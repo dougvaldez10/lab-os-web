@@ -32,7 +32,8 @@ export async function loginUser(username, password) {
     }
 
     // Set cookie persistence (30 days)
-    cookies().set('lab_os_user', username, { 
+    const cookieStore = await cookies();
+    cookieStore.set('lab_os_user', username, { 
        httpOnly: true, 
        secure: process.env.NODE_ENV === 'production',
        maxAge: 60 * 60 * 24 * 30,
@@ -47,13 +48,14 @@ export async function loginUser(username, password) {
 }
 
 export async function logoutUser() {
-  cookies().delete('lab_os_user');
+  const cookieStore = await cookies();
+  cookieStore.delete('lab_os_user');
   return { success: true };
 }
 
 export async function getCurrentUser() {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const username = cookieStore.get('lab_os_user')?.value;
 
     if (!username) return null;
