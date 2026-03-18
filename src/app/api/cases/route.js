@@ -6,8 +6,8 @@ export async function GET() {
   try {
     const { data: rows, error } = await supabase
       .from('casos_master')
-      .select('id, codigo, paciente, doctor, depto_actual, estado, fecha_ingreso, tipo')
-      .order('id', { ascending: false })
+      .select('id, codigo, paciente, doctor, depto_actual, estado, fecha_ingreso, fecha_entrega, hora_entrega, tipo')
+      .order('fecha_entrega', { ascending: true, nullsFirst: false })
       .limit(100);
 
     if (error) {
@@ -24,6 +24,8 @@ export async function GET() {
       dept: row.depto_actual,
       status: row.estado,
       date: row.fecha_ingreso,
+      fecha_entrega: row.fecha_entrega,
+      hora_entrega: row.hora_entrega,
       tipo: row.tipo,
       urgent: row.tipo?.toLowerCase() === 'digital' // Regla original, puede cambiarse
     }));

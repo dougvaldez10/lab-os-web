@@ -266,6 +266,43 @@ export default function Home() {
   
   const canCreateCases = currentUser && (currentUser.rol?.toLowerCase().includes('recep') || currentUser.rol?.includes('Admin'));
 
+  // Helpero para Fecha de entrega
+  const getDeliveryDateProps = (fecha, hora) => {
+    if (!fecha) return null;
+    try {
+      const [yyyy, mm, dd] = fecha.split('-');
+      if (!yyyy || !mm || !dd) return null;
+      
+      const dateObj = new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd));
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      let isDueToday = false;
+      let isPastDue = false;
+      
+      if (dateObj.getTime() === today.getTime()) isDueToday = true;
+      else if (dateObj.getTime() < today.getTime()) isPastDue = true;
+
+      let colorClass = "text-slate-500 hover:text-slate-600";
+      if (isDueToday) colorClass = "text-[#0062cc] font-bold";
+      else if (isPastDue) colorClass = "text-red-500/90 font-semibold";
+
+      let timeStr = hora || "";
+      if (hora && hora.includes(':')) {
+        const [h, m] = hora.split(':');
+        const hr = parseInt(h, 10);
+        const ampm = hr >= 12 ? 'PM' : 'AM';
+        const num12 = hr % 12 || 12;
+        timeStr = `${num12}:${m} ${ampm}`;
+      }
+
+      return {
+        text: `${dd}/${mm} ${timeStr}`.trim(),
+        colorClass
+      };
+    } catch { return null; }
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
       <Toaster position="bottom-center" />
@@ -332,7 +369,7 @@ export default function Home() {
                  {filteredCases.map((c) => {
                     const isDigital = c.tipo?.toLowerCase() === 'digital';
                     const bgClass = isDigital ? 'bg-blue-50/50' : 'bg-gray-50/50';
-                    const borderClass = c.urgent ? 'border-l-[4px] border-l-[#FF0000] pl-3' : 'border-l-[4px] border-l-transparent pl-3';
+                    const devProps = getDeliveryDateProps(c.fecha_entrega, c.hora_entrega);
                     
                     return (
                         <li key={c.internal_id} className={`flex items-center px-4 py-3.5 border-b border-gray-100 transition-colors ${bgClass} ${borderClass}`}>
@@ -347,9 +384,9 @@ export default function Home() {
                                  <span className="text-[13px] font-medium text-slate-500 shrink-0 flex items-center gap-1">
                                     <span className="text-slate-400">#</span>{c.id || "N/A"}
                                  </span>
-                                 {(c.fecha_entrega || c.hora_entrega) && (
-                                   <span className="text-[13px] text-slate-500/80 truncate font-medium">
-                                     {c.fecha_entrega ? new Date(c.fecha_entrega).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'}) : ''} {c.hora_entrega || ''}
+                                 {devProps && (
+                                   <span className={`text-[13px] ${devProps.colorClass} truncate ml-1 tracking-tight`}>
+                                     {devProps.text}
                                    </span>
                                  )}
                               </div>
