@@ -14,7 +14,7 @@ const workflow = [
   'Terminado'
 ];
 
-export async function updateCaseState(internalId, action) {
+export async function updateCaseState(internalId, action, operatorName = null) {
   try {
     if (!internalId || !['START', 'PAUSE', 'COMPLETE'].includes(action)) {
       return { success: false, error: "Datos de acción inválidos." };
@@ -35,7 +35,8 @@ export async function updateCaseState(internalId, action) {
     let updateData = {};
 
     if (action === 'START') {
-        updateData = { estado: 'En Proceso' };
+        const utcIso = new Date().toISOString();
+        updateData = { estado: 'En Proceso', operador_actual: operatorName, hora_inicio: utcIso };
     } else if (action === 'PAUSE') {
         updateData = { estado: 'En Pausa' };
     } else if (action === 'COMPLETE') {
@@ -45,7 +46,7 @@ export async function updateCaseState(internalId, action) {
             ? workflow[currentIndex + 1] 
             : currentCase.depto_actual; // Si ya es Terminado, se queda ahí
         
-        updateData = { depto_actual: nextDept, estado: 'Pendiente' };
+        updateData = { depto_actual: nextDept, estado: 'Pendiente', operador_actual: null, hora_inicio: null };
     }
 
     const { error: updateError } = await supabase

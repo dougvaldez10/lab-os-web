@@ -28,7 +28,7 @@ function StatusBadge({ status }) {
   return <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 whitespace-nowrap">Pendiente</span>;
 }
 
-function OperativeActionMenu({ currentCase, onRefresh }) {
+function OperativeActionMenu({ currentCase, onRefresh, operatorName }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const menuRef = useRef(null);
@@ -46,7 +46,7 @@ function OperativeActionMenu({ currentCase, onRefresh }) {
     setIsUpdating(true);
     const id = toast.loading(loadingMsg);
     try {
-      const res = await updateCaseState(currentCase.internal_id, actionType);
+      const res = await updateCaseState(currentCase.internal_id, actionType, operatorName);
       if (res.success) {
         toast.success(successMsg, { id });
         onRefresh();
@@ -251,7 +251,7 @@ export default function Home() {
     try {
       const user = await getCurrentUser();
       setCurrentUser(user);
-      if (user && (user.rol === 'Recepción' || user.rol === 'Admin' || user.rol === 'Administrador' || user.rol === 'Administración')) {
+      if (user && (user.rol?.toLowerCase().includes('recep') || user.rol?.toLowerCase().includes('admin'))) {
         const clientData = await getClients();
         setClients(clientData);
       }
@@ -364,6 +364,46 @@ export default function Home() {
     window.location.reload();
   };
 
+  // Filtrado Inteligente de Departamentos
+  const userRoles = currentUser?.rol?.split(',').map(r => r.trim().toLowerCase()) || [];
+  const isAdminOrReception = userRoles.includes('admin') || userRoles.includes('administrador') || userRoles.includes('recepción');
+  const allowedDepartments = departments.filter(d => 
+     isAdminOrReception || userRoles.includes(d.name.toLowerCase()) || userRoles.includes(d.id.toLowerCase())
+  );
+
+  // Helper SLA Cronómetro
+  const getSlaTimerProps = (horaInicio, depto) => {
+    if (!horaInicio) return null;
+    const isTechDept = ['Yesos', 'Digital_Escaneo', 'Digital_Diseno', 'Digital_Fresado', 'Ajuste'].includes(depto);
+    const startObj = new Date(horaInicio);
+    if (isNaN(startObj)) return null;
+
+    const diffMs = new Date() - startObj;
+    const diffMins = Math.floor(diffMs / 60000);
+
+    let textStr = "";
+    let colorCls = "text-slate-500";
+
+    if (isTechDept) {
+       // Base + 20 min
+       const limit = 20;
+       const left = limit - diffMins;
+       if (left > 0) {
+          textStr = `⏳ ${left}m`;
+          colorCls = "text-blue-600 font-bold";
+       } else {
+          textStr = `⚠️ +${Math.abs(left)}m atraso`;
+          colorCls = "text-red-500 font-bold";
+       }
+    } else {
+       // Genérico / Maquillaje (tiempo transcurrido)
+       textStr = `⏱️ ${diffMins}m`;
+    }
+    return { text: textStr, colorClass: colorCls };
+  };
+
+  const currentOperatorName = currentUser ? (currentUser.nombre_completo || currentUser.username) : null;
+
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
       <Toaster position="bottom-center" />
@@ -396,7 +436,7 @@ export default function Home() {
              >
                 <option value="all">TODAS (Monitor Global)</option>
                 <optgroup label="Departamentos Operativos">
-                  {departments.map((d) => (
+                  {allowedDepartments.map((d) => (
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
                 </optgroup>
@@ -430,8 +470,9 @@ export default function Home() {
                  {filteredCases.map((c) => {
                     const isDigital = c.tipo?.toLowerCase() === 'digital';
                     const bgClass = isDigital ? 'bg-blue-50/50' : 'bg-gray-50/50';
-                    const borderClass = c.urgent ? 'border-l-[4px] border-l-[#FF0000] pl-3' : 'border-l-[4px] border-l-transparent pl-3';
+                    const borderClass = c.urgent ? 'border-l-4 border-red-600 pl-3' : 'border-l-4 border-transparent pl-3';
                     const devProps = getDeliveryDateProps(c.fecha_entrega, c.hora_entrega);
+                    const slaProps = c.status === 'En Proceso' ? getSlaTimerProps(c.hora_inicio, c.dept) : null;
                     
                     return (
                         <li key={c.internal_id} className={`flex items-center px-4 py-3.5 border-b border-gray-100 transition-colors ${bgClass} ${borderClass}`}>
@@ -459,15 +500,25 @@ export default function Home() {
                             
                             {/* Derecha: Departamento + Pill (+ Menu si no es TODAS) */}
                             <div className="flex items-center gap-3 shrink-0">
-                               <div className="flex flex-col items-end gap-1.5">
+                               <div className="flex flex-col items-end gap-1.5 min-w-[80px]">
                                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                                      {departments.find(d=>d.id===c.dept)?.name || c.dept || 'N/A'}
                                   </span>
                                   <StatusBadge status={c.status} />
+                                  {c.status === 'En Proceso' && c.operador_actual && (
+                                     <span className="text-[10px] text-slate-600 font-medium tracking-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-[80px]">
+                                        👤 {c.operador_actual.split(' ')[0]}
+                                     </span>
+                                  )}
+                                  {slaProps && (
+                                     <span className={`text-[10px] ${slaProps.colorClass}`}>
+                                        {slaProps.text}
+                                     </span>
+                                  )}
                                </div>
                                
                                {activeDept !== "all" && (
-                                 <OperativeActionMenu currentCase={c} onRefresh={fetchCases} />
+                                 <OperativeActionMenu currentCase={c} onRefresh={fetchCases} operatorName={currentOperatorName} />
                                )}
                             </div>
                           </div>
