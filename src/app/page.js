@@ -7,7 +7,7 @@ import {
 import { updateCaseState } from "./actions/cases";
 import { createNewCase } from "./actions/create-case";
 import { getClients } from "./actions/clients";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, loginUser, logoutUser } from "@/lib/auth";
 import { Toaster, toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 
@@ -194,12 +194,56 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
   );
 }
 
+function LoginScreen({ onLoginSuccess }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const res = await loginUser(username, password);
+    if (res.success) {
+      toast.success("¡Bienvenido, " + res.user.nombre_completo + "!");
+      onLoginSuccess(res.user);
+    } else {
+      toast.error(res.error);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
+      <Toaster position="bottom-center" />
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Lab OS</h1>
+          <p className="text-sm text-slate-500 mt-1 font-medium">Acceso a la Nube Restringido</p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Usuario</label>
+            <input type="text" value={username} onChange={e => setUsername(e.target.value)} required placeholder="ej: vanessa" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-semibold transition-all"/>
+          </div>
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Contraseña</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-semibold transition-all"/>
+          </div>
+          <button disabled={loading} type="submit" className="w-full py-3.5 mt-2 rounded-xl font-bold text-sm text-white bg-slate-900 hover:bg-black transition-colors flex items-center justify-center">
+            {loading ? <RefreshCw className="animate-spin w-5 h-5"/> : "Iniciar Sesión"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const [activeDept, setActiveDept] = useState("all");
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [clients, setClients] = useState([]);
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
 
@@ -213,6 +257,8 @@ export default function Home() {
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setAuthChecked(true);
     }
   };
 
@@ -303,6 +349,21 @@ export default function Home() {
     } catch { return null; }
   };
 
+  if (!authChecked) {
+    return <div className="min-h-screen bg-white flex items-center justify-center"><RefreshCw className="animate-spin text-slate-300 w-8 h-8" /></div>;
+  }
+
+  if (!currentUser) {
+    return <LoginScreen onLoginSuccess={(u) => { setCurrentUser(u); loadInitialData(); fetchCases(); }} />;
+  }
+
+  const handleLogout = async () => {
+    await logoutUser();
+    setCurrentUser(null);
+    setAuthChecked(false);
+    window.location.reload();
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
       <Toaster position="bottom-center" />
@@ -312,13 +373,13 @@ export default function Home() {
         
         {/* Simple Header */}
         <header className="px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 h-16 bg-white">
-          <h1 className="font-bold text-xl tracking-tight text-slate-900">Lab OS</h1>
+          <h1 className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer" onClick={handleLogout} title="Cerrar Sesión">Lab OS</h1>
           <div className="flex items-center gap-3">
              {loading && <RefreshCw size={14} className="animate-spin text-slate-300" />}
              {currentUser && (
-                <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
+                <div className="flex items-center gap-2 text-sm text-slate-500 font-medium cursor-pointer" onClick={handleLogout} title="Cerrar Sesión">
                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 font-bold border border-slate-200">
-                     {currentUser.username.charAt(0).toUpperCase()}
+                     {currentUser.username?.charAt(0).toUpperCase()}
                    </div>
                 </div>
              )}
