@@ -1,49 +1,32 @@
-import Database from 'better-sqlite3';
-import path from 'path';
+import { supabase } from '@/lib/supabase';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // Path to the SQLite database
-    const dbPath = path.resolve('/Users/douglasvaldez/Desktop/programa/laboratorio_master.db');
-    
-    // Open the database (removing readonly to allow the WAL pragma to apply)
-    const db = new Database(dbPath, { fileMustExist: true });
-    
-    // Enable WAL (Write-Ahead Logging) mode for concurrent reads/writes
-    db.pragma('journal_mode = WAL');
+    const { data: rows, error } = await supabase
+      .from('casos_master')
+      .select('id, codigo, paciente, doctor, depto_actual, estado, fecha_ingreso, tipo')
+      .order('id', { ascending: false })
+      .limit(100);
 
-    // Query to fetch active cases from casos_master
-    // Mapping: 
-    // codigo -> id (Case ID)
-    // paciente -> patient
-    // doctor -> doctor
-    // depto_actual -> dept
-    // estado -> status
-    // fecha_ingreso -> date
-    const query = `
-      SELECT 
-        id as internal_id,
-        codigo as id, 
-        paciente as patient, 
-        doctor, 
-        depto_actual as dept, 
-        estado as status, 
-        fecha_ingreso as date,
-        tipo
-      FROM casos_master 
-      ORDER BY id DESC 
-      LIMIT 100
-    `;
+    if (error) {
+      console.error('Supabase query error:', error);
+      throw error;
+    }
 
-    const rows = db.prepare(query).all();
-    
-    // Add logic for 'urgent' if needed, for now we map columns
+    // Mapeo adaptado a la UI existente
     const cases = rows.map(row => ({
-      ...row,
-      urgent: row.tipo?.toLowerCase() === 'digital' // Example mapping: digital cases might be flagged
+      internal_id: row.id,
+      id: row.codigo,
+      patient: row.paciente,
+      doctor: row.doctor,
+      dept: row.depto_actual,
+      status: row.estado,
+      date: row.fecha_ingreso,
+      tipo: row.tipo,
+      urgent: row.tipo?.toLowerCase() === 'digital' // Regla original, puede cambiarse
     }));
-
-    db.close();
 
     return Response.json(cases);
   } catch (error) {

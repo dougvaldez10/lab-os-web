@@ -1,7 +1,6 @@
 "use server";
 
-import Database from 'better-sqlite3';
-import path from 'path';
+import { supabase } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
 
 // Flujo lógico de departamentos
@@ -16,34 +15,29 @@ const workflow = [
 ];
 
 export async function updateCaseState(internalId, action) {
-  let db;
   try {
     if (!internalId || !['START', 'PAUSE', 'COMPLETE'].includes(action)) {
       return { success: false, error: "Datos de acción inválidos." };
     }
 
-    const dbPath = path.resolve('/Users/douglasvaldez/Desktop/programa/laboratorio_master.db');
-    db = new Database(dbPath, { fileMustExist: true });
+    // Consulta el estado actual
+    const { data: currentCase, error: fetchError } = await supabase
+      .from('casos_master')
+      .select('depto_actual')
+      .eq('id', internalId)
+      .single();
     
-    db.pragma('journal_mode = WAL');
-    db.pragma('busy_timeout = 5000'); // Esperar hasta 5s
-
-    // Primero consultamos el estado actual para saber el depto en 'COMPLETE'
-    const currentCase = db.prepare('SELECT depto_actual FROM casos_master WHERE id = ?').get(internalId);
-    
-    if (!currentCase) {
+    if (fetchError || !currentCase) {
+      console.error(fetchError);
       return { success: false, error: "Caso no encontrado." };
     }
 
-    let query;
-    let params;
+    let updateData = {};
 
     if (action === 'START') {
-        query = `UPDATE casos_master SET estado = 'En Proceso' WHERE id = ?`;
-        params = [internalId];
+        updateData = { estado: 'En Proceso' };
     } else if (action === 'PAUSE') {
-        query = `UPDATE casos_master SET estado = 'En Pausa' WHERE id = ?`;
-        params = [internalId];
+        updateData = { estado: 'En Pausa' };
     } else if (action === 'COMPLETE') {
         // Lógica de avanzar al siguiente departamento y ponerlo en Pendiente
         const currentIndex = workflow.indexOf(currentCase.depto_actual);
@@ -51,13 +45,16 @@ export async function updateCaseState(internalId, action) {
             ? workflow[currentIndex + 1] 
             : currentCase.depto_actual; // Si ya es Terminado, se queda ahí
         
-        query = `UPDATE casos_master SET depto_actual = ?, estado = 'Pendiente' WHERE id = ?`;
-        params = [nextDept, internalId];
+        updateData = { depto_actual: nextDept, estado: 'Pendiente' };
     }
 
-    const info = db.prepare(query).run(...params);
+    const { error: updateError } = await supabase
+      .from('casos_master')
+      .update(updateData)
+      .eq('id', internalId);
 
-    if (info.changes === 0) {
+    if (updateError) {
+      console.error(updateError);
       return { success: false, error: "No se pudo modificar el registro." };
     }
 
@@ -66,16 +63,7 @@ export async function updateCaseState(internalId, action) {
 
   } catch (error) {
     console.error("Error al actualizar caso:", error);
-    
-    if (error.code === 'SQLITE_BUSY') {
-        return { success: false, error: "El sistema está ocupado. Intenta de nuevo en unos segundos." };
-    }
-    
     return { success: false, error: "Error interno al guardar." };
-  } finally {
-    if (db) {
-      db.close();
-    }
   }
 }
 

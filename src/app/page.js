@@ -9,6 +9,7 @@ import { createNewCase } from "./actions/create-case";
 import { getClients } from "./actions/clients";
 import { getCurrentUser } from "@/lib/auth";
 import { Toaster, toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 const departments = [
   { id: "Recepción", name: "Recepción" },
@@ -229,6 +230,28 @@ export default function Home() {
   useEffect(() => {
     loadInitialData();
     fetchCases();
+
+    // Suscripción Realtime a Supabase
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Escuchar INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'casos_master',
+        },
+        (payload) => {
+          console.log('Realtime Update Received!', payload);
+          // Si hay una actualización que otra persona hizo (como AG Windows o Vanessa), se refetchean los casos
+          fetchCases();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const urgencySort = (a, b) => {
@@ -244,11 +267,11 @@ export default function Home() {
   const canCreateCases = currentUser && (currentUser.rol?.toLowerCase().includes('recep') || currentUser.rol?.includes('Admin'));
 
   return (
-    <div className="min-h-screen bg-slate-100/50 flex flex-col font-sans">
+    <div className="min-h-screen bg-white flex flex-col font-sans">
       <Toaster position="bottom-center" />
       <NewCaseModal isOpen={isNewCaseModalOpen} onClose={() => setIsNewCaseModalOpen(false)} clients={clients} onActionComplete={fetchCases}/>
 
-      <main className="flex-1 w-full max-w-md mx-auto bg-white shadow-2xl min-h-screen flex flex-col border-x border-slate-200">
+      <main className="flex-1 w-full max-w-md mx-auto bg-white min-h-screen flex flex-col">
         
         {/* Simple Header */}
         <header className="px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 h-16 bg-white">
@@ -266,12 +289,12 @@ export default function Home() {
         </header>
 
         {/* Big Select Navigation */}
-        <div className="p-4 border-b border-slate-100 bg-slate-50 shrink-0">
+        <div className="p-4 border-b border-slate-100 bg-white shrink-0">
            <div className="relative">
              <select 
                 value={activeDept}
                 onChange={(e) => setActiveDept(e.target.value)}
-                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-slate-900 font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none shadow-sm text-[15px]"
+                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none shadow-sm text-[15px]"
              >
                 <option value="all">TODAS (Monitor Global)</option>
                 <optgroup label="Departamentos Operativos">
@@ -305,43 +328,53 @@ export default function Home() {
            ) : filteredCases.length === 0 ? (
                <div className="p-10 text-center text-slate-400 font-medium text-sm">No hay trabajos aquí.</div>
            ) : (
-               <ul className="divide-y divide-slate-100">
-                 {filteredCases.map((c) => (
-                    <li key={c.internal_id} className={`flex items-center px-4 py-4 hover:bg-slate-50 transition-colors ${c.urgent ? 'bg-red-50/30' : ''}`}>
-                       
-                       {/* Mobile-Friendly Rows */}
-                       {activeDept === "all" ? (
-                         // Monitor Mode 
-                         <div className="flex-1 min-w-0 pr-4">
-                           <div className="flex items-center justify-between mb-0.5">
-                             <div className="flex items-center gap-2">
-                               {c.urgent && <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>}
-                               <p className="text-[13px] font-bold text-slate-500 uppercase tracking-wide">#{c.id || "N/A"}</p>
-                             </div>
-                             <p className="text-[11px] font-semibold text-slate-500 uppercase">{departments.find(d=>d.id===c.dept)?.name || c.dept || 'N/A'}</p>
-                           </div>
-                           <p className="text-[15px] font-bold text-slate-900 truncate">{c.patient}</p>
-                         </div>
-                       ) : (
-                         // Action Mode
-                         <>
-                           <div className="flex-1 min-w-0 pr-2">
-                             <div className="flex items-center gap-2 mb-1">
-                               {c.urgent && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>}
-                               <p className="text-[15px] font-bold text-slate-900 truncate">{c.patient}</p>
-                             </div>
-                             <div className="flex items-center gap-2">
-                               <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wide">#{c.id}</p>
-                               <span className="text-[10px] text-slate-300">•</span>
-                               <StatusBadge status={c.status} />
-                             </div>
-                           </div>
-                           <OperativeActionMenu currentCase={c} onRefresh={fetchCases} />
-                         </>
-                       )}
-                       
-                    </li>
-                 ))}
+               <ul className="flex flex-col">
+                 {filteredCases.map((c) => {
+                    const isDigital = c.tipo?.toLowerCase() === 'digital';
+                    const bgClass = isDigital ? 'bg-blue-50/50' : 'bg-gray-50/50';
+                    const borderClass = c.urgent ? 'border-l-[4px] border-l-[#FF0000] pl-3' : 'border-l-[4px] border-l-transparent pl-3';
+                    
+                    return (
+                        <li key={c.internal_id} className={`flex items-center px-4 py-3.5 border-b border-gray-100 transition-colors ${bgClass} ${borderClass}`}>
+                          {/* Wrapper full flex row */}
+                          <div className="flex-1 flex items-center justify-between min-w-0">
+                            
+                            {/* Izquierda: Codigo, Fecha/Hora, Paciente */}
+                            <div className="flex flex-col min-w-0 pr-4 gap-1">
+                              {/* Línea Superior: Codigo + Fecha */}
+                              <div className="flex items-center gap-2">
+                                 {c.urgent && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>}
+                                 <span className="text-[13px] font-medium text-slate-500 shrink-0 flex items-center gap-1">
+                                    <span className="text-slate-400">#</span>{c.id || "N/A"}
+                                 </span>
+                                 {(c.fecha_entrega || c.hora_entrega) && (
+                                   <span className="text-[13px] text-slate-500/80 truncate font-medium">
+                                     {c.fecha_entrega ? new Date(c.fecha_entrega).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'}) : ''} {c.hora_entrega || ''}
+                                   </span>
+                                 )}
+                              </div>
+                              
+                              {/* Cuerpo: Paciente */}
+                              <p className="text-[16px] font-bold text-slate-900 truncate tracking-tight">{c.patient}</p>
+                            </div>
+                            
+                            {/* Derecha: Departamento + Pill (+ Menu si no es TODAS) */}
+                            <div className="flex items-center gap-3 shrink-0">
+                               <div className="flex flex-col items-end gap-1.5">
+                                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                     {departments.find(d=>d.id===c.dept)?.name || c.dept || 'N/A'}
+                                  </span>
+                                  <StatusBadge status={c.status} />
+                               </div>
+                               
+                               {activeDept !== "all" && (
+                                 <OperativeActionMenu currentCase={c} onRefresh={fetchCases} />
+                               )}
+                            </div>
+                          </div>
+                        </li>
+                    );
+                 })}
                </ul>
            )}
         </div>
