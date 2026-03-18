@@ -2,14 +2,18 @@
 
 import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
+import crypto from 'crypto';
 
 export async function loginUser(username, password) {
   try {
+    const salt = "legion_lab_";
+    const pwd_hash = crypto.createHash('sha256').update(salt + password).digest('hex');
+
     const { data: user, error } = await supabase
       .from('usuarios')
       .select('*')
       .eq('username', username)
-      .eq('password', password)
+      .eq('password_hash', pwd_hash)
       .single();
 
     if (error || !user) return { success: false, error: 'Credenciales inválidas' };
