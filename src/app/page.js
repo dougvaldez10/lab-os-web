@@ -369,6 +369,7 @@ export default function Home() {
                  {filteredCases.map((c) => {
                     const isDigital = c.tipo?.toLowerCase() === 'digital';
                     const bgClass = isDigital ? 'bg-blue-50/50' : 'bg-gray-50/50';
+                    const borderClass = c.urgent ? 'border-l-[4px] border-l-[#FF0000] pl-3' : 'border-l-[4px] border-l-transparent pl-3';
                     const devProps = getDeliveryDateProps(c.fecha_entrega, c.hora_entrega);
                     
                     return (
