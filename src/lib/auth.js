@@ -9,14 +9,27 @@ export async function loginUser(username, password) {
     const salt = "legion_lab_";
     const pwd_hash = crypto.createHash('sha256').update(salt + password).digest('hex');
 
+    // 1. Fetch user by username only
     const { data: user, error } = await supabase
       .from('usuarios')
       .select('*')
       .eq('username', username)
-      .eq('password_hash', pwd_hash)
       .single();
 
-    if (error || !user) return { success: false, error: 'Credenciales inválidas' };
+    if (error) {
+       console.log("Supabase error fetching user:", error);
+       return { success: false, error: 'Usuario no encontrado' };
+    }
+    
+    if (!user) {
+       return { success: false, error: 'Usuario no existe' };
+    }
+
+    // 2. Compara el Hash (Idéntico a Python)
+    if (user.password_hash !== pwd_hash) {
+       console.log(`Hash Mismatch para ${username}. InputHash: ${pwd_hash} | DBHash: ${user.password_hash}`);
+       return { success: false, error: 'Contraseña incorrecta' };
+    }
 
     // Set cookie persistence (30 days)
     cookies().set('lab_os_user', username, { 
@@ -28,7 +41,8 @@ export async function loginUser(username, password) {
 
     return { success: true, user };
   } catch (err) {
-    return { success: false, error: 'Error del servidor' };
+    console.error("Server Action Login Error:", err);
+    return { success: false, error: 'Error del servidor: ' + err.message };
   }
 }
 
