@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const { data: rows, error } = await supabase
       .from('casos_master')
-      .select('id, codigo, paciente, doctor, depto_actual, estado, fecha_ingreso, fecha_entrega, hora_entrega, tipo, operador_actual, hora_inicio')
+      .select('id, codigo, paciente, doctor, depto_actual, estado, fecha_ingreso, fecha_entrega, hora_entrega, tipo, operador_actual, hora_inicio, casos_detalle(unidades)')
       .order('fecha_entrega', { ascending: true, nullsFirst: false })
       .limit(100);
 
@@ -16,21 +16,27 @@ export async function GET() {
     }
 
     // Mapeo adaptado a la UI existente
-    const cases = rows.map(row => ({
-      internal_id: row.id,
-      id: row.codigo,
-      patient: row.paciente,
-      doctor: row.doctor,
-      dept: row.depto_actual,
-      status: row.estado,
-      date: row.fecha_ingreso,
-      fecha_entrega: row.fecha_entrega,
-      hora_entrega: row.hora_entrega,
-      tipo: row.tipo,
-      operador_actual: row.operador_actual,
-      hora_inicio: row.hora_inicio,
-      urgent: false // Por ahora sin urgencia automática hasta crear columna
-    }));
+    const cases = rows.map(row => {
+      const total_unidades = row.casos_detalle
+        ? row.casos_detalle.reduce((sum, d) => sum + (d.unidades || 1), 0)
+        : 1;
+      return {
+        internal_id: row.id,
+        id: row.codigo,
+        patient: row.paciente,
+        doctor: row.doctor,
+        dept: row.depto_actual,
+        status: row.estado,
+        date: row.fecha_ingreso,
+        fecha_entrega: row.fecha_entrega,
+        hora_entrega: row.hora_entrega,
+        tipo: row.tipo,
+        operador_actual: row.operador_actual,
+        hora_inicio: row.hora_inicio,
+        total_unidades,
+        urgent: false
+      };
+    });
 
     return Response.json(cases);
   } catch (error) {

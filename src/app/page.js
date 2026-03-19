@@ -612,35 +612,38 @@ export default function Home() {
      isAdmin || userRoles.includes(d.name.toLowerCase()) || userRoles.includes(d.id.toLowerCase())
   );
 
-  // Helper SLA Cronómetro
-  const getSlaTimerProps = (horaInicio, depto) => {
+  // ============================================================
+  //  Helper: SLA Semáforo — tiempos acordados por Douglas
+  // ============================================================
+  const SLA_CONFIG = {
+    Yesos:           { baseMin: 160,  perUnit: 0,  byDays: false },
+    Digital_Escaneo: { baseMin: 20,   perUnit: 10, byDays: false },
+    Digital_Diseno:  { baseMin: 15,   perUnit: 15, byDays: false },
+    Digital_Fresado: { baseMin: 0,    perUnit: 40, byDays: false },
+    Ajuste:          { baseMin: 20,   perUnit: 10, byDays: false },
+    Sinterizado:     { baseMin: 480,  perUnit: 0,  byDays: false },
+    Ceramica:        { baseMin: 480,  perUnit: 0,  byDays: true  },
+  };
+
+  const getSlaColor = (horaInicio, depto, total_unidades = 1) => {
     if (!horaInicio) return null;
-    const isTechDept = ['Yesos', 'Digital_Escaneo', 'Digital_Diseno', 'Digital_Fresado', 'Ajuste'].includes(depto);
+    const cfg = SLA_CONFIG[depto];
+    if (!cfg) return null;
+
     const startObj = new Date(horaInicio);
     if (isNaN(startObj)) return null;
 
-    const diffMs = new Date() - startObj;
-    const diffMins = Math.floor(diffMs / 60000);
+    const diffMins = (new Date() - startObj) / 60000;
+    const units = Math.max(1, total_unidades);
+    const slaMins = cfg.baseMin + (cfg.perUnit * units);
 
-    let textStr = "";
-    let colorCls = "text-slate-500";
+    const pct = cfg.byDays
+      ? diffMins / slaMins  // slaMins = 480 = 1 día laboral
+      : diffMins / slaMins;
 
-    if (isTechDept) {
-       // Base + 20 min
-       const limit = 20;
-       const left = limit - diffMins;
-       if (left > 0) {
-          textStr = `⏳ ${left}m`;
-          colorCls = "text-blue-600 font-bold";
-       } else {
-          textStr = `⚠️ +${Math.abs(left)}m atraso`;
-          colorCls = "text-red-500 font-bold";
-       }
-    } else {
-       // Genérico / Maquillaje (tiempo transcurrido)
-       textStr = `⏱️ ${diffMins}m`;
-    }
-    return { text: textStr, colorClass: colorCls };
+    if (pct < 0.8) return 'green';
+    if (pct < 1.0) return 'yellow';
+    return 'red';
   };
 
   const currentOperatorName = currentUser ? (currentUser.nombre_completo || currentUser.username) : null;
@@ -713,10 +716,14 @@ export default function Home() {
                     const bgClass = isDigital ? 'bg-blue-50/50' : 'bg-gray-50/50';
                     const borderClass = c.urgent ? 'border-l-4 border-red-600 pl-3' : 'border-l-4 border-transparent pl-3';
                     const devProps = getDeliveryDateProps(c.fecha_entrega, c.hora_entrega);
-                    const slaProps = c.status === 'En Proceso' ? getSlaTimerProps(c.hora_inicio, c.dept) : null;
+                    const slaColor = c.status === 'En Proceso' ? getSlaColor(c.hora_inicio, c.dept, c.total_unidades) : null;
+                    const slaRingClass = slaColor === 'green'  ? 'ring-2 ring-green-400'
+                                       : slaColor === 'yellow' ? 'ring-2 ring-yellow-400'
+                                       : slaColor === 'red'    ? 'ring-2 ring-red-500'
+                                       : '';
                     
                     return (
-                        <li key={c.internal_id} className={`flex items-center px-4 py-3.5 border-b border-gray-100 transition-colors ${bgClass} ${borderClass}`}>
+                        <li key={c.internal_id} className={`flex items-center px-4 py-3.5 border-b border-gray-100 transition-all ${bgClass} ${borderClass} ${slaRingClass} rounded-sm`}>
                           {/* Wrapper full flex row */}
                           <div className="flex-1 flex items-center justify-between min-w-0">
                             
