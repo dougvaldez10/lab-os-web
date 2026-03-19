@@ -272,8 +272,8 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                <div className="space-y-1.5">
-                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Edad</label>
-                 <input type="number" name="edad" placeholder="Años" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-sm font-medium shadow-sm"/>
+                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">No. Orden</label>
+                 <input type="text" name="codigo" required placeholder="Ej. A-1234" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-sm font-medium shadow-sm"/>
                </div>
                <div className="space-y-1.5">
                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Color</label>

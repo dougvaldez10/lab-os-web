@@ -11,7 +11,7 @@ export async function createNewCase(formData) {
     // Obtener valores del form
     const cliente_id = formData.get('cliente_id');
     const paciente = formData.get('paciente');
-    const edad = formData.get('edad');
+    const codigo = formData.get('codigo');
     const color = formData.get('color');
     const doctor = formData.get('doctor');
     const tipo = formData.get('tipo'); // 'Análogo' o 'Digital'
@@ -25,8 +25,8 @@ export async function createNewCase(formData) {
     } catch(e) {}
 
     // Validaciones básicas
-    if (!cliente_id || !paciente || !tipo) {
-      return { success: false, error: "Cliente, paciente y tipo son requeridos." };
+    if (!cliente_id || !paciente || !tipo || !codigo) {
+      return { success: false, error: "Faltan campos (Cliente, Paciente, Tipo, No. Orden)." };
     }
 
     // Auto-Enrutamiento Inicial
@@ -40,9 +40,8 @@ export async function createNewCase(formData) {
     const estado = 'Pendiente';
     const usuario_id = user ? user.id : null;
     
-    // Generar un código visual de caso (ej., C-XXXX)
+    // Obtener la fecha para ingreso
     const fecha = new Date();
-    const codigo = `C-${fecha.getFullYear().toString().slice(-2)}${(fecha.getMonth()+1).toString().padStart(2, '0')}${Math.floor(Math.random()*1000).toString().padStart(3, '0')}`;
     const fecha_ingreso = fecha.toISOString().split('T')[0];
 
     const newCase = {
@@ -53,7 +52,6 @@ export async function createNewCase(formData) {
       fecha_ingreso,
       fecha_entrega: fecha_entrega || null,
       hora_entrega: hora_entrega || null,
-      edad: edad || '', 
       color: color || '', 
       doctor: doctor || '', 
       tipo, 
