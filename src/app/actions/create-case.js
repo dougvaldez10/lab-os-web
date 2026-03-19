@@ -9,7 +9,7 @@ export async function createNewCase(formData) {
     const user = await getCurrentUser();
     
     // Obtener valores del form
-    const cliente_id = formData.get('cliente_id');
+    const form_doctor_id = formData.get('cliente_id'); // En realidad el UI envía el ID del Doctor aquí
     const paciente = formData.get('paciente');
     const codigo = formData.get('codigo');
     const color = formData.get('color');
@@ -25,7 +25,7 @@ export async function createNewCase(formData) {
     } catch(e) {}
 
     // Validaciones básicas
-    if (!cliente_id || !paciente || !tipo || !codigo) {
+    if (!form_doctor_id || !paciente || !tipo || !codigo) {
       return { success: false, error: "Faltan campos (Cliente, Paciente, Tipo, No. Orden)." };
     }
 
@@ -44,22 +44,24 @@ export async function createNewCase(formData) {
     const fecha = new Date();
     const fecha_ingreso = fecha.toISOString().split('T')[0];
 
-    // Obtener nombre del doctor desde la tabla doctores usando el ID
+    // Obtener nombre del doctor y ID de clínica real desde la tabla doctores usando el form_doctor_id
     let doctorNombre = doctor || '';
-    if (cliente_id) {
+    let db_cliente_id = null;
+    if (form_doctor_id) {
       const { data: docData } = await supabase
         .from('doctores')
-        .select('trato, nombre, apellido')
-        .eq('id', cliente_id)
+        .select('trato, nombre, apellido, cliente_id')
+        .eq('id', form_doctor_id)
         .single();
       if (docData) {
         doctorNombre = `${docData.trato || 'Dr.'} ${docData.nombre} ${docData.apellido || ''}`.trim();
+        db_cliente_id = docData.cliente_id;
       }
     }
 
     const newCase = {
       codigo, 
-      cliente_id, 
+      cliente_id: db_cliente_id, 
       paciente, 
       estado, 
       fecha_ingreso,
