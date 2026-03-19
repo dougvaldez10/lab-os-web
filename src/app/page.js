@@ -649,25 +649,29 @@ export default function Home() {
   const currentOperatorName = currentUser ? (currentUser.nombre_completo || currentUser.username) : null;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans">
+    <div className="min-h-screen bg-white md:bg-slate-100 flex flex-col font-sans">
       <Toaster position="bottom-center" />
       <NewCaseModal isOpen={isNewCaseModalOpen} onClose={() => setIsNewCaseModalOpen(false)} clients={clients} onActionComplete={fetchCases}/>
 
-      <main className="flex-1 w-full max-w-md mx-auto bg-white min-h-screen flex flex-col">
+      {/* Desktop: tarjeta flotante centrada. Mobile: full screen */}
+      <main className="flex-1 w-full max-w-[500px] mx-auto bg-white min-h-screen md:min-h-[calc(100vh-2rem)] md:my-4 md:rounded-2xl md:shadow-2xl md:ring-1 md:ring-slate-200/80 flex flex-col overflow-hidden">
         
-        {/* Simple Header */}
-        <header className="px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 h-16 bg-white">
-          <h1 className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer" onClick={handleLogout} title="Cerrar Sesión">Lab OS</h1>
-          <div className="flex items-center gap-3">
-             {loading && <RefreshCw size={14} className="animate-spin text-slate-300" />}
-             {currentUser && (
-                <div className="flex items-center gap-2 text-sm text-slate-500 font-medium cursor-pointer" onClick={handleLogout} title="Cerrar Sesión">
-                   <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 font-bold border border-slate-200">
-                     {currentUser.username?.charAt(0).toUpperCase()}
-                   </div>
-                </div>
-             )}
-          </div>
+        {/* Header — logo centrado, spinner a la derecha */}
+        <header className="px-5 py-4 border-b border-slate-100 flex items-center justify-center relative shrink-0 h-14 bg-white">
+          {/* Logo clickeable — navega a TODAS */}
+          <h1
+            className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none"
+            onClick={() => setActiveDept('all')}
+            title="Ver todos los casos"
+          >
+            Lab OS
+          </h1>
+          {/* Spinner de recarga — esquina derecha */}
+          {loading && (
+            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+              <RefreshCw size={14} className="animate-spin text-slate-300" />
+            </div>
+          )}
         </header>
 
         {/* Big Select Navigation */}
@@ -704,7 +708,7 @@ export default function Home() {
         )}
 
         {/* List Content */}
-        <div className="flex-1 overflow-y-auto w-full pb-20">
+        <div className="flex-1 overflow-y-auto w-full pb-24">
            {loading && cases.length === 0 ? (
                <div className="p-10 text-center text-slate-400 font-medium text-sm">Cargando datos...</div>
            ) : filteredCases.length === 0 ? (
@@ -775,6 +779,19 @@ export default function Home() {
         </div>
 
       </main>
+
+      {/* Avatar de usuario — fijo al pie de pantalla, centrado */}
+      {currentUser && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <button
+            onClick={handleLogout}
+            title="Cerrar sesión"
+            className="w-11 h-11 rounded-full bg-white border border-slate-200 shadow-lg flex items-center justify-center text-slate-700 font-bold text-[15px] hover:bg-slate-50 hover:shadow-xl transition-all active:scale-95 select-none"
+          >
+            {currentUser.username?.charAt(0).toUpperCase()}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
