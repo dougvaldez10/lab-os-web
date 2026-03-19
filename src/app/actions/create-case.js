@@ -80,7 +80,7 @@ export async function createNewCase(formData) {
 
     if (insertError) {
       console.error("Supabase insert error (master):", insertError);
-      return { success: false, error: "Error interno al guardar Caso Maestro en BD." };
+      return { success: false, error: `Error DB: ${insertError.message || JSON.stringify(insertError)}` };
     }
 
     const masterId = insertedData.id;
