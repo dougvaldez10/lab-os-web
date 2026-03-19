@@ -835,12 +835,12 @@ export default function Home() {
         </header>
 
         {/* Big Select Navigation */}
-        <div className="px-4 py-3 border-b border-slate-100 bg-white shrink-0 flex justify-center">
-           <div className="relative w-full max-w-xs">
+        <div className="px-4 py-3 border-b border-slate-100 bg-white shrink-0">
+           <div className="relative">
              <select 
                 value={activeDept}
                 onChange={(e) => setActiveDept(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none shadow-sm text-[15px]"
+                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 text-center font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none shadow-sm text-[15px]"
              >
                 <option value="all">TODAS (Monitor Global)</option>
                 <optgroup label="Departamentos Operativos">
