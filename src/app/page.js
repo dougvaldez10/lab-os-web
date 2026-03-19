@@ -13,15 +13,19 @@ import { supabase } from '@/lib/supabase';
 
 const departments = [
   { id: "Recepción", name: "Recepción" },
-  { id: "Diseño (CAD)", name: "Diseño (CAD)" },
+  { id: "Yesos", name: "Yesos" },
+  { id: "Digital_Escaneo", name: "Escaneo" },
+  { id: "Digital_Diseno", name: "Diseño" },
+  { id: "Digital_Fresado", name: "Fresado" },
   { id: "Zirconia (CAM)", name: "Zirconia (CAM)" },
   { id: "Impresión 3D", name: "Impresión 3D" },
   { id: "Cerámica", name: "Cerámica" },
+  { id: "Ajuste", name: "Ajuste" },
   { id: "Terminado", name: "Terminado" },
 ];
 
 // Selector Personalizado Inteligente Extirpado de Modal
-const ClientSelect = ({ clients }) => {
+const ClientSelect = ({ clients, selected, onChange }) => {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState('');
@@ -78,7 +82,7 @@ const ClientSelect = ({ clients }) => {
                  filtered.map(c => (
                    <div 
                      key={c.id} 
-                     onClick={() => { setSelected(c.id); setOpen(false); setSearch(''); }}
+                     onClick={() => { onChange(c.id); setOpen(false); setSearch(''); }}
                      className="px-4 py-2.5 hover:bg-[#D4AF37]/10 cursor-pointer border-b border-slate-50 last:border-0 transition-colors flex flex-col"
                    >
                      <span className="font-bold text-slate-800 text-sm">{c.nombre_dentista ? (c.nombre_dentista.toLowerCase().includes('dr') ? c.nombre_dentista : 'Dr. ' + c.nombre_dentista) : c.nombre}</span>
@@ -93,13 +97,6 @@ const ClientSelect = ({ clients }) => {
     </div>
   );
 };
-  { id: "Yesos", name: "Yesos" },
-  { id: "Digital_Escaneo", name: "Escaneo" },
-  { id: "Digital_Diseno", name: "Diseño" },
-  { id: "Digital_Fresado", name: "Fresado" },
-  { id: "Ajuste", name: "Ajuste" },
-  { id: "Terminado", name: "Terminado" },
-];
 
 function StatusBadge({ status }) {
   if (status === 'En Proceso') return <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 whitespace-nowrap">En Proceso</span>;
@@ -182,6 +179,7 @@ function OperativeActionMenu({ currentCase, onRefresh, operatorName }) {
 
 function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
   const [selectedTeeth, setSelectedTeeth] = useState([]);
   const [items, setItems] = useState([]);
   const [material, setMaterial] = useState('');
@@ -232,7 +230,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
       const result = await createNewCase(formData);
       if (result.success) {
         toast.success(`Registrado con éxito. Pasa a: ${result.deptoAsignado}.`, { id: loadingToast });
-        setItems([]); setSelectedTeeth([]); setMaterial(''); setProducto('');
+        setItems([]); setSelectedTeeth([]); setMaterial(''); setProducto(''); setSelectedClient(null);
         onActionComplete();
         onClose();
       } else {
@@ -267,7 +265,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente / Doctor</label>
-                <ClientSelect clients={clients} />
+                <ClientSelect clients={clients} selected={selectedClient} onChange={setSelectedClient} />
               </div>
 
               <div className="space-y-1.5">
