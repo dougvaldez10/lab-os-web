@@ -804,12 +804,17 @@ export default function Home() {
   const currentOperatorName = currentUser ? (currentUser.nombre_completo || currentUser.username) : null;
 
   return (
-    <div className="min-h-screen bg-white md:bg-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-white sm:bg-slate-50 lg:bg-slate-100 flex flex-col font-sans transition-colors duration-300">
       <Toaster position="bottom-center" />
       <NewCaseModal isOpen={isNewCaseModalOpen} onClose={() => setIsNewCaseModalOpen(false)} clients={clients} onActionComplete={fetchCases}/>
 
-      {/* Desktop: tarjeta flotante centrada. Mobile: full screen */}
-      <main className="flex-1 w-full max-w-[500px] mx-auto bg-white min-h-screen md:min-h-[calc(100vh-2rem)] md:my-4 md:rounded-2xl md:shadow-2xl md:ring-1 md:ring-slate-200/80 flex flex-col overflow-hidden">
+      {/* 3 etapas responsivas: mobile full-width | sm tarjeta pequeña | lg tarjeta ancha */}
+      <main className="
+        flex-1 w-full bg-white flex flex-col overflow-hidden
+        transition-all duration-300
+        sm:max-w-[520px] sm:mx-auto sm:my-3 sm:rounded-2xl sm:shadow-lg sm:ring-1 sm:ring-slate-200/60 sm:min-h-[calc(100vh-1.5rem)]
+        lg:max-w-[680px] lg:my-6 lg:shadow-2xl lg:ring-slate-200/80 lg:min-h-[calc(100vh-3rem)]
+      ">
         
         {/* Header — logo centrado, spinner a la derecha */}
         <header className="px-5 py-4 border-b border-slate-100 flex items-center justify-center relative shrink-0 h-14 bg-white">
