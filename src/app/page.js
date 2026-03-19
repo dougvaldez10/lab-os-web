@@ -8,7 +8,6 @@ import { updateCaseState } from "./actions/cases";
 import { createNewCase } from "./actions/create-case";
 import { getClients } from "./actions/clients";
 import { getProducts } from "./actions/products";
-import { getProducts } from "./actions/products";
 import { getCurrentUser, loginUser, logoutUser } from "@/lib/auth";
 import { Toaster, toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
