@@ -92,11 +92,10 @@ export async function createNewCase(formData) {
        const detalles = items.map(item => ({
           caso_id: masterId,
           dientes: Array.isArray(item.dientes) ? item.dientes.join(',') : '',
-          material: item.material,
           producto: item.producto,
-          precio_unidad: 0,
           unidades: item.unidades || 1,
-          total: 0
+          precio_unit: 0,
+          subtotal: 0
        }));
 
        const { error: errorDetalles } = await supabase.from('casos_detalle').insert(detalles);
