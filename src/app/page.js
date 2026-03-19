@@ -391,14 +391,29 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (items.length === 0) {
+    
+    let finalItems = [...items];
+    
+    // Auto-agregar si olvidó pulsar "Añadir Piezas"
+    if (material && producto) {
+       const hasTeeth = selectedTeeth.length > 0;
+       finalItems.push({
+         id: Date.now(),
+         dientes: hasTeeth ? selectedTeeth.sort() : [],
+         material,
+         producto,
+         unidades: hasTeeth ? selectedTeeth.length : 1
+       });
+    }
+
+    if (finalItems.length === 0) {
        const proceed = window.confirm("¿Guardar orden SIN piezas ni materiales anotados?");
        if (!proceed) return;
     }
 
     setIsSubmitting(true);
     const formData = new FormData(e.target);
-    formData.append('items', JSON.stringify(items));
+    formData.append('items', JSON.stringify(finalItems));
 
     const loadingToast = toast.loading(`Registrando caso complejo...`);
     
