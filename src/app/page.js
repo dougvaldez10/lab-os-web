@@ -367,6 +367,9 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
 
   const upperTeeth = [18,17,16,15,14,13,12,11, 21,22,23,24,25,26,27,28];
   const lowerTeeth = [48,47,46,45,44,43,42,41, 31,32,33,34,35,36,37,38];
+  
+  const addedTeeth = items.flatMap(item => item.dientes);
+
   const toggleTooth = (t) => {
     if (selectedTeeth.includes(t)) setSelectedTeeth(selectedTeeth.filter(x => x !== t));
     else setSelectedTeeth([...selectedTeeth, t]);
@@ -385,6 +388,8 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
     }
     setItems([...items, { id: Date.now(), dientes: selectedTeeth.sort(), material, producto, unidades: selectedTeeth.length }]);
     setSelectedTeeth([]);
+    setMaterial('');
+    setProducto('');
   };
 
   const handleRemoveItem = (id) => setItems(items.filter(i => i.id !== id));
@@ -560,37 +565,49 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
               <div className="min-w-[600px] flex flex-col gap-2 items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-inner">
                 {/* Superior */}
                 <div className="flex gap-1 justify-center w-full">
-                  {upperTeeth.map((tooth, idx) => (
-                    <button type="button" key={tooth} onClick={() => toggleTooth(tooth)}
-                      className={`
-                        w-9 h-11 flex items-center justify-center font-bold text-[13px] rounded-lg border-2 transition-all
-                        ${idx === 7 ? 'mr-4' : ''} 
-                        ${selectedTeeth.includes(tooth) 
-                          ? 'bg-[#D4AF37]/10 border-[#D4AF37] text-[#B8860B] shadow-sm transform scale-105' 
-                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'}
-                      `}
-                    >
-                      {tooth}
-                    </button>
-                  ))}
+                  {upperTeeth.map((tooth, idx) => {
+                    const isSelected = selectedTeeth.includes(tooth);
+                    const isAdded = addedTeeth.includes(tooth);
+                    return (
+                      <button type="button" key={tooth} onClick={() => toggleTooth(tooth)}
+                        className={`
+                          w-9 h-11 flex items-center justify-center font-bold text-[13px] rounded-lg border-2 transition-all
+                          ${idx === 7 ? 'mr-4' : ''} 
+                          ${isSelected 
+                            ? 'bg-[#D4AF37]/10 border-[#D4AF37] text-[#B8860B] shadow-sm transform scale-105' 
+                            : isAdded
+                              ? 'bg-[#D4AF37]/10 border-transparent text-[#B8860B]/70'
+                              : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'}
+                        `}
+                      >
+                        {tooth}
+                      </button>
+                    );
+                  })}
                 </div>
                 {/* Divisor Visual Archos */}
                 <div className="w-full h-px bg-slate-100 my-1"></div>
                 {/* Inferior */}
                 <div className="flex gap-1 justify-center w-full">
-                  {lowerTeeth.map((tooth, idx) => (
-                    <button type="button" key={tooth} onClick={() => toggleTooth(tooth)}
-                      className={`
-                        w-9 h-11 flex items-center justify-center font-bold text-[13px] rounded-lg border-2 transition-all
-                        ${idx === 7 ? 'mr-4' : ''} 
-                        ${selectedTeeth.includes(tooth) 
-                          ? 'bg-[#D4AF37]/10 border-[#D4AF37] text-[#B8860B] shadow-sm transform scale-105' 
-                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'}
-                      `}
-                    >
-                      {tooth}
-                    </button>
-                  ))}
+                  {lowerTeeth.map((tooth, idx) => {
+                    const isSelected = selectedTeeth.includes(tooth);
+                    const isAdded = addedTeeth.includes(tooth);
+                    return (
+                      <button type="button" key={tooth} onClick={() => toggleTooth(tooth)}
+                        className={`
+                          w-9 h-11 flex items-center justify-center font-bold text-[13px] rounded-lg border-2 transition-all
+                          ${idx === 7 ? 'mr-4' : ''} 
+                          ${isSelected 
+                            ? 'bg-[#D4AF37]/10 border-[#D4AF37] text-[#B8860B] shadow-sm transform scale-105' 
+                            : isAdded
+                              ? 'bg-[#D4AF37]/10 border-transparent text-[#B8860B]/70'
+                              : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'}
+                        `}
+                      >
+                        {tooth}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
