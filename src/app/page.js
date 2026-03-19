@@ -7,6 +7,8 @@ import {
 import { updateCaseState } from "./actions/cases";
 import { createNewCase } from "./actions/create-case";
 import { getClients } from "./actions/clients";
+import { getProducts } from "./actions/products";
+import { getProducts } from "./actions/products";
 import { getCurrentUser, loginUser, logoutUser } from "@/lib/auth";
 import { Toaster, toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
@@ -338,13 +340,22 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
   const [items, setItems] = useState([]);
   const [material, setMaterial] = useState('');
   const [producto, setProducto] = useState('');
+  const [productsMap, setProductsMap] = useState({});
+
+  // Cargar catálogo de productos desde Supabase al abrir el modal
+  useEffect(() => {
+    if (isOpen && Object.keys(productsMap).length === 0) {
+      getProducts().then(data => setProductsMap(data));
+    }
+  }, [isOpen]);
+
+  const categoriesList = Object.keys(productsMap).sort();
+  const currentProducts = material ? (productsMap[material] || []) : [];
+
+  const handleMaterialChange = (val) => { setMaterial(val); setProducto(''); };
 
   const upperTeeth = [18,17,16,15,14,13,12,11, 21,22,23,24,25,26,27,28];
   const lowerTeeth = [48,47,46,45,44,43,42,41, 31,32,33,34,35,36,37,38];
-  
-  const materialsList = ["Zirconia", "Disilicato de Litio", "PMMA", "Metal", "E-max", "Acrílico", "Cerámica", "Otro"];
-  const productsList = ["Corona", "Carilla", "Puente", "Incrustación", "Implante", "Cofia", "Guía Quirúrgica", "Modelo", "Otro"];
-
   const toggleTooth = (t) => {
     if (selectedTeeth.includes(t)) setSelectedTeeth(selectedTeeth.filter(x => x !== t));
     else setSelectedTeeth([...selectedTeeth, t]);
