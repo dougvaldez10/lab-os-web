@@ -714,16 +714,18 @@ export default function Home() {
                  {filteredCases.map((c) => {
                     const isDigital = c.tipo?.toLowerCase() === 'digital';
                     const bgClass = isDigital ? 'bg-blue-50/50' : 'bg-gray-50/50';
-                    const borderClass = c.urgent ? 'border-l-4 border-red-600 pl-3' : 'border-l-4 border-transparent pl-3';
                     const devProps = getDeliveryDateProps(c.fecha_entrega, c.hora_entrega);
                     const slaColor = c.status === 'En Proceso' ? getSlaColor(c.hora_inicio, c.dept, c.total_unidades) : null;
-                    const slaRingClass = slaColor === 'green'  ? 'ring-2 ring-green-400'
-                                       : slaColor === 'yellow' ? 'ring-2 ring-yellow-400'
-                                       : slaColor === 'red'    ? 'ring-2 ring-red-500'
-                                       : '';
+                    // Borde izquierdo: urgente tiene prioridad, luego semáforo SLA
+                    const borderClass = c.urgent
+                      ? 'border-l-4 border-red-500 pl-3'
+                      : slaColor === 'red'    ? 'border-l-4 border-red-400 pl-3'
+                      : slaColor === 'yellow' ? 'border-l-4 border-yellow-400 pl-3'
+                      : slaColor === 'green'  ? 'border-l-4 border-green-400 pl-3'
+                      : 'border-l-4 border-transparent pl-3';
                     
                     return (
-                        <li key={c.internal_id} className={`flex items-center px-4 py-3.5 border-b border-gray-100 transition-all ${bgClass} ${borderClass} ${slaRingClass} rounded-sm`}>
+                        <li key={c.internal_id} className={`flex items-center px-4 py-3.5 border-b border-gray-100 transition-colors ${bgClass} ${borderClass}`}>
                           {/* Wrapper full flex row */}
                           <div className="flex-1 flex items-center justify-between min-w-0">
                             
