@@ -44,6 +44,19 @@ export async function createNewCase(formData) {
     const fecha = new Date();
     const fecha_ingreso = fecha.toISOString().split('T')[0];
 
+    // Obtener nombre del doctor desde la tabla doctores usando el ID
+    let doctorNombre = doctor || '';
+    if (cliente_id) {
+      const { data: docData } = await supabase
+        .from('doctores')
+        .select('trato, nombre, apellido')
+        .eq('id', cliente_id)
+        .single();
+      if (docData) {
+        doctorNombre = `${docData.trato || 'Dr.'} ${docData.nombre} ${docData.apellido || ''}`.trim();
+      }
+    }
+
     const newCase = {
       codigo, 
       cliente_id, 
@@ -53,7 +66,7 @@ export async function createNewCase(formData) {
       fecha_entrega: fecha_entrega || null,
       hora_entrega: hora_entrega || null,
       color: color || '', 
-      doctor: doctor || '', 
+      doctor: doctorNombre,
       tipo, 
       depto_actual, 
       usuario_id
