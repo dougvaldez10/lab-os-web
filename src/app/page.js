@@ -639,6 +639,18 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
                  </ul>
               </div>
             )}
+
+            {/* Comentarios del Caso */}
+            <div className="space-y-1.5 mt-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Instrucciones Adicionales (Comentarios)</label>
+              <textarea 
+                name="comentarios" 
+                rows="2" 
+                placeholder="Ej. El doctor prefiere un color más cálido en incisal..."
+                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-medium shadow-sm resize-none transition-all placeholder:text-slate-400"
+              ></textarea>
+            </div>
+
           </div>
           
         </div>

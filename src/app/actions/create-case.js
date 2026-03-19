@@ -17,6 +17,7 @@ export async function createNewCase(formData) {
     const tipo = formData.get('tipo'); // 'Análogo' o 'Digital'
     const fecha_entrega = formData.get('fecha_entrega');
     const hora_entrega = formData.get('hora_entrega');
+    const comentarios = formData.get('comentarios');
     
     // Parseo de ítems del odontograma
     let items = [];
@@ -68,6 +69,7 @@ export async function createNewCase(formData) {
       fecha_entrega: fecha_entrega || null,
       hora_entrega: hora_entrega || null,
       color: color || '', 
+      comentarios: comentarios || '',
       doctor: doctorNombre,
       tipo, 
       depto_actual, 
