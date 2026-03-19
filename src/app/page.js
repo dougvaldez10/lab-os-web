@@ -13,6 +13,86 @@ import { supabase } from '@/lib/supabase';
 
 const departments = [
   { id: "Recepción", name: "Recepción" },
+  { id: "Diseño (CAD)", name: "Diseño (CAD)" },
+  { id: "Zirconia (CAM)", name: "Zirconia (CAM)" },
+  { id: "Impresión 3D", name: "Impresión 3D" },
+  { id: "Cerámica", name: "Cerámica" },
+  { id: "Terminado", name: "Terminado" },
+];
+
+// Selector Personalizado Inteligente Extirpado de Modal
+const ClientSelect = ({ clients }) => {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState('');
+  
+  const filtered = clients.filter(c => {
+     const term = search.toLowerCase();
+     return (c.nombre?.toLowerCase().includes(term) || c.nombre_dentista?.toLowerCase().includes(term));
+  });
+
+  const selectedClient = clients.find(c => c.id === selected);
+
+  return (
+    <div className="relative">
+      <input type="hidden" name="cliente_id" value={selected || ''} required />
+      
+      <div 
+        onClick={() => setOpen(!open)}
+        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 hover:border-[#D4AF37] transition-colors cursor-pointer flex items-center justify-between shadow-sm h-[46px]"
+      >
+        <span className="truncate">
+          {selectedClient ? (
+            <span className="flex items-baseline gap-2 truncate">
+              <span className="text-sm font-bold truncate">{selectedClient.nombre_dentista || selectedClient.nombre}</span>
+              {selectedClient.nombre_dentista && <span className="text-xs text-slate-400 truncate hidden sm:inline-block">({selectedClient.nombre})</span>}
+            </span>
+          ) : (
+            <span className="text-slate-400 text-sm">Buscar doctor o clínica...</span>
+          )}
+        </span>
+        <ChevronDown size={16} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </div>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)}></div>
+          <div className="absolute z-50 mt-2 w-full bg-white border border-slate-200 rounded-xl shadow-2xl max-h-64 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+            <div className="p-2 border-b border-slate-100 bg-slate-50/80 backdrop-blur-sm sticky top-0 z-10">
+               <input 
+                 autoFocus 
+                 type="text" 
+                 placeholder="Escribe para buscar..." 
+                 className="w-full bg-white rounded-lg px-3 py-2 text-sm border border-slate-200 outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-all"
+                 value={search}
+                 onChange={(e) => setSearch(e.target.value)}
+                 onClick={e => e.stopPropagation()}
+               />
+            </div>
+            <div className="overflow-y-auto custom-scrollbar">
+               {filtered.length === 0 ? (
+                 <div className="p-4 text-sm text-slate-400 text-center flex flex-col items-center gap-1">
+                    <span>Sin resultados</span>
+                 </div>
+               ) : (
+                 filtered.map(c => (
+                   <div 
+                     key={c.id} 
+                     onClick={() => { setSelected(c.id); setOpen(false); setSearch(''); }}
+                     className="px-4 py-2.5 hover:bg-[#D4AF37]/10 cursor-pointer border-b border-slate-50 last:border-0 transition-colors flex flex-col"
+                   >
+                     <span className="font-bold text-slate-800 text-sm">{c.nombre_dentista ? (c.nombre_dentista.toLowerCase().includes('dr') ? c.nombre_dentista : 'Dr. ' + c.nombre_dentista) : c.nombre}</span>
+                     {c.nombre_dentista && <span className="text-xs text-slate-500 font-medium">{c.nombre}</span>}
+                   </div>
+                 ))
+               )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
   { id: "Yesos", name: "Yesos" },
   { id: "Digital_Escaneo", name: "Escaneo" },
   { id: "Digital_Diseno", name: "Diseño" },
@@ -167,80 +247,6 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
 
   if (!isOpen) return null;
 
-  // Selector Personalizado Inteligente
-  const ClientSelect = () => {
-    const [open, setOpen] = useState(false);
-    const [selected, setSelected] = useState(null);
-    const [search, setSearch] = useState('');
-    
-    const filtered = clients.filter(c => {
-       const term = search.toLowerCase();
-       return (c.nombre?.toLowerCase().includes(term) || c.nombre_dentista?.toLowerCase().includes(term));
-    });
-
-    const selectedClient = clients.find(c => c.id === selected);
-
-    return (
-      <div className="relative">
-        <input type="hidden" name="cliente_id" value={selected || ''} required />
-        
-        <div 
-          onClick={() => setOpen(!open)}
-          className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 hover:border-[#D4AF37] transition-colors cursor-pointer flex items-center justify-between shadow-sm h-[46px]"
-        >
-          <span className="truncate">
-            {selectedClient ? (
-              <span className="flex items-baseline gap-2 truncate">
-                <span className="text-sm font-bold truncate">{selectedClient.nombre_dentista || selectedClient.nombre}</span>
-                {selectedClient.nombre_dentista && <span className="text-xs text-slate-400 truncate hidden sm:inline-block">({selectedClient.nombre})</span>}
-              </span>
-            ) : (
-              <span className="text-slate-400 text-sm">Buscar doctor o clínica...</span>
-            )}
-          </span>
-          <ChevronDown size={16} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
-        </div>
-
-        {open && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)}></div>
-            <div className="absolute z-50 mt-2 w-full bg-white border border-slate-200 rounded-xl shadow-2xl max-h-64 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-              <div className="p-2 border-b border-slate-100 bg-slate-50/80 backdrop-blur-sm sticky top-0 z-10">
-                 <input 
-                   autoFocus 
-                   type="text" 
-                   placeholder="Escribe para buscar..." 
-                   className="w-full bg-white rounded-lg px-3 py-2 text-sm border border-slate-200 outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-all"
-                   value={search}
-                   onChange={(e) => setSearch(e.target.value)}
-                   onClick={e => e.stopPropagation()}
-                 />
-              </div>
-              <div className="overflow-y-auto custom-scrollbar">
-                 {filtered.length === 0 ? (
-                   <div className="p-4 text-sm text-slate-400 text-center flex flex-col items-center gap-1">
-                      <span>Sin resultados</span>
-                   </div>
-                 ) : (
-                   filtered.map(c => (
-                     <div 
-                       key={c.id} 
-                       onClick={() => { setSelected(c.id); setOpen(false); setSearch(''); }}
-                       className="px-4 py-2.5 hover:bg-[#D4AF37]/10 cursor-pointer border-b border-slate-50 last:border-0 transition-colors flex flex-col"
-                     >
-                       <span className="font-bold text-slate-800 text-sm">{c.nombre_dentista ? (c.nombre_dentista.toLowerCase().includes('dr') ? c.nombre_dentista : 'Dr. ' + c.nombre_dentista) : c.nombre}</span>
-                       {c.nombre_dentista && <span className="text-xs text-slate-500 font-medium">{c.nombre}</span>}
-                     </div>
-                   ))
-                 )}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 p-0 sm:p-4 font-sans">
       <div className="w-full max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
@@ -261,7 +267,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente / Doctor</label>
-                <ClientSelect />
+                <ClientSelect clients={clients} />
               </div>
 
               <div className="space-y-1.5">
