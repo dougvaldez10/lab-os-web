@@ -757,12 +757,7 @@ export default function Home() {
                                      <span className="text-[10px] text-slate-600 font-medium tracking-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-[80px]">
                                         👤 {c.operador_actual.split(' ')[0]}
                                      </span>
-                                  )}
-                                  {slaProps && (
-                                     <span className={`text-[10px] ${slaProps.colorClass}`}>
-                                        {slaProps.text}
-                                     </span>
-                                  )}
+                                   )}
                                </div>
                                
                                {activeDept !== "all" && (
