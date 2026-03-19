@@ -340,6 +340,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
   const [material, setMaterial] = useState('');
   const [producto, setProducto] = useState('');
   const [productsMap, setProductsMap] = useState({});
+  const [tipo, setTipo] = useState('Análogo');
 
   // Cargar catálogo de productos desde Supabase al abrir el modal
   useEffect(() => {
@@ -349,7 +350,18 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
   }, [isOpen]);
 
   const categoriesList = Object.keys(productsMap).sort();
-  const currentProducts = material ? (productsMap[material] || []) : [];
+  
+  const getFilteredProducts = () => {
+    const allProductsForMaterial = productsMap[material] || [];
+    const filtered = allProductsForMaterial.filter(p => {
+      const isDigitalInName = p.raw.toLowerCase().includes('digital');
+      return tipo === 'Digital' ? isDigitalInName : !isDigitalInName;
+    });
+    // Regla de respaldo: Si el filtro se queda vacío, mostramos todos
+    return filtered.length > 0 ? filtered : allProductsForMaterial;
+  };
+  
+  const currentProducts = material ? getFilteredProducts() : [];
 
   const handleMaterialChange = (val) => { setMaterial(val); setProducto(''); };
 
@@ -476,14 +488,38 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Protocolo de Entrada</label>
                <div className="grid grid-cols-2 gap-3">
                   <label className="flex items-center gap-3 p-3.5 border border-slate-200 rounded-xl bg-white hover:border-[#D4AF37] cursor-pointer transition-colors shadow-sm">
-                    <input type="radio" name="tipo" value="Análogo" required className="w-4 h-4 text-[#D4AF37] focus:ring-[#D4AF37]"/>
+                    <input 
+                      type="radio" 
+                      name="tipo" 
+                      value="Análogo" 
+                      required 
+                      className="w-4 h-4 text-[#D4AF37] focus:ring-[#D4AF37]"
+                      checked={tipo === 'Análogo'}
+                      onChange={(e) => {
+                        setTipo(e.target.value);
+                        setMaterial('');
+                        setProducto('');
+                      }}
+                    />
                     <div className="flex flex-col">
                        <span className="text-sm font-bold text-slate-800 leading-tight">Físico (Análogo)</span>
                        <span className="text-xs text-slate-500">Impresión &gt; Yesos</span>
                     </div>
                   </label>
                   <label className="flex items-center gap-3 p-3.5 border border-slate-200 rounded-xl bg-white hover:border-blue-500 cursor-pointer transition-colors shadow-sm">
-                    <input type="radio" name="tipo" value="Digital" required className="w-4 h-4 text-blue-600 focus:ring-blue-500"/>
+                    <input 
+                      type="radio" 
+                      name="tipo" 
+                      value="Digital" 
+                      required 
+                      className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      checked={tipo === 'Digital'}
+                      onChange={(e) => {
+                        setTipo(e.target.value);
+                        setMaterial('');
+                        setProducto('');
+                      }}
+                    />
                     <div className="flex flex-col">
                        <span className="text-sm font-bold text-slate-800 leading-tight">Digital</span>
                        <span className="text-xs text-slate-500">STL &gt; Diseño</span>
