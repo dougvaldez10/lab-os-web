@@ -104,10 +104,37 @@ function StatusBadge({ status }) {
   return <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 whitespace-nowrap">Pendiente</span>;
 }
 
+// Barra de progreso vertical en el borde derecho de la tarjeta
+function FileProgressBar({ progress, direction }) {
+  if (progress === null || progress === undefined) return null;
+  const isUpload = direction === 'upload'; // upload = abajo→arriba, download = arriba→abajo
+  return (
+    <div className="absolute right-0 top-0 bottom-0 w-1 bg-blue-100 overflow-hidden rounded-r-sm">
+      <div
+        className="absolute left-0 right-0 bg-blue-500 transition-all duration-300 ease-out"
+        style={
+          isUpload
+            ? { bottom: 0, height: `${progress}%` }           // crece de abajo hacia arriba
+            : { top: 0, height: `${progress}%` }             // crece de arriba hacia abajo
+        }
+      />
+    </div>
+  );
+}
+
 function OperativeActionMenu({ currentCase, onRefresh, operatorName }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [fileProgress, setFileProgress] = useState(null); // 0-100
+  const [fileDirection, setFileDirection] = useState(null); // 'upload' | 'download'
   const menuRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const dept = currentCase.dept;
+  const showUploadEscaneo = dept === 'Digital_Escaneo';
+  const showDownloadEscaneo = dept === 'Digital_Diseno';
+  const showUploadDiseno = dept === 'Digital_Diseno';
+  const showDownloadDiseno = dept === 'Digital_Fresado';
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -136,8 +163,97 @@ function OperativeActionMenu({ currentCase, onRefresh, operatorName }) {
     }
   };
 
+  // Upload via fetch con progreso (XMLHttpRequest)
+  const handleUpload = async (sourceDept) => {
+    setIsOpen(false);
+    fileInputRef.current.dataset.sourceDept = sourceDept;
+    fileInputRef.current.click();
+  };
+
+  const onFileSelected = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const sourceDept = e.target.dataset.sourceDept;
+    const caseId = currentCase.internal_id;
+
+    // Upload con XMLHttpRequest para progreso real
+    setFileDirection('upload');
+    setFileProgress(0);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('caseId', caseId);
+    formData.append('dept', sourceDept);
+
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = (ev) => {
+      if (ev.lengthComputable) setFileProgress(Math.round((ev.loaded / ev.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        toast.success(`Archivo "${file.name}" cargado ✓`);
+      } else {
+        toast.error('Error al cargar archivo');
+      }
+      setTimeout(() => { setFileProgress(null); setFileDirection(null); }, 1000);
+    };
+    xhr.onerror = () => {
+      toast.error('Error de red al cargar');
+      setFileProgress(null); setFileDirection(null);
+    };
+    xhr.open('POST', '/api/upload-file');
+    xhr.send(formData);
+    e.target.value = '';
+  };
+
+  // Download con progreso
+  const handleDownload = async (fromDept) => {
+    setIsOpen(false);
+    setFileDirection('download');
+    setFileProgress(0);
+    const toastId = toast.loading('Obteniendo archivos...');
+    try {
+      const res = await fetch(`/api/case-files?caseId=${currentCase.internal_id}&dept=${fromDept}`);
+      const { files } = await res.json();
+      if (!files || files.length === 0) {
+        toast.error('No hay archivos en ese departamento', { id: toastId });
+        setFileProgress(null); setFileDirection(null);
+        return;
+      }
+      toast.dismiss(toastId);
+      // Descargar cada archivo con progreso
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        const urlRes = await fetch(`/api/case-files/url?caseId=${currentCase.internal_id}&dept=${fromDept}&filename=${encodeURIComponent(f.name)}`);
+        const { url } = await urlRes.json();
+        if (url) {
+          const a = document.createElement('a');
+          a.href = url; a.download = f.name; a.click();
+        }
+        setFileProgress(Math.round(((i + 1) / files.length) * 100));
+      }
+      toast.success(`${files.length} archivo(s) descargado(s) ✓`);
+    } catch {
+      toast.error('Error al descargar archivos', { id: toastId });
+    } finally {
+      setTimeout(() => { setFileProgress(null); setFileDirection(null); }, 1200);
+    }
+  };
+
   return (
     <div className="relative" ref={menuRef}>
+      {/* Barra de progreso pegada al borde derecho */}
+      <FileProgressBar progress={fileProgress} direction={fileDirection} />
+
+      {/* Input oculto para selección de archivos */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".stl,.ply,.obj,.3ds"
+        className="hidden"
+        onChange={onFileSelected}
+      />
+
       <button 
         onClick={() => setIsOpen(!isOpen)}
         disabled={isUpdating}
@@ -147,7 +263,8 @@ function OperativeActionMenu({ currentCase, onRefresh, operatorName }) {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-12 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden py-1">
+        <div className="absolute right-0 top-12 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden py-1">
+          {/* Acciones de proceso */}
           <button 
             onClick={() => handleAction('START', 'Iniciando...', `Caso ${currentCase.id} En Proceso`)}
             className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium"
@@ -169,6 +286,44 @@ function OperativeActionMenu({ currentCase, onRefresh, operatorName }) {
             <PauseCircle size={16} className="text-red-600" />
             Pausar
           </button>
+
+          {/* Acciones de archivos — según departamento */}
+          {(showUploadEscaneo || showUploadDiseno || showDownloadEscaneo || showDownloadDiseno) && (
+            <div className="border-t border-slate-100 mt-1 pt-1">
+              {showDownloadEscaneo && (
+                <button
+                  onClick={() => handleDownload('Digital_Escaneo')}
+                  className="w-full text-left px-4 py-3 text-sm text-blue-700 hover:bg-blue-50 flex items-center gap-2 font-medium"
+                >
+                  <span className="text-base">⬇</span> Descargar de Escaneo
+                </button>
+              )}
+              {showDownloadDiseno && (
+                <button
+                  onClick={() => handleDownload('Digital_Diseno')}
+                  className="w-full text-left px-4 py-3 text-sm text-blue-700 hover:bg-blue-50 flex items-center gap-2 font-medium"
+                >
+                  <span className="text-base">⬇</span> Descargar de Diseño
+                </button>
+              )}
+              {showUploadEscaneo && (
+                <button
+                  onClick={() => handleUpload('Digital_Escaneo')}
+                  className="w-full text-left px-4 py-3 text-sm text-blue-700 hover:bg-blue-50 flex items-center gap-2 font-medium"
+                >
+                  <span className="text-base">⬆</span> Cargar Archivos
+                </button>
+              )}
+              {showUploadDiseno && (
+                <button
+                  onClick={() => handleUpload('Digital_Diseno')}
+                  className="w-full text-left px-4 py-3 text-sm text-blue-700 hover:bg-blue-50 flex items-center gap-2 font-medium"
+                >
+                  <span className="text-base">⬆</span> Cargar Diseño
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
