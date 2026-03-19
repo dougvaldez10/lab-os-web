@@ -191,7 +191,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
           <span className="truncate">
             {selectedClient ? (
               <span className="flex items-baseline gap-2 truncate">
-                <span className="text-sm font-bold truncate">{selectedClient.nombre_dentista || 'Dr. ' + selectedClient.nombre}</span>
+                <span className="text-sm font-bold truncate">{selectedClient.nombre_dentista || selectedClient.nombre}</span>
                 {selectedClient.nombre_dentista && <span className="text-xs text-slate-400 truncate hidden sm:inline-block">({selectedClient.nombre})</span>}
               </span>
             ) : (
@@ -228,7 +228,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
                        onClick={() => { setSelected(c.id); setOpen(false); setSearch(''); }}
                        className="px-4 py-2.5 hover:bg-[#D4AF37]/10 cursor-pointer border-b border-slate-50 last:border-0 transition-colors flex flex-col"
                      >
-                       <span className="font-bold text-slate-800 text-sm">{c.nombre_dentista || 'Dr. ' + c.nombre}</span>
+                       <span className="font-bold text-slate-800 text-sm">{c.nombre_dentista ? (c.nombre_dentista.toLowerCase().includes('dr') ? c.nombre_dentista : 'Dr. ' + c.nombre_dentista) : c.nombre}</span>
                        {c.nombre_dentista && <span className="text-xs text-slate-500 font-medium">{c.nombre}</span>}
                      </div>
                    ))
