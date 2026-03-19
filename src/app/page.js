@@ -835,8 +835,8 @@ export default function Home() {
         </header>
 
         {/* Big Select Navigation */}
-        <div className="p-4 border-b border-slate-100 bg-white shrink-0">
-           <div className="relative">
+        <div className="px-4 py-3 border-b border-slate-100 bg-white shrink-0 flex justify-center">
+           <div className="relative w-full max-w-xs">
              <select 
                 value={activeDept}
                 onChange={(e) => setActiveDept(e.target.value)}
