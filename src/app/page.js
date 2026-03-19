@@ -662,6 +662,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Instrucciones Adicionales (Comentarios)</label>
               <textarea 
                 name="comentarios" 
+                form="new-case-form"
                 rows="2" 
                 placeholder="Ej. El doctor prefiere un color más cálido en incisal..."
                 className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-medium shadow-sm resize-none transition-all placeholder:text-slate-400"
