@@ -27,7 +27,6 @@ const departments = [
 // Selector Personalizado Inteligente Extirpado de Modal
 const ClientSelect = ({ clients, selected, onChange }) => {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState('');
   
   const filtered = clients.filter(c => {
