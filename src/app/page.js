@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { 
@@ -443,7 +443,22 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
                </div>
                <div className="space-y-1.5">
                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">H. Entrega</label>
-                 <input type="time" name="hora_entrega" required className="w-full bg-white border border-slate-200 rounded-xl px-3 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-sm font-medium shadow-sm"/>
+                  <select
+                    name="hora_entrega"
+                    defaultValue="14:00"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-sm font-medium shadow-sm"
+                  >
+                    {Array.from({ length: 27 }, (_, i) => {
+                      const totalMin = 7 * 60 + i * 30;
+                      const h24 = Math.floor(totalMin / 60);
+                      const m = totalMin % 60;
+                      const value = `${String(h24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                      const h12 = h24 % 12 || 12;
+                      const ampm = h24 < 12 ? 'AM' : 'PM';
+                      const label = `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+                      return <option key={value} value={value}>{label}</option>;
+                    })}
+                  </select>
                </div>
             </div>
 
