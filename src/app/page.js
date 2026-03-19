@@ -300,15 +300,20 @@ export default function Home() {
     };
   }, []);
 
-  const urgencySort = (a, b) => {
-     if (a.urgent && !b.urgent) return -1;
-     if (!a.urgent && b.urgent) return 1;
-     return new Date(a.date) - new Date(b.date);
+  const dateTimeSort = (a, b) => {
+     // a.fecha_entrega formato YYYY-MM-DD, a.hora_entrega formato HH:mm (24h)
+     const timeA = a.hora_entrega ? a.hora_entrega : '23:59';
+     const timeB = b.hora_entrega ? b.hora_entrega : '23:59';
+     
+     const dateA = new Date(`${a.fecha_entrega}T${timeA}`);
+     const dateB = new Date(`${b.fecha_entrega}T${timeB}`);
+     
+     return dateA - dateB;
   };
 
   const filteredCases = activeDept === "all" 
-     ? [...cases].sort(urgencySort) 
-     : cases.filter(c => c.dept === activeDept).sort(urgencySort);
+     ? [...cases].sort(dateTimeSort) 
+     : cases.filter(c => c.dept === activeDept).sort(dateTimeSort);
   
   const canCreateCases = currentUser && (currentUser.rol?.toLowerCase().includes('recep') || currentUser.rol?.includes('Admin'));
 

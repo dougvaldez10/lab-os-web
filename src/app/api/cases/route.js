@@ -29,7 +29,7 @@ export async function GET() {
       tipo: row.tipo,
       operador_actual: row.operador_actual,
       hora_inicio: row.hora_inicio,
-      urgent: row.tipo?.toLowerCase() === 'digital' // Regla original, puede cambiarse
+      urgent: false // Por ahora sin urgencia automática hasta crear columna
     }));
 
     return Response.json(cases);
