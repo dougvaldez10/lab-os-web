@@ -366,9 +366,9 @@ export default function Home() {
 
   // Filtrado Inteligente de Departamentos
   const userRoles = currentUser?.rol?.split(',').map(r => r.trim().toLowerCase()) || [];
-  const isAdminOrReception = userRoles.includes('admin') || userRoles.includes('administrador') || userRoles.includes('recepción');
+  const isAdmin = userRoles.includes('admin') || userRoles.includes('administrador') || userRoles.includes('administración');
   const allowedDepartments = departments.filter(d => 
-     isAdminOrReception || userRoles.includes(d.name.toLowerCase()) || userRoles.includes(d.id.toLowerCase())
+     isAdmin || userRoles.includes(d.name.toLowerCase()) || userRoles.includes(d.id.toLowerCase())
   );
 
   // Helper SLA Cronómetro
