@@ -614,11 +614,11 @@ function LoginScreen({ onLoginSuccess }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Usuario</label>
-            <input type="text" value={username} onChange={e => setUsername(e.target.value)} required placeholder="ej: vanessa" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-semibold transition-all"/>
+            <input type="text" value={username} onChange={e => setUsername(e.target.value)} required placeholder="ej: vanessa" autoFocus className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-semibold transition-all"/>
           </div>
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Contraseña</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-semibold transition-all"/>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" onKeyDown={e => { if (e.key === 'Enter') handleSubmit(e); }} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-semibold transition-all"/>
           </div>
           <button disabled={loading} type="submit" className="w-full py-3.5 mt-2 rounded-xl font-bold text-sm text-white bg-slate-900 hover:bg-black transition-colors flex items-center justify-center">
             {loading ? <RefreshCw className="animate-spin w-5 h-5"/> : "Iniciar Sesión"}
