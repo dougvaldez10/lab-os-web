@@ -102,17 +102,57 @@ function OperativeActionMenu({ currentCase, onRefresh, operatorName }) {
 
 function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedTeeth, setSelectedTeeth] = useState([]);
+  const [items, setItems] = useState([]);
+  const [material, setMaterial] = useState('');
+  const [producto, setProducto] = useState('');
+
+  const upperTeeth = [18,17,16,15,14,13,12,11, 21,22,23,24,25,26,27,28];
+  const lowerTeeth = [48,47,46,45,44,43,42,41, 31,32,33,34,35,36,37,38];
+  
+  const materialsList = ["Zirconia", "Disilicato de Litio", "PMMA", "Metal", "E-max", "Acrílico", "Cerámica", "Otro"];
+  const productsList = ["Corona", "Carilla", "Puente", "Incrustación", "Implante", "Cofia", "Guía Quirúrgica", "Modelo", "Otro"];
+
+  const toggleTooth = (t) => {
+    if (selectedTeeth.includes(t)) setSelectedTeeth(selectedTeeth.filter(x => x !== t));
+    else setSelectedTeeth([...selectedTeeth, t]);
+  };
+
+  const clearSelection = () => setSelectedTeeth([]);
+
+  const handleAddItem = () => {
+    if (selectedTeeth.length === 0) {
+       toast.error("Selecciona al menos una pieza dental.");
+       return;
+    }
+    if (!material || !producto) {
+       toast.error("Selecciona el material y producto.");
+       return;
+    }
+    setItems([...items, { id: Date.now(), dientes: selectedTeeth.sort(), material, producto, unidades: selectedTeeth.length }]);
+    setSelectedTeeth([]);
+  };
+
+  const handleRemoveItem = (id) => setItems(items.filter(i => i.id !== id));
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (items.length === 0) {
+       const proceed = window.confirm("¿Guardar orden SIN piezas ni materiales anotados?");
+       if (!proceed) return;
+    }
+
     setIsSubmitting(true);
     const formData = new FormData(e.target);
-    const loadingToast = toast.loading(`Registrando...`);
+    formData.append('items', JSON.stringify(items));
+
+    const loadingToast = toast.loading(`Registrando caso complejo...`);
     
     try {
       const result = await createNewCase(formData);
       if (result.success) {
-        toast.success(`Registrado. Pasa a: ${result.deptoAsignado}.`, { id: loadingToast });
+        toast.success(`Registrado con éxito. Pasa a: ${result.deptoAsignado}.`, { id: loadingToast });
+        setItems([]); setSelectedTeeth([]); setMaterial(''); setProducto('');
         onActionComplete();
         onClose();
       } else {
@@ -128,67 +168,191 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 p-0 sm:p-4">
-      <div className="w-full max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col h-[85vh] sm:h-auto max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">Nuevo Trabajo</h2>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-800 rounded-full bg-white shadow-sm border border-slate-200">
-            <X size={18} />
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 p-0 sm:p-4 font-sans">
+      <div className="w-full max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-white shrink-0 shadow-sm z-10">
+          <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">Constructor de Casos</h2>
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors">
+            <X size={20} />
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-5 overflow-y-auto flex-1 flex flex-col gap-4">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente / Doctor</label>
-            <select name="cliente_id" required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none text-sm appearance-none font-medium">
-               <option value="">Selección...</option>
-               {clients.map(c => (
-                 <option key={c.id} value={c.id}>{c.nombre} {c.nombre_dentista ? `(${c.nombre_dentista})` : ''}</option>
-               ))}
-            </select>
-          </div>
+        {/* Scrollable Form */}
+        <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-8 bg-slate-50/50">
+          
+          {/* Seccion 1: Cabecera Info Basica */}
+          <form id="new-case-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente / Doctor</label>
+                <select name="cliente_id" required className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-sm appearance-none font-medium shadow-sm">
+                   <option value="">Selección...</option>
+                   {clients.map(c => (
+                     <option key={c.id} value={c.id}>{c.nombre} {c.nombre_dentista ? `(${c.nombre_dentista})` : ''}</option>
+                   ))}
+                </select>
+              </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Paciente</label>
-            <input type="text" name="paciente" required placeholder="Nombre completo" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"/>
-          </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Paciente</label>
+                <input type="text" name="paciente" required placeholder="Nombre completo" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-sm font-medium shadow-sm"/>
+              </div>
+            </div>
 
-          <div className="grid grid-cols-2 gap-4">
-             <div className="space-y-1">
-               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Edad</label>
-               <input type="number" name="edad" placeholder="Años" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"/>
-             </div>
-             <div className="space-y-1">
-               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Color</label>
-               <input type="text" name="color" placeholder="Ej. A2" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"/>
-             </div>
-          </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+               <div className="space-y-1.5">
+                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Edad</label>
+                 <input type="number" name="edad" placeholder="Años" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-sm font-medium shadow-sm"/>
+               </div>
+               <div className="space-y-1.5">
+                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Color</label>
+                 <input type="text" name="color" placeholder="Ej. A2" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-sm font-medium shadow-sm"/>
+               </div>
+               <div className="space-y-1.5">
+                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">F. Entrega</label>
+                 <input type="date" name="fecha_entrega" required className="w-full bg-white border border-slate-200 rounded-xl px-3 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-sm font-medium shadow-sm"/>
+               </div>
+               <div className="space-y-1.5">
+                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">H. Entrega</label>
+                 <input type="time" name="hora_entrega" required className="w-full bg-white border border-slate-200 rounded-xl px-3 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-sm font-medium shadow-sm"/>
+               </div>
+            </div>
 
-          <div className="space-y-2 mt-2 pb-4">
-             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Protocolo de Entrada</label>
-             <div className="grid grid-cols-1 gap-2">
-                <label className="flex items-center gap-3 p-3 border border-slate-200 rounded-xl bg-white hover:bg-blue-50 cursor-pointer">
-                  <input type="radio" name="tipo" value="Análogo" required className="w-4 h-4 text-blue-600 focus:ring-blue-500"/>
-                  <div className="flex flex-col">
-                     <span className="text-sm font-bold text-slate-800">Físico (Análogo)</span>
-                     <span className="text-xs text-slate-500">Impresión &gt; Yesos</span>
-                  </div>
-                </label>
-                <label className="flex items-center gap-3 p-3 border border-slate-200 rounded-xl bg-white hover:bg-blue-50 cursor-pointer">
-                  <input type="radio" name="tipo" value="Digital" required className="w-4 h-4 text-blue-600 focus:ring-blue-500"/>
-                  <div className="flex flex-col">
-                     <span className="text-sm font-bold text-slate-800">Digital (Intraoral)</span>
-                     <span className="text-xs text-slate-500">STL &gt; Diseño</span>
-                  </div>
-                </label>
-             </div>
-          </div>
+            <div className="space-y-2 mt-2">
+               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Protocolo de Entrada</label>
+               <div className="grid grid-cols-2 gap-3">
+                  <label className="flex items-center gap-3 p-3.5 border border-slate-200 rounded-xl bg-white hover:border-[#D4AF37] cursor-pointer transition-colors shadow-sm">
+                    <input type="radio" name="tipo" value="Análogo" required className="w-4 h-4 text-[#D4AF37] focus:ring-[#D4AF37]"/>
+                    <div className="flex flex-col">
+                       <span className="text-sm font-bold text-slate-800 leading-tight">Físico (Análogo)</span>
+                       <span className="text-xs text-slate-500">Impresión &gt; Yesos</span>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 p-3.5 border border-slate-200 rounded-xl bg-white hover:border-blue-500 cursor-pointer transition-colors shadow-sm">
+                    <input type="radio" name="tipo" value="Digital" required className="w-4 h-4 text-blue-600 focus:ring-blue-500"/>
+                    <div className="flex flex-col">
+                       <span className="text-sm font-bold text-slate-800 leading-tight">Digital</span>
+                       <span className="text-xs text-slate-500">STL &gt; Diseño</span>
+                    </div>
+                  </label>
+               </div>
+            </div>
+          </form>
 
-          <button disabled={isSubmitting} type="submit" className={`mt-auto w-full py-4 rounded-xl font-bold text-sm text-white bg-slate-900 hover:bg-black transition-colors flex items-center justify-center gap-2 ${isSubmitting ? 'opacity-70' : ''}`}>
-             {isSubmitting ? <RefreshCw className="animate-spin" size={18}/> : <Plus size={18}/>}
-             Guardar e Iniciar
+          <hr className="border-slate-200" />
+
+          {/* Seccion 2: Odontograma y Detalle */}
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wide">Odontograma Interactivo</h3>
+              {selectedTeeth.length > 0 && (
+                <button type="button" onClick={clearSelection} className="text-xs font-bold text-slate-400 hover:text-red-500">Limpiar piezas</button>
+              )}
+            </div>
+
+            {/* Grilla FDI */}
+            <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+              <div className="min-w-[600px] flex flex-col gap-2 items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-inner">
+                {/* Superior */}
+                <div className="flex gap-1 justify-center w-full">
+                  {upperTeeth.map((tooth, idx) => (
+                    <button type="button" key={tooth} onClick={() => toggleTooth(tooth)}
+                      className={`
+                        w-9 h-11 flex items-center justify-center font-bold text-[13px] rounded-lg border-2 transition-all
+                        ${idx === 7 ? 'mr-4' : ''} 
+                        ${selectedTeeth.includes(tooth) 
+                          ? 'bg-[#D4AF37]/10 border-[#D4AF37] text-[#B8860B] shadow-sm transform scale-105' 
+                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'}
+                      `}
+                    >
+                      {tooth}
+                    </button>
+                  ))}
+                </div>
+                {/* Divisor Visual Archos */}
+                <div className="w-full h-px bg-slate-100 my-1"></div>
+                {/* Inferior */}
+                <div className="flex gap-1 justify-center w-full">
+                  {lowerTeeth.map((tooth, idx) => (
+                    <button type="button" key={tooth} onClick={() => toggleTooth(tooth)}
+                      className={`
+                        w-9 h-11 flex items-center justify-center font-bold text-[13px] rounded-lg border-2 transition-all
+                        ${idx === 7 ? 'mr-4' : ''} 
+                        ${selectedTeeth.includes(tooth) 
+                          ? 'bg-[#D4AF37]/10 border-[#D4AF37] text-[#B8860B] shadow-sm transform scale-105' 
+                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'}
+                      `}
+                    >
+                      {tooth}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Selector de Materiales y Agregar */}
+            <div className="bg-slate-100/50 p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row gap-3 items-end">
+               <div className="flex-1 w-full space-y-1.5">
+                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Material</label>
+                 <select value={material} onChange={(e)=>setMaterial(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-medium">
+                    <option value="">Seleccionar...</option>
+                    {materialsList.map(m => <option key={m} value={m}>{m}</option>)}
+                 </select>
+               </div>
+               <div className="flex-1 w-full space-y-1.5">
+                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Producto (Restauración)</label>
+                 <select value={producto} onChange={(e)=>setProducto(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-medium">
+                    <option value="">Seleccionar...</option>
+                    {productsList.map(p => <option key={p} value={p}>{p}</option>)}
+                 </select>
+               </div>
+               <button 
+                 type="button" 
+                 onClick={handleAddItem}
+                 className="w-full sm:w-auto bg-[#D4AF37] hover:bg-[#B8860B] text-white font-bold px-6 py-2.5 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
+               >
+                 <Plus size={16} /> Añadir Piezas
+               </button>
+            </div>
+
+            {/* Listado de Items en "Pills" */}
+            {items.length > 0 && (
+              <div className="space-y-3">
+                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Especificaciones Añadidas ({items.length})</h4>
+                 <ul className="flex flex-col gap-2">
+                   {items.map(item => (
+                     <li key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white border border-slate-200 p-3 rounded-xl shadow-sm gap-3">
+                        <div className="flex flex-col min-w-0">
+                           <span className="text-sm font-black text-slate-800 capitalize leading-tight">{item.producto} de {item.material}</span>
+                           <span className="text-xs text-slate-500 font-medium truncate mt-0.5">Dientes: <span className="font-bold text-slate-700">{item.dientes.join(', ')}</span> ({item.unidades} un.)</span>
+                        </div>
+                        <button type="button" onClick={() => handleRemoveItem(item.id)} className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg shrink-0 self-end sm:self-center transition-colors">
+                           <X size={16} />
+                        </button>
+                     </li>
+                   ))}
+                 </ul>
+              </div>
+            )}
+          </div>
+          
+        </div>
+
+        {/* Footer Fixed */}
+        <div className="px-5 py-4 border-t border-slate-100 bg-white shrink-0 mt-auto">
+          <button 
+            form="new-case-form" 
+            disabled={isSubmitting} 
+            type="submit" 
+            className={`w-full py-4 rounded-xl font-bold text-[15px] text-white bg-slate-900 hover:bg-black transition-colors flex items-center justify-center gap-2 shadow-lg ${isSubmitting ? 'opacity-70 pointer-events-none' : ''}`}
+          >
+             {isSubmitting ? <RefreshCw className="animate-spin" size={18}/> : <CheckCircle2 size={18}/>}
+             Confirmar y Enviar a Laboratorio
           </button>
-        </form>
+        </div>
+
       </div>
     </div>
   );

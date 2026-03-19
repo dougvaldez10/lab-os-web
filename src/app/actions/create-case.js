@@ -15,6 +15,14 @@ export async function createNewCase(formData) {
     const color = formData.get('color');
     const doctor = formData.get('doctor');
     const tipo = formData.get('tipo'); // 'Análogo' o 'Digital'
+    const fecha_entrega = formData.get('fecha_entrega');
+    const hora_entrega = formData.get('hora_entrega');
+    
+    // Parseo de ítems del odontograma
+    let items = [];
+    try {
+       items = JSON.parse(formData.get('items') || '[]');
+    } catch(e) {}
 
     // Validaciones básicas
     if (!cliente_id || !paciente || !tipo) {
@@ -42,7 +50,9 @@ export async function createNewCase(formData) {
       cliente_id, 
       paciente, 
       estado, 
-      fecha_ingreso, 
+      fecha_ingreso,
+      fecha_entrega: fecha_entrega || null,
+      hora_entrega: hora_entrega || null,
       edad: edad || '', 
       color: color || '', 
       doctor: doctor || '', 
@@ -58,8 +68,29 @@ export async function createNewCase(formData) {
       .single();
 
     if (insertError) {
-      console.error("Supabase insert error:", insertError);
-      return { success: false, error: "Error interno al guardar en BD." };
+      console.error("Supabase insert error (master):", insertError);
+      return { success: false, error: "Error interno al guardar Caso Maestro en BD." };
+    }
+
+    const masterId = insertedData.id;
+
+    // Insertar ítems si existen
+    if (items.length > 0) {
+       const detalles = items.map(item => ({
+          caso_id: masterId,
+          dientes: Array.isArray(item.dientes) ? item.dientes.join(',') : '',
+          material: item.material,
+          producto: item.producto,
+          precio_unidad: 0,
+          unidades: item.unidades || 1,
+          total: 0
+       }));
+
+       const { error: errorDetalles } = await supabase.from('casos_detalle').insert(detalles);
+       if (errorDetalles) {
+          console.error("Supabase insert error (detalles):", errorDetalles);
+          // Opcional: Podríamos hacer rollback del master aquí o considerar soft failure.
+       }
     }
 
     // Revalidar para que el Dashboard actualice
