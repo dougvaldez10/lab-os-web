@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { 
-  MoreVertical, Play, CheckCircle2, PauseCircle, Plus, RefreshCw, X, ChevronDown
+  MoreVertical, Play, CheckCircle2, PauseCircle, Plus, RefreshCw, X, ChevronDown, ChevronUp, UploadCloud, DownloadCloud
 } from "lucide-react";
 import { updateCaseState } from "./actions/cases";
 import { createNewCase } from "./actions/create-case";
@@ -736,13 +736,20 @@ function LoginScreen({ onLoginSuccess }) {
 }
 
 export default function Home() {
-  const [activeDept, setActiveDept] = useState("all");
+  const [activeDept, setActiveDept] = useState("Departamentos Operativos");
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [clients, setClients] = useState([]);
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
+  
+  // Estado para los acordeones de los departamentos y de los casos individuales
+  const [expandedDepts, setExpandedDepts] = useState({});
+  const [expandedCases, setExpandedCases] = useState({});
+
+  const toggleDept = (deptId) => setExpandedDepts(prev => ({ ...prev, [deptId]: !prev[deptId] }));
+  const toggleCase = (caseId) => setExpandedCases(prev => ({ ...prev, [caseId]: !prev[caseId] }));
 
   const loadInitialData = async () => {
     try {
@@ -764,7 +771,9 @@ export default function Home() {
     try {
       const res = await fetch('/api/cases');
       const data = await res.json();
-      if (!data.error) setCases(data);
+      if (!data.error) {
+        setCases(data);
+      }
     } catch (err) { } finally {
       setLoading(false);
     }
@@ -774,47 +783,27 @@ export default function Home() {
     loadInitialData();
     fetchCases();
 
-    // Suscripción Realtime a Supabase
     const channel = supabase
       .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Escuchar INSERT, UPDATE, DELETE
-          schema: 'public',
-          table: 'casos_master',
-        },
-        (payload) => {
-          console.log('Realtime Update Received!', payload);
-          // Si hay una actualización que otra persona hizo (como AG Windows o Vanessa), se refetchean los casos
-          fetchCases();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'casos_master' }, () => {
+        fetchCases();
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => supabase.removeChannel(channel);
   }, []);
 
   const dateTimeSort = (a, b) => {
-     // a.fecha_entrega formato YYYY-MM-DD, a.hora_entrega formato HH:mm (24h)
      const timeA = a.hora_entrega ? a.hora_entrega : '23:59';
      const timeB = b.hora_entrega ? b.hora_entrega : '23:59';
-     
      const dateA = new Date(`${a.fecha_entrega}T${timeA}`);
      const dateB = new Date(`${b.fecha_entrega}T${timeB}`);
-     
      return dateA - dateB;
   };
 
-  const filteredCases = activeDept === "all" 
-     ? [...cases].sort(dateTimeSort) 
-     : cases.filter(c => c.dept === activeDept).sort(dateTimeSort);
-  
+  const currentOperatorName = currentUser ? (currentUser.nombre_completo || currentUser.username) : null;
   const canCreateCases = currentUser && (currentUser.rol?.toLowerCase().includes('recep') || currentUser.rol?.includes('Admin'));
 
-  // Helpero para Fecha de entrega
   const getDeliveryDateProps = (fecha, hora) => {
     if (!fecha) return null;
     try {
@@ -825,9 +814,7 @@ export default function Home() {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      let isDueToday = false;
-      let isPastDue = false;
-      
+      let isDueToday = false; let isPastDue = false;
       if (dateObj.getTime() === today.getTime()) isDueToday = true;
       else if (dateObj.getTime() < today.getTime()) isPastDue = true;
 
@@ -844,38 +831,10 @@ export default function Home() {
         timeStr = `${num12}:${m} ${ampm}`;
       }
 
-      return {
-        text: `${dd}/${mm} ${timeStr}`.trim(),
-        colorClass
-      };
+      return { text: `${dd}/${mm} ${timeStr}`.trim(), colorClass };
     } catch { return null; }
   };
 
-  if (!authChecked) {
-    return <div className="min-h-screen bg-white flex items-center justify-center"><RefreshCw className="animate-spin text-slate-300 w-8 h-8" /></div>;
-  }
-
-  if (!currentUser) {
-    return <LoginScreen onLoginSuccess={(u) => { setCurrentUser(u); loadInitialData(); fetchCases(); }} />;
-  }
-
-  const handleLogout = async () => {
-    await logoutUser();
-    setCurrentUser(null);
-    setAuthChecked(false);
-    window.location.reload();
-  };
-
-  // Filtrado Inteligente de Departamentos
-  const userRoles = currentUser?.rol?.split(',').map(r => r.trim().toLowerCase()) || [];
-  const isAdmin = userRoles.includes('admin') || userRoles.includes('administrador') || userRoles.includes('administración');
-  const allowedDepartments = departments.filter(d => 
-     isAdmin || userRoles.includes(d.name.toLowerCase()) || userRoles.includes(d.id.toLowerCase())
-  );
-
-  // ============================================================
-  //  Helper: SLA Semáforo — tiempos acordados por Douglas
-  // ============================================================
   const SLA_CONFIG = {
     Yesos:           { baseMin: 160,  perUnit: 0,  byDays: false },
     Digital_Escaneo: { baseMin: 20,   perUnit: 10, byDays: false },
@@ -890,49 +849,75 @@ export default function Home() {
     if (!horaInicio) return null;
     const cfg = SLA_CONFIG[depto];
     if (!cfg) return null;
-
     const startObj = new Date(horaInicio);
     if (isNaN(startObj)) return null;
-
     const diffMins = (new Date() - startObj) / 60000;
-    const units = Math.max(1, total_unidades);
-    const slaMins = cfg.baseMin + (cfg.perUnit * units);
-
-    const pct = cfg.byDays
-      ? diffMins / slaMins  // slaMins = 480 = 1 día laboral
-      : diffMins / slaMins;
-
+    const slaMins = cfg.baseMin + (cfg.perUnit * Math.max(1, total_unidades));
+    const pct = diffMins / slaMins;
     if (pct < 0.8) return 'green';
     if (pct < 1.0) return 'yellow';
     return 'red';
   };
 
-  const currentOperatorName = currentUser ? (currentUser.nombre_completo || currentUser.username) : null;
+  if (!authChecked) {
+    return <div className="min-h-screen bg-white flex items-center justify-center"><RefreshCw className="animate-spin text-slate-300 w-8 h-8" /></div>;
+  }
+  if (!currentUser) {
+    return <LoginScreen onLoginSuccess={(u) => { setCurrentUser(u); loadInitialData(); fetchCases(); }} />;
+  }
+
+  const handleLogout = async () => {
+    await logoutUser();
+    setCurrentUser(null);
+    setAuthChecked(false);
+    window.location.reload();
+  };
+
+  // Filtrado de roles para los grupos visuales
+  const userRolesStr = currentUser.rol || "";
+  const rawRoles = userRolesStr.split(',').map(r => r.trim());
+  const isAdmin = rawRoles.some(r => !!r.match(/admin/i));
+
+  let groupsToRender = [];
+  if (activeDept === "all") {
+    // Si estamos en TODAS (Monitor Global), renderizar TODOS los departamentos operativos
+    groupsToRender = departments.filter(d => d.id !== "Terminado");
+  } else {
+    // Si estamos en Departamentos Operativos, renderizar solo las áreas asignadas al usuario
+    if (isAdmin) {
+      groupsToRender = departments.filter(d => d.id !== "Terminado");
+    } else {
+      groupsToRender = departments.filter(d => rawRoles.includes(d.id) && d.id !== "Terminado");
+    }
+  }
+
+  // Pre-abrir todos los acordeones en la carga inicial (hacemos un set 1 vez)
+  // Como Set no funciona fácil, lo inicializamos solo la primera vez en useEffect si fuera util,
+  // pero podemos basarnos predeterminadamente en que false/undefined = "Abierto", true = "Cerrado"
+  // para simplificar el estado.
+  const isDeptHidden = (deptId) => !!expandedDepts[deptId];
 
   return (
     <div className="min-h-screen bg-white sm:bg-slate-50 lg:bg-slate-100 flex flex-col font-sans transition-colors duration-300">
       <Toaster position="bottom-center" />
       <NewCaseModal isOpen={isNewCaseModalOpen} onClose={() => setIsNewCaseModalOpen(false)} clients={clients} onActionComplete={fetchCases}/>
 
-      {/* 3 etapas responsivas: mobile full-width | sm tarjeta pequeña | lg tarjeta ancha */}
       <main className="
         flex-1 w-full bg-white flex flex-col overflow-hidden
-        transition-all duration-300
+        transition-all duration-300 relative
         sm:max-w-[520px] sm:mx-auto sm:my-3 sm:rounded-2xl sm:shadow-lg sm:ring-1 sm:ring-slate-200/60 sm:min-h-[calc(100vh-1.5rem)]
         lg:max-w-[680px] lg:my-6 lg:shadow-2xl lg:ring-slate-200/80 lg:min-h-[calc(100vh-3rem)]
       ">
         
         {/* Header — logo centrado, spinner a la derecha */}
-        <header className="px-5 py-4 border-b border-slate-100 flex items-center justify-center relative shrink-0 h-14 bg-white">
-          {/* Logo clickeable — navega a TODAS */}
+        <header className="px-5 py-4 border-b border-slate-100 flex items-center justify-center relative shrink-0 h-14 bg-white z-20">
           <h1
             className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none"
-            onClick={() => setActiveDept('all')}
-            title="Ver todos los casos"
+            onClick={() => setActiveDept("Departamentos Operativos")}
+            title="Volver a Inicio"
           >
             Lab OS
           </h1>
-          {/* Spinner de recarga — esquina derecha */}
           {loading && (
             <div className="absolute right-4 top-1/2 -translate-y-1/2">
               <RefreshCw size={14} className="animate-spin text-slate-300" />
@@ -941,106 +926,133 @@ export default function Home() {
         </header>
 
         {/* Big Select Navigation */}
-        <div className="px-4 py-3 border-b border-slate-100 bg-white shrink-0">
+        <div className="px-4 py-3 border-b border-slate-100 bg-white shrink-0 z-20">
            <div className="relative">
              <select 
                 value={activeDept}
                 onChange={(e) => setActiveDept(e.target.value)}
                 className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 text-center font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none shadow-sm text-[15px]"
              >
+                <option value="Departamentos Operativos">Departamentos Operativos</option>
                 <option value="all">TODAS (Monitor Global)</option>
-                <optgroup label="Departamentos Operativos">
-                  {allowedDepartments.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </optgroup>
              </select>
              <div className="absolute right-4 top-4 text-slate-400 pointer-events-none">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                <ChevronDown size={20} />
              </div>
            </div>
         </div>
 
-        {/* Action Button for Reception - Only visible if authorized */}
-        {canCreateCases && activeDept === "Recepción" && (
-           <div className="px-4 pt-4 pb-2">
-             <button 
-                onClick={() => setIsNewCaseModalOpen(true)}
-                className="w-full bg-[#D4AF37] hover:bg-yellow-500 text-white font-bold rounded-xl py-3.5 flex items-center justify-center gap-2 shadow-sm transition-colors"
-             >
-                <Plus size={18} /> Registrar Nuevo
-             </button>
-           </div>
-        )}
-
         {/* List Content */}
-        <div className="flex-1 overflow-y-auto w-full pb-24">
+        <div className="flex-1 overflow-y-auto w-full pb-24 relative z-10 bg-[#f8fafc]">
            {loading && cases.length === 0 ? (
                <div className="p-10 text-center text-slate-400 font-medium text-sm">Cargando datos...</div>
-           ) : filteredCases.length === 0 ? (
-               <div className="p-10 text-center text-slate-400 font-medium text-sm">No hay trabajos aquí.</div>
            ) : (
-               <ul className="flex flex-col">
-                 {filteredCases.map((c) => {
-                    const isDigital = c.tipo?.toLowerCase() === 'digital';
-                    const bgClass = isDigital ? 'bg-blue-50/50' : 'bg-gray-50/50';
-                    const devProps = getDeliveryDateProps(c.fecha_entrega, c.hora_entrega);
-                    const slaColor = c.status === 'En Proceso' ? getSlaColor(c.hora_inicio, c.dept, c.total_unidades) : null;
-                    // Borde izquierdo: urgente tiene prioridad, luego semáforo SLA
-                    const borderClass = c.urgent
-                      ? 'border-l-4 border-red-500 pl-3'
-                      : slaColor === 'red'    ? 'border-l-4 border-red-400 pl-3'
-                      : slaColor === 'yellow' ? 'border-l-4 border-yellow-400 pl-3'
-                      : slaColor === 'green'  ? 'border-l-4 border-green-400 pl-3'
-                      : 'border-l-4 border-transparent pl-3';
-                    
-                    return (
-                        <li key={c.internal_id} className={`flex items-center px-4 py-3.5 border-b border-gray-100 transition-colors ${bgClass} ${borderClass}`}>
-                          {/* Wrapper full flex row */}
-                          <div className="flex-1 flex items-center justify-between min-w-0">
-                            
-                            {/* Izquierda: Codigo, Fecha/Hora, Paciente */}
-                            <div className="flex flex-col min-w-0 pr-4 gap-1">
-                              {/* Línea Superior: Codigo + Fecha */}
-                              <div className="flex items-center gap-2">
-                                 {c.urgent && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>}
-                                 <span className="text-[13px] font-medium text-slate-500 shrink-0 flex items-center gap-1">
-                                    <span className="text-slate-400">#</span>{c.id || "N/A"}
-                                 </span>
-                                 {devProps && (
-                                   <span className={`text-[13px] ${devProps.colorClass} truncate ml-1 tracking-tight`}>
-                                     {devProps.text}
-                                   </span>
-                                 )}
-                              </div>
-                              
-                              {/* Cuerpo: Paciente */}
-                              <p className="text-[16px] font-bold text-slate-900 truncate tracking-tight">{c.patient}</p>
-                            </div>
-                            
-                            {/* Derecha: Departamento + Pill (+ Menu si no es TODAS) */}
-                            <div className="flex items-center gap-3 shrink-0">
-                               <div className="flex flex-col items-end gap-1.5 min-w-[80px]">
-                                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                                     {departments.find(d=>d.id===c.dept)?.name || c.dept || 'N/A'}
-                                  </span>
-                                  <StatusBadge status={c.status} />
-                                  {c.status === 'En Proceso' && c.operador_actual && (
-                                     <span className="text-[10px] text-slate-600 font-medium tracking-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-[80px]">
-                                        👤 {c.operador_actual.split(' ')[0]}
-                                     </span>
-                                   )}
-                               </div>
-                               
-                               {activeDept !== "all" && (
-                                 <OperativeActionMenu currentCase={c} onRefresh={fetchCases} operatorName={currentOperatorName} />
-                               )}
-                            </div>
-                          </div>
-                        </li>
-                    );
+               <div className="flex flex-col">
+                 {groupsToRender.map(grupo => {
+                   // Obtener los casos para este grupo
+                   const casosEnGrupo = cases
+                     .filter(c => c.dept === grupo.id)
+                     .sort(dateTimeSort);
+                   
+                   const collapsed = isDeptHidden(grupo.id);
+
+                   return (
+                     <div key={grupo.id} className="mb-2">
+                       {/* Header del Departamento Accordion */}
+                       <div 
+                         onClick={() => toggleDept(grupo.id)}
+                         className="flex items-center justify-center gap-2 py-3 px-4 bg-white border-b border-slate-100 cursor-pointer select-none hover:bg-slate-50 transition-colors"
+                       >
+                         <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{grupo.name.replace("Digital_", "")}</span>
+                         {collapsed ? <ChevronDown size={14} className="text-slate-400" /> : <ChevronUp size={14} className="text-slate-400" />}
+                       </div>
+
+                       {/* Contenido Colapsable */}
+                       {!collapsed && (
+                         <div className="bg-white">
+                           {/* Boton Agregar solo en Recepción */}
+                           {grupo.id === "Recepción" && canCreateCases && activeDept !== "all" && (
+                             <div className="px-4 pt-4 pb-2">
+                               <button 
+                                  onClick={() => setIsNewCaseModalOpen(true)}
+                                  className="w-full bg-[#D4AF37] hover:bg-yellow-500 text-white font-bold rounded-xl py-3 flex items-center justify-center gap-2 shadow-sm transition-colors"
+                               >
+                                  <Plus size={18} /> Registrar Nuevo
+                               </button>
+                             </div>
+                           )}
+
+                           {/* Lista de Casos */}
+                           {casosEnGrupo.length === 0 ? (
+                             <div className="py-6 text-center text-slate-400 font-medium text-sm">
+                               No hay casos en {grupo.name.replace("Digital_", "")}
+                             </div>
+                           ) : (
+                             <ul className="flex flex-col">
+                               {casosEnGrupo.map((c) => {
+                                  const devProps = getDeliveryDateProps(c.fecha_entrega, c.hora_entrega);
+                                  const slaColor = c.status === 'En Proceso' ? getSlaColor(c.hora_inicio, c.dept, c.total_unidades) : null;
+                                  const borderClass = c.urgent
+                                    ? 'border-l-4 border-red-500 pl-3'
+                                    : slaColor === 'red'    ? 'border-l-4 border-red-400 pl-3'
+                                    : slaColor === 'yellow' ? 'border-l-4 border-yellow-400 pl-3'
+                                    : slaColor === 'green'  ? 'border-l-4 border-green-400 pl-3'
+                                    : 'border-l-4 border-transparent pl-3';
+                                  
+                                  const cExpanded = !!expandedCases[c.internal_id];
+                                  const isReadOnly = activeDept === "all";
+
+                                  return (
+                                      <li key={c.internal_id} className={`flex flex-col border-b border-slate-100 transition-colors bg-white ${borderClass}`}>
+                                        <div className="flex items-start px-4 pt-3.5 pb-2 min-w-0">
+                                          {/* Izquierda: Codigo, Fecha/Hora, Paciente */}
+                                          <div className="flex-1 flex flex-col min-w-0 pr-4 gap-1">
+                                            <div className="flex items-center gap-2">
+                                               {c.urgent && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>}
+                                               <span className="text-[13px] font-medium text-slate-500 shrink-0 flex items-center gap-1">
+                                                  <span className="text-slate-400">#</span>{c.id || "N/A"}
+                                               </span>
+                                               {devProps && (
+                                                 <span className={`text-[13px] ${devProps.colorClass} truncate ml-1 tracking-tight`}>
+                                                   {devProps.text}
+                                                 </span>
+                                               )}
+                                            </div>
+                                            <p className="text-[16px] font-bold text-slate-900 truncate tracking-tight">{c.patient}</p>
+                                          </div>
+                                          
+                                          {/* Derecha: Pill de estado del Caso */}
+                                          <div className="flex flex-col items-end gap-1.5 min-w-[80px] shrink-0">
+                                            <StatusBadge status={c.status} />
+                                            {c.status === 'En Proceso' && c.operador_actual && (
+                                               <span className="text-[10px] text-slate-600 font-medium tracking-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-[80px]">
+                                                  👤 {c.operador_actual.split(' ')[0]}
+                                               </span>
+                                             )}
+                                          </div>
+                                        </div>
+
+                                        {/* Row Expandible del Caso (Solo si no es monitor global / read_only) */}
+                                        {!isReadOnly && (
+                                           <CaseActionBar 
+                                             currentCase={c} 
+                                             onRefresh={fetchCases} 
+                                             operatorName={currentOperatorName} 
+                                             isExpanded={cExpanded} 
+                                             onToggleExpand={() => toggleCase(c.internal_id)} 
+                                           />
+                                        )}
+                                      </li>
+                                  );
+                               })}
+                             </ul>
+                           )}
+                         </div>
+                       )}
+                     </div>
+                   );
                  })}
-               </ul>
+               </div>
            )}
         </div>
 
