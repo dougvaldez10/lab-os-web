@@ -122,31 +122,23 @@ function FileProgressBar({ progress, direction }) {
     </div>
   );
 }
-
-function OperativeActionMenu({ currentCase, onRefresh, operatorName }) {
-  const [isOpen, setIsOpen] = useState(false);
+// Barra de acciones horizontal por caso (reemplaza los 3 puntos)
+function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onToggleExpand }) {
   const [isUpdating, setIsUpdating] = useState(false);
-  const [fileProgress, setFileProgress] = useState(null); // 0-100
-  const [fileDirection, setFileDirection] = useState(null); // 'upload' | 'download'
-  const menuRef = useRef(null);
+  const [fileProgress, setFileProgress] = useState(null);
+  const [fileDirection, setFileDirection] = useState(null); // 'upload' o 'download'
   const fileInputRef = useRef(null);
 
-  const dept = currentCase.dept;
-  const showUploadEscaneo = dept === 'Digital_Escaneo';
-  const showDownloadEscaneo = dept === 'Digital_Diseno';
-  const showUploadDiseno = dept === 'Digital_Diseno';
-  const showDownloadDiseno = dept === 'Digital_Fresado';
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) setIsOpen(false);
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  // Reglas de archivos
+  const depto = currentCase.dept;
+  const isDigital = currentCase.tipo?.toLowerCase() === 'digital';
+  
+  const showUploadEscaneo = isDigital && depto === 'Digital_Escaneo';
+  const showUploadDiseno = isDigital && depto === 'Digital_Diseno';
+  const showDownloadEscaneo = isDigital && depto === 'Digital_Diseno';
+  const showDownloadDiseno = isDigital && depto === 'Digital_Fresado';
 
   const handleAction = async (actionType, loadingMsg, successMsg) => {
-    setIsOpen(false);
     setIsUpdating(true);
     const id = toast.loading(loadingMsg);
     try {
@@ -164,9 +156,7 @@ function OperativeActionMenu({ currentCase, onRefresh, operatorName }) {
     }
   };
 
-  // Upload via fetch con progreso (XMLHttpRequest)
   const handleUpload = async (sourceDept) => {
-    setIsOpen(false);
     fileInputRef.current.dataset.sourceDept = sourceDept;
     fileInputRef.current.click();
   };
@@ -177,7 +167,6 @@ function OperativeActionMenu({ currentCase, onRefresh, operatorName }) {
     const sourceDept = e.target.dataset.sourceDept;
     const caseId = currentCase.internal_id;
 
-    // Upload con XMLHttpRequest para progreso real
     setFileDirection('upload');
     setFileProgress(0);
 
@@ -207,9 +196,7 @@ function OperativeActionMenu({ currentCase, onRefresh, operatorName }) {
     e.target.value = '';
   };
 
-  // Download con progreso
   const handleDownload = async (fromDept) => {
-    setIsOpen(false);
     setFileDirection('download');
     setFileProgress(0);
     const toastId = toast.loading('Obteniendo archivos...');
@@ -222,7 +209,6 @@ function OperativeActionMenu({ currentCase, onRefresh, operatorName }) {
         return;
       }
       toast.dismiss(toastId);
-      // Descargar cada archivo con progreso
       for (let i = 0; i < files.length; i++) {
         const f = files[i];
         const urlRes = await fetch(`/api/case-files/url?caseId=${currentCase.internal_id}&dept=${fromDept}&filename=${encodeURIComponent(f.name)}`);
@@ -242,11 +228,28 @@ function OperativeActionMenu({ currentCase, onRefresh, operatorName }) {
   };
 
   return (
-    <div className="relative" ref={menuRef}>
-      {/* Barra de progreso pegada al borde derecho */}
-      <FileProgressBar progress={fileProgress} direction={fileDirection} />
+    <div className="w-full relative flex flex-col items-center">
+      {/* Botón Expansor en el centro de la tarjeta */}
+      <button 
+        onClick={onToggleExpand}
+        disabled={isUpdating}
+        className="flex items-center justify-center w-full py-2 hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600 rounded-b-xl"
+      >
+        {isUpdating ? <RefreshCw size={16} className="animate-spin text-blue-500" /> : 
+          isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />
+        }
+      </button>
+      
+      {/* Barra de Progreso Subida/Bajada */}
+      {fileProgress !== null && (
+        <div className="w-full px-4 mb-2">
+          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div className={`h-full ${fileDirection === 'upload' ? 'bg-[#98b355]' : 'bg-[#0062cc]'} transition-all`} style={{ width: `${fileProgress}%` }}></div>
+          </div>
+        </div>
+      )}
 
-      {/* Input oculto para selección de archivos */}
+      {/* Input oculto */}
       <input
         ref={fileInputRef}
         type="file"
@@ -255,75 +258,51 @@ function OperativeActionMenu({ currentCase, onRefresh, operatorName }) {
         onChange={onFileSelected}
       />
 
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        disabled={isUpdating}
-        className="w-11 h-11 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors active:bg-slate-200"
-      >
-        {isUpdating ? <RefreshCw size={18} className="animate-spin" /> : <MoreVertical size={20} />}
-      </button>
-
-      {isOpen && (
-        <div className="absolute right-0 top-12 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden py-1">
-          {/* Acciones de proceso */}
+      {/* Barra de Acciones Expandida */}
+      {isExpanded && (
+        <div className="w-full bg-slate-50 border-t border-slate-100 p-3 flex flex-wrap gap-2 justify-center rounded-b-xl shadow-inner animate-in slide-in-from-top-2">
           <button 
             onClick={() => handleAction('START', 'Iniciando...', `Caso ${currentCase.id} En Proceso`)}
-            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-blue-50 hover:border-blue-200 transition-colors shadow-sm font-medium"
           >
-            <Play size={16} className="text-blue-600" />
-            Iniciar Proceso
+            <Play size={14} className="text-blue-600" /> Iniciar Proceso
           </button>
+          
           <button 
             onClick={() => handleAction('COMPLETE', 'Avanzando...', `Caso ${currentCase.id} Terminado y Avanzado`)}
-            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-green-50 hover:border-green-200 transition-colors shadow-sm font-medium"
           >
-            <CheckCircle2 size={16} className="text-green-600" />
-            Terminar Proceso
+            <CheckCircle2 size={14} className="text-green-600" /> Terminar Proceso
           </button>
+          
           <button 
             onClick={() => handleAction('PAUSE', 'Pausando...', `Caso ${currentCase.id} en Pausa`)}
-            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium border-t border-slate-100"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-red-50 hover:border-red-200 transition-colors shadow-sm font-medium"
           >
-            <PauseCircle size={16} className="text-red-600" />
-            Pausar
+            <PauseCircle size={14} className="text-red-600" /> Pausar
           </button>
 
-          {/* Acciones de archivos — según departamento */}
-          {(showUploadEscaneo || showUploadDiseno || showDownloadEscaneo || showDownloadDiseno) && (
-            <div className="border-t border-slate-100 mt-1 pt-1">
-              {showDownloadEscaneo && (
-                <button
-                  onClick={() => handleDownload('Digital_Escaneo')}
-                  className="w-full text-left px-4 py-3 text-sm text-blue-700 hover:bg-blue-50 flex items-center gap-2 font-medium"
-                >
-                  <span className="text-base">⬇</span> Descargar de Escaneo
-                </button>
-              )}
-              {showDownloadDiseno && (
-                <button
-                  onClick={() => handleDownload('Digital_Diseno')}
-                  className="w-full text-left px-4 py-3 text-sm text-blue-700 hover:bg-blue-50 flex items-center gap-2 font-medium"
-                >
-                  <span className="text-base">⬇</span> Descargar de Diseño
-                </button>
-              )}
-              {showUploadEscaneo && (
-                <button
-                  onClick={() => handleUpload('Digital_Escaneo')}
-                  className="w-full text-left px-4 py-3 text-sm text-blue-700 hover:bg-blue-50 flex items-center gap-2 font-medium"
-                >
-                  <span className="text-base">⬆</span> Cargar Archivos
-                </button>
-              )}
-              {showUploadDiseno && (
-                <button
-                  onClick={() => handleUpload('Digital_Diseno')}
-                  className="w-full text-left px-4 py-3 text-sm text-blue-700 hover:bg-blue-50 flex items-center gap-2 font-medium"
-                >
-                  <span className="text-base">⬆</span> Cargar Diseño
-                </button>
-              )}
-            </div>
+          {/* Archivos Dinamicos */}
+          {showDownloadEscaneo && (
+            <button onClick={() => handleDownload('Digital_Escaneo')} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-100 rounded-lg text-sm text-blue-700 hover:bg-blue-50 transition-colors shadow-sm font-medium">
+              <DownloadCloud size={14} /> Descargar
+            </button>
+          )}
+          {showDownloadDiseno && (
+            <button onClick={() => handleDownload('Digital_Diseno')} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-100 rounded-lg text-sm text-blue-700 hover:bg-blue-50 transition-colors shadow-sm font-medium">
+              <DownloadCloud size={14} /> Descargar
+            </button>
+          )}
+          
+          {showUploadEscaneo && (
+            <button onClick={() => handleUpload('Digital_Escaneo')} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-green-100 rounded-lg text-sm text-green-700 hover:bg-green-50 transition-colors shadow-sm font-medium">
+              <UploadCloud size={14} /> Cargar
+            </button>
+          )}
+          {showUploadDiseno && (
+            <button onClick={() => handleUpload('Digital_Diseno')} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-green-100 rounded-lg text-sm text-green-700 hover:bg-green-50 transition-colors shadow-sm font-medium">
+              <UploadCloud size={14} /> Cargar
+            </button>
           )}
         </div>
       )}
