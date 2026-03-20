@@ -866,7 +866,7 @@ export default function Home() {
     if (isAdmin) {
       groupsToRender = departments;
     } else {
-      groupsToRender = departments.filter(d => rawRoles.includes(d.id));
+      groupsToRender = departments.filter(d => rawRoles.includes(d.id) || d.id === "Sinterizado");
     }
   }
 
