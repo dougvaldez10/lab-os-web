@@ -10,6 +10,7 @@ const workflow = [
   'Digital_Escaneo', // "Escaneo" en UI
   'Digital_Diseno',  // "Diseño" en UI
   'Digital_Fresado', // "Fresado" en UI
+  'Sinterizado',
   'Ajuste', 
   'Terminado'
 ];

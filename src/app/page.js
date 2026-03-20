@@ -18,9 +18,9 @@ const departments = [
   { id: "Digital_Escaneo", name: "Escaneo" },
   { id: "Digital_Diseno", name: "Diseño" },
   { id: "Digital_Fresado", name: "Fresado" },
-  { id: "Zirconia (CAM)", name: "Zirconia (CAM)" },
-  { id: "Impresión 3D", name: "Impresión 3D" },
-  { id: "Cerámica", name: "Cerámica" },
+  { id: "Sinterizado", name: "Sinterizado" },
+
+
   { id: "Ajuste", name: "Ajuste" },
   { id: "Terminado", name: "Terminado" },
 ];
