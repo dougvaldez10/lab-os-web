@@ -91,14 +91,31 @@ export async function createNewCase(formData) {
 
     // Insertar ítems si existen
     if (items.length > 0) {
-       const detalles = items.map(item => ({
-          caso_id: masterId,
-          dientes: Array.isArray(item.dientes) ? item.dientes.join(',') : '',
-          producto: item.producto,
-          unidades: item.unidades || 1,
-          precio_unit: 0,
-          subtotal: 0
-       }));
+       // Obtener precios base de productos para asignar costos reales
+       const { data: dbProductos } = await supabase.from('productos').select('nombre, precio');
+       const priceMap = {};
+       if (dbProductos) {
+         dbProductos.forEach(p => {
+           // Limpiar prefijo numérico "10001-Corona Zr" -> "Corona Zr"
+           const cleanName = p.nombre.replace(/^\d+\-/, '').trim();
+           priceMap[cleanName] = Number(p.precio) || 0;
+         });
+       }
+
+       const detalles = items.map(item => {
+          const matchedPrice = priceMap[item.producto] || 0;
+          const numUnidades = item.unidades || 1;
+          const subTotalCalculado = matchedPrice * numUnidades;
+
+          return {
+            caso_id: masterId,
+            dientes: Array.isArray(item.dientes) ? item.dientes.join(',') : '',
+            producto: item.producto,
+            unidades: numUnidades,
+            precio_unit: matchedPrice,
+            subtotal: subTotalCalculado
+          };
+       });
 
        const { error: errorDetalles } = await supabase.from('casos_detalle').insert(detalles);
        if (errorDetalles) {
