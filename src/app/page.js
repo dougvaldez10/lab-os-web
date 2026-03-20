@@ -943,7 +943,7 @@ export default function Home() {
                          className="flex items-center justify-center gap-2 py-3 px-4 bg-white border-b border-slate-100 cursor-pointer select-none hover:bg-slate-50 transition-colors"
                        >
                          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{grupo.name.replace("Digital_", "")}</span>
-                         {collapsed ? <ChevronDown size={14} className="text-slate-400" /> : <ChevronUp size={14} className="text-slate-400" />}
+                         
                        </div>
 
                        {/* Contenido Colapsable */}
