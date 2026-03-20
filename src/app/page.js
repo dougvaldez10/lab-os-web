@@ -454,11 +454,12 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
         </div>
         
         {/* Scrollable Form */}
-        <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-8 bg-slate-50/50">
-          
-          {/* Seccion 1: Cabecera Info Basica */}
-          <form id="new-case-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <form id="new-case-form" onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+          <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-8 bg-slate-50/50">
+            
+            {/* Seccion 1: Cabecera Info Basica */}
+            <div className="flex flex-col gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente / Doctor</label>
                 <ClientSelect clients={clients} selected={selectedClient} onChange={setSelectedClient} />
@@ -546,8 +547,8 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
                     </div>
                   </label>
                </div>
+              </div>
             </div>
-          </form>
 
           <hr className="border-slate-200" />
 
@@ -662,7 +663,6 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Instrucciones Adicionales (Comentarios)</label>
               <textarea 
                 name="comentarios" 
-                form="new-case-form"
                 rows="2" 
                 placeholder="Ej. El doctor prefiere un color más cálido en incisal..."
                 className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-medium shadow-sm resize-none transition-all placeholder:text-slate-400"
@@ -670,8 +670,8 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
             </div>
 
           </div>
-          
-        </div>
+          </div>
+        </form>
 
         {/* Footer Fixed */}
         <div className="px-5 py-4 border-t border-slate-100 bg-white shrink-0 mt-auto">
