@@ -860,13 +860,13 @@ export default function Home() {
   let groupsToRender = [];
   if (activeDept === "all") {
     // Si estamos en TODAS (Monitor Global), renderizar TODOS los departamentos operativos
-    groupsToRender = departments.filter(d => d.id !== "Terminado");
+    groupsToRender = departments;
   } else {
     // Si estamos en Departamentos Operativos, renderizar solo las áreas asignadas al usuario
     if (isAdmin) {
-      groupsToRender = departments.filter(d => d.id !== "Terminado");
+      groupsToRender = departments;
     } else {
-      groupsToRender = departments.filter(d => rawRoles.includes(d.id) && d.id !== "Terminado");
+      groupsToRender = departments.filter(d => rawRoles.includes(d.id));
     }
   }
 
