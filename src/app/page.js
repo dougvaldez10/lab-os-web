@@ -23,6 +23,7 @@ const departments = [
 
   { id: "Ajuste", name: "Ajuste" },
   { id: "Terminado", name: "Terminado" },
+  { id: "Inspección", name: "Inspección" },
 ];
 
 // Selector Personalizado Inteligente Extirpado de Modal
