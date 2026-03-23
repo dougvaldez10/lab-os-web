@@ -3,17 +3,36 @@
 import { supabase } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
 
-// Flujo lógico de departamentos
-const workflow = [
-  'Recepción', 
-  'Yesos', 
-  'Digital_Escaneo', // "Escaneo" en UI
-  'Digital_Diseno',  // "Diseño" en UI
-  'Digital_Fresado', // "Fresado" en UI
-  'Sinterizado',
-  'Ajuste', 
-  'Terminado'
-];
+// Flujo lógico de departamentos ahora dictado por objeto
+const FLUJO_DIGITAL = {
+    "Recepción": "Digital_Diseno",
+    "Digital_Diseno": "Digital_Fresado",
+    "Digital_Fresado": "Sinterizado",
+    "Sinterizado": "Ajuste",
+    "Ajuste": "Terminado",
+    "Terminado": "Inspección",
+    "Inspección": "Recibo/Factura",
+    "Recibo/Factura": "Empaquetado",
+    "Empaquetado": "Envío",
+    "Envío": "Terminado",
+    "Yesos": "Digital_Escaneo",
+    "Digital_Escaneo": "Digital_Diseno"
+};
+
+const FLUJO_ANALOGO = {
+    "Recepción": "Yesos",
+    "Yesos": "Digital_Escaneo",
+    "Digital_Escaneo": "Digital_Diseno",
+    "Digital_Diseno": "Digital_Fresado",
+    "Digital_Fresado": "Sinterizado",
+    "Sinterizado": "Ajuste",
+    "Ajuste": "Terminado",
+    "Terminado": "Inspección",
+    "Inspección": "Recibo/Factura",
+    "Recibo/Factura": "Empaquetado",
+    "Empaquetado": "Envío",
+    "Envío": "Terminado"
+};
 
 export async function updateCaseState(internalId, action, operatorName = null) {
   try {
@@ -21,10 +40,10 @@ export async function updateCaseState(internalId, action, operatorName = null) {
       return { success: false, error: "Datos de acción inválidos." };
     }
 
-    // Consulta el estado actual
+    // Consulta el estado actual y el tipo
     const { data: currentCase, error: fetchError } = await supabase
       .from('casos_master')
-      .select('depto_actual')
+      .select('depto_actual, tipo')
       .eq('id', internalId)
       .single();
     
@@ -41,11 +60,15 @@ export async function updateCaseState(internalId, action, operatorName = null) {
     } else if (action === 'PAUSE') {
         updateData = { estado: 'En Pausa' };
     } else if (action === 'COMPLETE') {
-        // Lógica de avanzar al siguiente departamento y ponerlo en Pendiente
-        const currentIndex = workflow.indexOf(currentCase.depto_actual);
-        const nextDept = currentIndex >= 0 && currentIndex < workflow.length - 1 
-            ? workflow[currentIndex + 1] 
-            : currentCase.depto_actual; // Si ya es Terminado, se queda ahí
+        const deptoLimpio = currentCase.depto_actual ? currentCase.depto_actual.trim() : "";
+        const tipoLimpio = currentCase.tipo ? currentCase.tipo.trim().toLowerCase() : "análogo";
+        
+        let nextDept = "Terminado";
+        if (tipoLimpio === "digital") {
+            nextDept = FLUJO_DIGITAL[deptoLimpio] || "Terminado";
+        } else {
+            nextDept = FLUJO_ANALOGO[deptoLimpio] || "Terminado";
+        }
         
         updateData = { depto_actual: nextDept, estado: 'Pendiente', operador_actual: null, hora_inicio: null };
     }
