@@ -8,7 +8,7 @@ import { updateCaseState } from "./actions/cases";
 import { createNewCase } from "./actions/create-case";
 import { getClients } from "./actions/clients";
 import { getProducts } from "./actions/products";
-import { getCurrentUser, loginUser, logoutUser } from "@/lib/auth";
+import { getCurrentUser, loginUser, logoutUser, getAllUsers } from "@/lib/auth";
 import { Toaster, toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 
@@ -672,45 +672,198 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
 }
 
 function LoginScreen({ onLoginSuccess }) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [welcomeName, setWelcomeName] = useState("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const res = await loginUser(username, password);
-    if (res.success) {
-      toast.success("¡Bienvenido, " + res.user.nombre_completo + "!");
-      onLoginSuccess(res.user);
-    } else {
-      toast.error(res.error);
+  const pinInputRef = useRef(null);
+
+  // Load users and sort by frequency
+  useEffect(() => {
+    async function load() {
+      const allUsers = await getAllUsers();
+      
+      const usageStr = localStorage.getItem("lab_os_user_freq");
+      const usage = usageStr ? JSON.parse(usageStr) : {};
+
+      const sortedUsers = [...allUsers].sort((a, b) => {
+         const freqA = usage[a.username] || 0;
+         const freqB = usage[b.username] || 0;
+         return freqB - freqA;
+      });
+      
+      setUsers(sortedUsers);
+      setLoadingUsers(false);
+      
+      if (sortedUsers.length > 0) {
+        setSelectedUser(sortedUsers[0]);
+      }
     }
-    setLoading(false);
+    load();
+  }, []);
+
+  // Handle PIN input
+  const handlePinChange = async (e) => {
+    const val = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
+    if (val.length <= 4) {
+       setPin(val);
+       if (val.length === 4) {
+          setLoading(true);
+          const res = await loginUser(selectedUser.username, val);
+          if (res.success) {
+             const usageStr = localStorage.getItem("lab_os_user_freq");
+             const usage = usageStr ? JSON.parse(usageStr) : {};
+             usage[selectedUser.username] = (usage[selectedUser.username] || 0) + 1;
+             localStorage.setItem("lab_os_user_freq", JSON.stringify(usage));
+             
+             setWelcomeName(res.user.nombre_completo || res.user.username);
+             setShowWelcome(true);
+             
+             setTimeout(() => {
+                onLoginSuccess(res.user);
+             }, 1500);
+          } else {
+             toast.error(res.error);
+             setPin("");
+             setLoading(false);
+             if (pinInputRef.current) pinInputRef.current.focus();
+          }
+       }
+    }
   };
 
-  return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
-      <Toaster position="bottom-center" />
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Lab OS</h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">Acceso a la Nube Restringido</p>
+  const handleUserClick = (u) => {
+      setSelectedUser(u);
+      setPin("");
+      setTimeout(() => {
+         if (pinInputRef.current) pinInputRef.current.focus();
+      }, 100);
+  };
+
+  if (showWelcome) {
+     return (
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans">
+           <div className="text-center animate-in fade-in zoom-in duration-500">
+              <div className="w-28 h-28 mx-auto mb-6 rounded-full overflow-hidden shadow-2xl ring-4 ring-[#D4AF37] ring-offset-4 ring-offset-slate-50">
+                 {selectedUser?.avatar_base64 ? 
+                     <img src={selectedUser.avatar_base64} className="w-full h-full object-cover" alt="avatar" /> :
+                     <div className="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400 font-bold text-4xl">{selectedUser?.username.charAt(0).toUpperCase()}</div>
+                 }
+              </div>
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Bienvenido, {welcomeName}</h1>
+              <p className="text-slate-500 mt-2 font-medium">Preparando tu entorno operativo...</p>
+           </div>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Usuario</label>
-            <input type="text" value={username} onChange={e => setUsername(e.target.value)} required placeholder="ej: vanessa" autoFocus className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-semibold transition-all"/>
-          </div>
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Contraseña</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" onKeyDown={e => { if (e.key === 'Enter') handleSubmit(e); }} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-semibold transition-all"/>
-          </div>
-          <button disabled={loading} type="submit" className="w-full py-3.5 mt-2 rounded-xl font-bold text-sm text-white bg-slate-900 hover:bg-black transition-colors flex items-center justify-center">
-            {loading ? <RefreshCw className="animate-spin w-5 h-5"/> : "Iniciar Sesión"}
-          </button>
-        </form>
+     );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans overflow-hidden">
+      <Toaster position="bottom-center" />
+      
+      {/* Brand Logo / Title */}
+      <div className="absolute top-12 left-0 right-0 text-center">
+         <h1 className="text-2xl font-black text-slate-900 tracking-tight">Lab OS</h1>
       </div>
+
+      {loadingUsers ? (
+         <RefreshCw className="animate-spin text-slate-400 w-8 h-8" />
+      ) : (
+         <div className="w-full max-w-4xl flex flex-col items-center mt-12">
+            
+            {/* 3D Carousel View */}
+            <div className="relative w-full h-48 flex items-center justify-center mb-16 perspective-1000">
+               {users.map((user, idx) => {
+                  const selectedIdx = users.findIndex(u => u.id === selectedUser?.id);
+                  let offset = idx - selectedIdx;
+                  
+                  const absOffset = Math.abs(offset);
+                  const isVisible = absOffset <= 2; 
+                  
+                  if (!isVisible) return null;
+                  
+                  const isActive = absOffset === 0;
+                  const translateX = offset * 110; 
+                  const scale = isActive ? 1.3 : Math.max(0.7, 1 - (absOffset * 0.2));
+                  const zIndex = 20 - absOffset;
+                  const opacity = isActive ? 1 : Math.max(0.3, 0.8 - (absOffset * 0.4));
+                  
+                  return (
+                     <div 
+                        key={user.id} 
+                        onClick={() => handleUserClick(user)}
+                        className={`absolute transition-all duration-500 ease-out cursor-pointer flex flex-col items-center group`}
+                        style={{
+                           transform: `translateX(${translateX}px) scale(${scale})`,
+                           zIndex,
+                           opacity
+                        }}
+                     >
+                        <div className={`w-20 h-20 rounded-full overflow-hidden shadow-lg transition-all duration-300 ${isActive ? 'ring-[3px] ring-[#D4AF37] ring-offset-4 ring-offset-slate-50' : 'filter grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100'}`}>
+                           {user.avatar_base64 ? (
+                              <img src={user.avatar_base64} alt={user.username} className="w-full h-full object-cover" />
+                           ) : (
+                              <div className="w-full h-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-3xl">
+                                 {user.username.charAt(0).toUpperCase()}
+                              </div>
+                           )}
+                        </div>
+                        
+                        <div className={`mt-5 w-32 text-center transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
+                           <p className="text-sm font-bold text-slate-800 truncate">{user.username}</p>
+                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{user.rol?.split(',')[0] || 'Personal'}</p>
+                        </div>
+                     </div>
+                  );
+               })}
+            </div>
+
+            {/* PIN Input Area */}
+            <div className={`transition-all duration-500 transform ${selectedUser && !loading ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+               <div className="flex flex-col items-center relative">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">Ingresa tu PIN</p>
+                  
+                  <div className="relative w-full flex justify-center">
+                     <input 
+                        ref={pinInputRef}
+                        type="password" 
+                        value={pin}
+                        onChange={handlePinChange}
+                        className="absolute inset-0 opacity-0 cursor-text z-20 w-full h-full"
+                        autoFocus
+                        disabled={loading}
+                        inputMode="numeric"
+                        autoComplete="off"
+                     />
+                     
+                     <div className="flex gap-4 relative z-10 pointer-events-none">
+                        {[0, 1, 2, 3].map(i => {
+                           const isFilled = pin.length > i;
+                           const isCurrent = pin.length === i;
+                           return (
+                              <div key={i} className={`w-14 h-16 rounded-xl border-2 flex items-center justify-center transition-all bg-white shadow-sm ${isFilled ? 'border-[#D4AF37] scale-105' : isCurrent ? 'border-slate-300 ring-4 ring-slate-100 scale-110 shadow-md' : 'border-slate-200 text-transparent'}`}>
+                                 {isFilled && <div className="w-3 h-3 bg-slate-800 rounded-full" />}
+                              </div>
+                           );
+                        })}
+                     </div>
+                  </div>
+                  
+                  {loading && (
+                     <div className="absolute inset-0 flex items-end justify-center z-30 mb-[-2rem]">
+                        <RefreshCw className="animate-spin text-[#D4AF37] w-5 h-5" />
+                     </div>
+                  )}
+               </div>
+            </div>
+            
+         </div>
+      )}
     </div>
   );
 }

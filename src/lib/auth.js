@@ -73,3 +73,20 @@ export async function getCurrentUser() {
     return null;
   }
 }
+
+export async function getAllUsers() {
+  try {
+    const { data: users, error } = await supabase
+      .from('usuarios')
+      .select('id, username, rol, avatar_base64');
+    
+    if (error) {
+       console.error("Error fetching users:", error);
+       return [];
+    }
+    return users || [];
+  } catch (err) {
+    console.error("Server Action getAllUsers Error:", err);
+    return [];
+  }
+}
