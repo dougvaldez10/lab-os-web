@@ -1157,42 +1157,120 @@ export default function Home() {
                                               {c.doctor && <span className="ml-2 text-[14px] font-medium text-slate-400 tracking-normal">({c.doctor})</span>}
                                             </p>
                                             
-                                            {c.items && c.items.length > 0 && (
-                                              <div className="flex flex-col gap-0.5 mt-0.5">
-                                                {c.items.map((item, idx) => {
-                                                  const prodLower = item.producto.toLowerCase();
+                                            {c.items && c.items.length > 0 && (() => {
+                                              // AGRUPACIÓN Y FORMATEO
+                                              const grouped = {};
+                                              
+                                              c.items.forEach(item => {
+                                                  const p = item.producto ? item.producto.toLowerCase() : "";
+                                                  
+                                                  // 1. Material Base y Color
                                                   let matText = "";
                                                   let matColor = "";
+                                                  let isZirconia = false;
+                                                  let isLithium = false;
                                                   
-                                                  if (prodLower.includes("zirconia") || prodLower.includes("zr")) {
+                                                  if (p.includes("zirconia") || p.includes("zr")) {
                                                     matText = "Zr";
-                                                    matColor = "text-[#D4AF37]"; // Dorado / Amarillo
-                                                  } else if (prodLower.includes("pmma")) {
+                                                    matColor = "text-[#D4AF37]"; // Dorado
+                                                    isZirconia = true;
+                                                  } else if (p.includes("pmma")) {
                                                     matText = "(C5O2H8)n";
                                                     matColor = "text-red-500";
-                                                  } else if (prodLower.includes("emax") || prodLower.includes("litio") || prodLower.includes("lisio4")) {
-                                                    matText = "LiSiO4";
+                                                  } else if (p.includes("emax") || p.includes("litio") || p.includes("lisio4") || p.includes("li2si2o5")) {
+                                                    matText = "Li2Si2O5";
                                                     matColor = "text-blue-500";
+                                                    isLithium = true;
+                                                  } else if (p.includes("metal")) {
+                                                    matText = "Metal";
+                                                    matColor = "text-slate-500";
                                                   } else {
-                                                    matText = item.producto; // Fallback
+                                                    matText = item.producto.split(' ')[0] || "Pieza"; // Fallback
                                                     matColor = "text-slate-600";
+                                                  }
+
+                                                  // 2. Translucidez (HT, LT, etc.)
+                                                  let extraText = "";
+                                                  const parenMatch = item.producto.match(/\(([^)]+)\)/);
+                                                  if (parenMatch) {
+                                                     const val = parenMatch[1].toUpperCase();
+                                                     if (["HT", "LT", "MT", "MO", "HO"].includes(val)) {
+                                                         extraText += ` (${val})`;
+                                                     }
+                                                  }
+
+                                                  // 3. Sufijo de Tipo (I, Ca, Co)
+                                                  let typeAbbr = "";
+                                                  if (p.includes("implante")) {
+                                                      typeAbbr = " I";
+                                                  } else if (isLithium) {
+                                                      // Para Litio, agregamos especificadores más finos
+                                                      if (p.includes("incrustacion") || p.includes("inlay") || p.includes("onlay")) typeAbbr = " I";
+                                                      else if (p.includes("carilla")) typeAbbr = " Ca";
+                                                      else if (p.includes("corona")) typeAbbr = " Co";
+                                                  }
+
+                                                  const groupKey = `${matText}|${matColor}|${extraText}|${typeAbbr}`;
+                                                  
+                                                  if (!grouped[groupKey]) {
+                                                      grouped[groupKey] = { matText, matColor, extraText, typeAbbr, teeth: [] };
+                                                  }
+                                                  
+                                                  if (item.dientes) {
+                                                      // Teeth often come as "11,12" or "11"
+                                                      const tArr = item.dientes.split(',').map(s => s.trim()).filter(Boolean);
+                                                      grouped[groupKey].teeth.push(...tArr);
+                                                  }
+                                              });
+
+                                              // Generar la lista final y formatear dientes
+                                              const renderedLines = Object.values(grouped).map((group, idx) => {
+                                                  // Eliminar duplicados y formatear dientes consecutivos
+                                                  let teethStr = "";
+                                                  if (group.teeth.length > 0) {
+                                                      let sorted = [...new Set(group.teeth)].map(Number).sort((a,b) => a-b);
+                                                      let ranges = [];
+                                                      let start = sorted[0];
+                                                      let prev = sorted[0];
+                                                      for (let i = 1; i < sorted.length; i++) {
+                                                          let curr = sorted[i];
+                                                          if (curr === prev + 1) {
+                                                              prev = curr;
+                                                          } else {
+                                                              ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+                                                              start = curr;
+                                                              prev = curr;
+                                                          }
+                                                      }
+                                                      ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+                                                      teethStr = ranges.join(", ");
                                                   }
 
                                                   return (
                                                     <div key={idx} className="flex items-baseline gap-1.5 truncate">
-                                                      <span className={`text-[16px] font-black tracking-tight ${matColor}`}>
-                                                        {matText}
+                                                      <span className={`text-[16px] font-black tracking-tight ${group.matColor}`}>
+                                                        {group.matText}
                                                       </span>
-                                                      {item.dientes && (
-                                                        <span className="text-[14px] font-medium text-slate-700 truncate">
-                                                          #{item.dientes}
+                                                      {(group.extraText || group.typeAbbr) && (
+                                                        <span className="text-[14px] font-medium text-slate-700 tracking-tight">
+                                                          {group.extraText}{group.typeAbbr}
+                                                        </span>
+                                                      )}
+                                                      {teethStr && (
+                                                        <span className="text-[14px] font-medium text-slate-700 truncate ml-1">
+                                                          #{teethStr}
                                                         </span>
                                                       )}
                                                     </div>
                                                   );
-                                                })}
-                                              </div>
-                                            )}
+                                              });
+
+                                              return (
+                                                <div className="flex flex-col gap-0.5 mt-0.5">
+                                                  {renderedLines}
+                                                </div>
+                                              );
+                                            })()}
                                           </div>
                                           
                                           {/* Derecha: Pill de estado del Caso */}
