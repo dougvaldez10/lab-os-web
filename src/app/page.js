@@ -999,7 +999,10 @@ export default function Home() {
                                                  </span>
                                                )}
                                             </div>
-                                            <p className="text-[16px] font-bold text-slate-900 truncate tracking-tight">{c.patient}</p>
+                                            <p className="text-[16px] font-bold text-slate-900 truncate tracking-tight">
+                                              {c.patient}
+                                              {c.doctor && <span className="ml-2 text-[14px] font-medium text-slate-400 tracking-normal">({c.doctor})</span>}
+                                            </p>
                                           </div>
                                           
                                           {/* Derecha: Pill de estado del Caso */}
