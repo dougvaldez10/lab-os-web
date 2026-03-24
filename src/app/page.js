@@ -1266,6 +1266,14 @@ export default function Home() {
                                                 </div>
                                               );
                                             })()}
+                                            
+                                            {/* COMENTARIO (opcional) */}
+                                            {c.comentarios && c.comentarios.trim() !== "" && (
+                                              <div className="mt-1 text-[13px] text-slate-600 leading-snug break-words pr-2">
+                                                <span className="font-bold text-slate-700 mr-1">Comentario:</span>
+                                                {c.comentarios}
+                                              </div>
+                                            )}
                                           </div>
                                           
                                           {/* Derecha: Pill de estado del Caso */}

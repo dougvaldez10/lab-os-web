@@ -7,7 +7,7 @@ export async function GET() {
     // 1. Traer los casos
     const { data: rows, error } = await supabase
       .from('casos_master')
-      .select('id, codigo, paciente, doctor, depto_actual, estado, fecha_ingreso, fecha_entrega, hora_entrega, tipo, operador_actual, hora_inicio')
+      .select('id, codigo, paciente, doctor, depto_actual, estado, fecha_ingreso, fecha_entrega, hora_entrega, tipo, operador_actual, hora_inicio, comentarios')
       .order('fecha_entrega', { ascending: true, nullsFirst: false })
       .limit(100);
 
@@ -64,6 +64,7 @@ export async function GET() {
       tipo: row.tipo,
       operador_actual: row.operador_actual,
       hora_inicio: row.hora_inicio,
+      comentarios: row.comentarios,
       total_unidades: unidadesPorCaso[row.id] || 1,
       items: itemsPorCaso[row.id] || [],
       urgent: false
