@@ -940,10 +940,12 @@ export default function Home() {
                      <div key={grupo.id} className="mb-2">
                        <div 
                          onClick={() => toggleDept(grupo.id)}
-                         className="flex items-center justify-between py-3 px-2 cursor-pointer select-none group border-b-2 border-slate-100 hover:border-[#D4AF37] transition-colors mb-4 mt-6"
+                         className="flex items-center justify-center py-4 px-2 cursor-pointer select-none group border-b-2 border-slate-100 hover:border-[#D4AF37] transition-colors mb-4 mt-6 relative"
                        >
-                         <span className="text-sm font-black text-slate-900 uppercase tracking-widest">{grupo.name.replace("Digital_", "")}</span>
-                         {collapsed ? <ChevronDown size={20} className="text-slate-300 group-hover:text-[#D4AF37] transition-colors" /> : <ChevronUp size={20} className="text-slate-300 group-hover:text-[#D4AF37] transition-colors" />}
+                         <span className="text-[15px] font-black text-slate-900 uppercase tracking-widest">{grupo.name.replace("Digital_", "")}</span>
+                         <div className="absolute right-2">
+                           {collapsed ? <ChevronDown size={20} className="text-slate-300 group-hover:text-[#D4AF37] transition-colors" /> : <ChevronUp size={20} className="text-slate-300 group-hover:text-[#D4AF37] transition-colors" />}
+                         </div>
                        </div>
 
                        {/* Contenido Colapsable */}
