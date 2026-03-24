@@ -869,7 +869,7 @@ function LoginScreen({ onLoginSuccess }) {
 }
 
 export default function Home() {
-  const [activeDept, setActiveDept] = useState("Departamentos Operativos");
+  const [activeDept, setActiveDept] = useState("Producción");
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
@@ -1046,7 +1046,7 @@ export default function Home() {
         <header className="px-5 py-4 border-b border-slate-100 flex items-center justify-center relative shrink-0 h-14 bg-white z-20">
           <h1
             className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none"
-            onClick={() => setActiveDept("Departamentos Operativos")}
+            onClick={() => setActiveDept("Producción")}
             title="Volver a Inicio"
           >
             Lab OS
@@ -1066,7 +1066,7 @@ export default function Home() {
                 onChange={(e) => setActiveDept(e.target.value)}
                 className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 text-center font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none shadow-sm text-[15px]"
              >
-                <option value="Departamentos Operativos">Departamentos Operativos</option>
+                <option value="Producción">Producción</option>
                 <option value="all">TODAS (Monitor Global)</option>
              </select>
              <div className="absolute right-4 top-4 text-slate-400 pointer-events-none">
@@ -1156,6 +1156,43 @@ export default function Home() {
                                               {c.patient}
                                               {c.doctor && <span className="ml-2 text-[14px] font-medium text-slate-400 tracking-normal">({c.doctor})</span>}
                                             </p>
+                                            
+                                            {c.items && c.items.length > 0 && (
+                                              <div className="flex flex-col gap-0.5 mt-0.5">
+                                                {c.items.map((item, idx) => {
+                                                  const prodLower = item.producto.toLowerCase();
+                                                  let matText = "";
+                                                  let matColor = "";
+                                                  
+                                                  if (prodLower.includes("zirconia") || prodLower.includes("zr")) {
+                                                    matText = "Zr";
+                                                    matColor = "text-[#D4AF37]"; // Dorado / Amarillo
+                                                  } else if (prodLower.includes("pmma")) {
+                                                    matText = "(C5O2H8)n";
+                                                    matColor = "text-red-500";
+                                                  } else if (prodLower.includes("emax") || prodLower.includes("litio") || prodLower.includes("lisio4")) {
+                                                    matText = "LiSiO4";
+                                                    matColor = "text-blue-500";
+                                                  } else {
+                                                    matText = item.producto; // Fallback
+                                                    matColor = "text-slate-600";
+                                                  }
+
+                                                  return (
+                                                    <div key={idx} className="flex items-baseline gap-1.5 truncate">
+                                                      <span className={`text-[16px] font-black tracking-tight ${matColor}`}>
+                                                        {matText}
+                                                      </span>
+                                                      {item.dientes && (
+                                                        <span className="text-[14px] font-medium text-slate-700 truncate">
+                                                          #{item.dientes}
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                            )}
                                           </div>
                                           
                                           {/* Derecha: Pill de estado del Caso */}

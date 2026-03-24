@@ -70,6 +70,33 @@ export async function updateCaseState(internalId, action, operatorName = null) {
             nextDept = FLUJO_ANALOGO[deptoLimpio] || "Terminado";
         }
         
+        // --- REGLA DE ENRUTAMIENTO DINAMICO POR MATERIAL ---
+        // Si sale de Fresado Digital, evaluar si de verdad requiere Sinterizado
+        if (deptoLimpio === "digital_fresado" || deptoLimpio === "digital_fresado " || depto_actual === 'Digital_Fresado' || currentCase.depto_actual === 'Digital_Fresado') {
+            const { data: detalles } = await supabase
+                .from('casos_detalle')
+                .select('producto')
+                .eq('caso_id', internalId);
+                
+            let requiereSinterizado = false;
+            
+            if (detalles && detalles.length > 0) {
+               for (const d of detalles) {
+                   const prod = d.producto ? d.producto.toLowerCase() : "";
+                   // Si el nombre del producto incluye Zr o Zirconia, va a Sinterizado
+                   if (prod.includes("zr") || prod.includes("zirconia")) {
+                       requiereSinterizado = true;
+                       break;
+                   }
+               }
+            }
+            
+            if (!requiereSinterizado) {
+                // Si es puro PMMA, Emax, Metal, etc., salta Sinterizado -> Ajuste
+                nextDept = "Ajuste";
+            }
+        }
+        
         updateData = { depto_actual: nextDept, estado: 'Pendiente', operador_actual: null, hora_inicio: null };
     }
 

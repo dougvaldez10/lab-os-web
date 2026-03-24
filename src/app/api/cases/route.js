@@ -16,16 +16,23 @@ export async function GET() {
       throw error;
     }
 
-    // 2. Traer las unidades agrupadas por caso (consulta separada para evitar problemas de FK)
+    // 2. Traer las unidades y productos agrupados por caso
     const ids = rows.map(r => r.id);
     let unidadesPorCaso = {};
+    let itemsPorCaso = {};
     if (ids.length > 0) {
       const { data: detalles } = await supabase
         .from('casos_detalle')
-        .select('caso_id, unidades')
+        .select('caso_id, unidades, producto, dientes')
         .in('caso_id', ids);
       if (detalles) {
         detalles.forEach(d => {
+          if (!itemsPorCaso[d.caso_id]) itemsPorCaso[d.caso_id] = [];
+          itemsPorCaso[d.caso_id].push({
+            producto: d.producto || '',
+            dientes: d.dientes || '',
+            unidades: d.unidades || 1
+          });
           unidadesPorCaso[d.caso_id] = (unidadesPorCaso[d.caso_id] || 0) + (d.unidades || 1);
         });
       }
@@ -46,6 +53,7 @@ export async function GET() {
       operador_actual: row.operador_actual,
       hora_inicio: row.hora_inicio,
       total_unidades: unidadesPorCaso[row.id] || 1,
+      items: itemsPorCaso[row.id] || [],
       urgent: false
     }));
 
