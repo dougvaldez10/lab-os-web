@@ -423,10 +423,10 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 p-0 sm:p-4 font-sans">
-      <div className="w-full max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
+      <div className="w-full max-w-2xl bg-[#d4ae7d] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-white shrink-0 shadow-sm z-10">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#cca571] bg-[#d4ae7d] shrink-0 shadow-sm z-10">
           <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">Constructor de Casos</h2>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors">
             <X size={20} />
@@ -654,7 +654,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
         </form>
 
         {/* Footer Fixed */}
-        <div className="px-5 py-4 border-t border-slate-100 bg-white shrink-0 mt-auto">
+        <div className="px-5 py-4 border-t border-[#cca571] bg-[#f3eee6] shrink-0 mt-auto">
           <button 
             form="new-case-form" 
             disabled={isSubmitting} 
@@ -941,9 +941,9 @@ export default function Home() {
                        {/* Header del Departamento Accordion */}
                        <div 
                          onClick={() => toggleDept(grupo.id)}
-                         className="flex items-center justify-center gap-2 py-3 px-4 bg-white border-b border-slate-100 cursor-pointer select-none hover:bg-slate-50 transition-colors"
+                         className="flex items-center justify-center gap-2 py-3 px-4 bg-[#b66f33] border-b border-[#a05c26] cursor-pointer select-none hover:bg-[#a05c26] transition-colors"
                        >
-                         <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{grupo.name.replace("Digital_", "")}</span>
+                         <span className="text-xs font-bold text-white uppercase tracking-widest">{grupo.name.replace("Digital_", "")}</span>
                          
                        </div>
 
@@ -983,7 +983,7 @@ export default function Home() {
                                   const isReadOnly = activeDept === "all";
 
                                   return (
-                                      <li key={c.internal_id} className={`flex flex-col border-b border-slate-100 transition-colors bg-white ${borderClass}`}>
+                                      <li key={c.internal_id} className={`flex flex-col border-b border-[#d6c5ab] transition-colors bg-[#e2d1b7] ${borderClass}`}>
                                         <div className="flex items-start px-4 pt-3.5 pb-2 min-w-0">
                                           {/* Izquierda: Codigo, Fecha/Hora, Paciente */}
                                           <div className="flex-1 flex flex-col min-w-0 pr-4 gap-1">
