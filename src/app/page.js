@@ -423,10 +423,10 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 p-0 sm:p-4 font-sans">
-      <div className="w-full max-w-2xl bg-[#d4ae7d] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
+      <div className="w-full max-w-2xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden border border-slate-100">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#cca571] bg-[#d4ae7d] shrink-0 shadow-sm z-10">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-white shrink-0 shadow-sm z-10">
           <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">Constructor de Casos</h2>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors">
             <X size={20} />
@@ -654,12 +654,12 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
         </form>
 
         {/* Footer Fixed */}
-        <div className="px-5 py-4 border-t border-[#cca571] bg-[#f3eee6] shrink-0 mt-auto">
+        <div className="px-6 py-5 border-t border-slate-100 bg-white shrink-0 mt-auto">
           <button 
             form="new-case-form" 
             disabled={isSubmitting} 
             type="submit" 
-            className={`w-full py-4 rounded-xl font-bold text-[15px] text-white bg-slate-900 hover:bg-black transition-colors flex items-center justify-center gap-2 shadow-lg ${isSubmitting ? 'opacity-70 pointer-events-none' : ''}`}
+            className={`w-full py-4 rounded-2xl font-bold text-[15px] text-white bg-slate-900 hover:bg-black transition-colors flex items-center justify-center gap-2 shadow-lg ${isSubmitting ? 'opacity-70 pointer-events-none' : ''}`}
           >
              {isSubmitting ? <RefreshCw className="animate-spin" size={18}/> : <CheckCircle2 size={18}/>}
              Confirmar y Enviar a Laboratorio
@@ -938,18 +938,17 @@ export default function Home() {
 
                    return (
                      <div key={grupo.id} className="mb-2">
-                       {/* Header del Departamento Accordion */}
                        <div 
                          onClick={() => toggleDept(grupo.id)}
-                         className="flex items-center justify-center gap-2 py-3 px-4 bg-[#b66f33] border-b border-[#a05c26] cursor-pointer select-none hover:bg-[#a05c26] transition-colors"
+                         className="flex items-center justify-between py-4 px-6 bg-white border border-slate-100 cursor-pointer select-none hover:bg-slate-50 transition-colors rounded-2xl shadow-sm mb-2"
                        >
-                         <span className="text-xs font-bold text-white uppercase tracking-widest">{grupo.name.replace("Digital_", "")}</span>
-                         
+                         <span className="text-sm font-bold text-slate-800 uppercase tracking-wide">{grupo.name.replace("Digital_", "")}</span>
+                         {collapsed ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
                        </div>
 
                        {/* Contenido Colapsable */}
                        {!collapsed && (
-                         <div className="bg-white">
+                         <div className="bg-transparent mt-2">
                            {/* Boton Agregar solo en Recepción */}
                            {grupo.id === "Recepción" && canCreateCases && activeDept !== "all" && (
                              <div className="px-4 pt-4 pb-2">
@@ -983,10 +982,10 @@ export default function Home() {
                                   const isReadOnly = activeDept === "all";
 
                                   return (
-                                      <li key={c.internal_id} className={`flex flex-col border-b border-[#d6c5ab] transition-colors bg-[#e2d1b7] ${borderClass}`}>
-                                        <div className="flex items-start px-4 pt-3.5 pb-2 min-w-0">
+                                      <li key={c.internal_id} className={`flex flex-col border border-slate-100 transition-colors bg-white rounded-2xl shadow-sm mb-3 hover:shadow-md ${borderClass.replace('border-l-4', 'border-l-4')}`}>
+                                        <div className="flex items-start px-5 pt-4 pb-3 min-w-0">
                                           {/* Izquierda: Codigo, Fecha/Hora, Paciente */}
-                                          <div className="flex-1 flex flex-col min-w-0 pr-4 gap-1">
+                                          <div className="flex-1 flex flex-col min-w-0 pr-4 gap-1.5">
                                             <div className="flex items-center gap-2">
                                                {c.urgent && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>}
                                                <span className="text-[13px] font-medium text-slate-500 shrink-0 flex items-center gap-1">
