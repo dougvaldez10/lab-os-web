@@ -72,7 +72,7 @@ export async function updateCaseState(internalId, action, operatorName = null) {
         
         // --- REGLA DE ENRUTAMIENTO DINAMICO POR MATERIAL ---
         // Si sale de Fresado Digital, evaluar si de verdad requiere Sinterizado
-        if (deptoLimpio === "digital_fresado" || deptoLimpio === "digital_fresado " || depto_actual === 'Digital_Fresado' || currentCase.depto_actual === 'Digital_Fresado') {
+        if (deptoLimpio === "digital_fresado" || currentCase.depto_actual === 'Digital_Fresado') {
             const { data: detalles } = await supabase
                 .from('casos_detalle')
                 .select('producto')
