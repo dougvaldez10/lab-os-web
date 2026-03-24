@@ -81,10 +81,23 @@ export async function updateCaseState(internalId, action, operatorName = null) {
             let requiereSinterizado = false;
             
             if (detalles && detalles.length > 0) {
+               // Pre-cargar todos los productos una vez (está cacheado en bd usualmente)
+               const { data: catData } = await supabase.from('productos').select('nombre, categoria');
+               const catMap = {};
+               if (catData) {
+                   catData.forEach(p => {
+                       const cleanName = p.nombre.replace(/^\d+\-/, '').trim();
+                       catMap[cleanName.toLowerCase()] = (p.categoria || "").toLowerCase();
+                       catMap[p.nombre.toLowerCase()] = (p.categoria || "").toLowerCase();
+                   });
+               }
+
                for (const d of detalles) {
                    const prod = d.producto ? d.producto.toLowerCase() : "";
-                   // Si el nombre del producto incluye Zr o Zirconia, va a Sinterizado
-                   if (prod.includes("zr") || prod.includes("zirconia")) {
+                   const cat = catMap[prod] || "";
+                   
+                   // Validar la categoría o el nombre del producto
+                   if (cat.includes("zr") || cat.includes("zirconia") || prod.includes("zr") || prod.includes("zirconia")) {
                        requiereSinterizado = true;
                        break;
                    }

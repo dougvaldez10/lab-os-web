@@ -1163,25 +1163,22 @@ export default function Home() {
                                               
                                               c.items.forEach(item => {
                                                   const p = item.producto ? item.producto.toLowerCase() : "";
+                                                  const cat = item.categoria ? item.categoria.toLowerCase() : "";
                                                   
                                                   // 1. Material Base y Color
                                                   let matText = "";
                                                   let matColor = "";
-                                                  let isZirconia = false;
-                                                  let isLithium = false;
                                                   
-                                                  if (p.includes("zirconia") || p.includes("zr")) {
+                                                  if (cat.includes("zr") || cat.includes("zirconia") || p.includes("zirconia") || p.includes("zr")) {
                                                     matText = "Zr";
                                                     matColor = "text-[#D4AF37]"; // Dorado
-                                                    isZirconia = true;
-                                                  } else if (p.includes("pmma")) {
+                                                  } else if (cat.includes("pmma") || p.includes("pmma")) {
                                                     matText = "(C5O2H8)n";
                                                     matColor = "text-red-500";
-                                                  } else if (p.includes("emax") || p.includes("litio") || p.includes("lisio4") || p.includes("li2si2o5")) {
+                                                  } else if (cat.includes("emax") || cat.includes("litio") || p.includes("emax") || p.includes("litio") || p.includes("lisio4") || p.includes("li2si2o5")) {
                                                     matText = "Li2Si2O5";
                                                     matColor = "text-blue-500";
-                                                    isLithium = true;
-                                                  } else if (p.includes("metal")) {
+                                                  } else if (cat.includes("metal") || p.includes("metal")) {
                                                     matText = "Metal";
                                                     matColor = "text-slate-500";
                                                   } else {
@@ -1189,7 +1186,16 @@ export default function Home() {
                                                     matColor = "text-slate-600";
                                                   }
 
-                                                  // 2. Translucidez (HT, LT, etc.)
+                                                  // 2. Extraer sufijo de Tipo (I, Ca, Co) y pegarlo al matText (todo mismo color y negrita)
+                                                  if (p.includes("implante") || p.includes("incrustacion") || p.includes("inlay") || p.includes("onlay")) {
+                                                      matText += " I";
+                                                  } else if (p.includes("carilla")) {
+                                                      matText += " Ca";
+                                                  } else if (p.includes("corona")) {
+                                                      matText += " Co";
+                                                  }
+
+                                                  // 3. Translucidez (HT, LT, etc.)
                                                   let extraText = "";
                                                   const parenMatch = item.producto.match(/\(([^)]+)\)/);
                                                   if (parenMatch) {
@@ -1199,21 +1205,10 @@ export default function Home() {
                                                      }
                                                   }
 
-                                                  // 3. Sufijo de Tipo (I, Ca, Co)
-                                                  let typeAbbr = "";
-                                                  if (p.includes("implante")) {
-                                                      typeAbbr = " I";
-                                                  } else if (isLithium) {
-                                                      // Para Litio, agregamos especificadores más finos
-                                                      if (p.includes("incrustacion") || p.includes("inlay") || p.includes("onlay")) typeAbbr = " I";
-                                                      else if (p.includes("carilla")) typeAbbr = " Ca";
-                                                      else if (p.includes("corona")) typeAbbr = " Co";
-                                                  }
-
-                                                  const groupKey = `${matText}|${matColor}|${extraText}|${typeAbbr}`;
+                                                  const groupKey = `${matText}|${matColor}|${extraText}`;
                                                   
                                                   if (!grouped[groupKey]) {
-                                                      grouped[groupKey] = { matText, matColor, extraText, typeAbbr, teeth: [] };
+                                                      grouped[groupKey] = { matText, matColor, extraText, teeth: [] };
                                                   }
                                                   
                                                   if (item.dientes) {
@@ -1247,17 +1242,17 @@ export default function Home() {
                                                   }
 
                                                   return (
-                                                    <div key={idx} className="flex items-baseline gap-1.5 truncate">
+                                                    <div key={idx} className="flex items-baseline gap-1.5 truncate mt-0.5">
                                                       <span className={`text-[16px] font-black tracking-tight ${group.matColor}`}>
                                                         {group.matText}
                                                       </span>
-                                                      {(group.extraText || group.typeAbbr) && (
+                                                      {group.extraText && (
                                                         <span className="text-[14px] font-medium text-slate-700 tracking-tight">
-                                                          {group.extraText}{group.typeAbbr}
+                                                          {group.extraText}
                                                         </span>
                                                       )}
                                                       {teethStr && (
-                                                        <span className="text-[14px] font-medium text-slate-700 truncate ml-1">
+                                                        <span className="text-[14px] font-medium text-slate-700 truncate ml-0.5">
                                                           #{teethStr}
                                                         </span>
                                                       )}

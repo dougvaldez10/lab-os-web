@@ -16,6 +16,17 @@ export async function GET() {
       throw error;
     }
 
+    // 1.5 Obtener categorias de productos para mapeo exacto
+    const { data: dbProducts } = await supabase.from('productos').select('nombre, categoria');
+    let catMap = {};
+    if (dbProducts) {
+      dbProducts.forEach(p => {
+        const cleanName = p.nombre.replace(/^\d+\-/, '').trim();
+        catMap[cleanName] = p.categoria;
+        catMap[p.nombre] = p.categoria;
+      });
+    }
+
     // 2. Traer las unidades y productos agrupados por caso
     const ids = rows.map(r => r.id);
     let unidadesPorCaso = {};
@@ -30,6 +41,7 @@ export async function GET() {
           if (!itemsPorCaso[d.caso_id]) itemsPorCaso[d.caso_id] = [];
           itemsPorCaso[d.caso_id].push({
             producto: d.producto || '',
+            categoria: catMap[d.producto] || '',
             dientes: d.dientes || '',
             unidades: d.unidades || 1
           });
