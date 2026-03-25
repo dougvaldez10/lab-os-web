@@ -7,7 +7,7 @@ export async function GET() {
     // 1. Traer los casos
     const { data: rows, error } = await supabase
       .from('casos_master')
-      .select('id, codigo, paciente, doctor, depto_actual, estado, fecha_ingreso, fecha_entrega, hora_entrega, tipo, operador_actual, hora_inicio, comentarios')
+      .select('*')
       .order('fecha_entrega', { ascending: true, nullsFirst: false })
       .limit(100);
 
@@ -16,14 +16,17 @@ export async function GET() {
       throw error;
     }
 
-    // 1.5 Obtener categorias de productos para mapeo exacto
-    const { data: dbProducts } = await supabase.from('productos').select('nombre, categoria');
+    // 1.5 Obtener categorias y precios de productos para mapeo exacto
+    const { data: dbProducts } = await supabase.from('productos').select('nombre, categoria, precio');
     let catMap = {};
+    let priceMap = {};
     if (dbProducts) {
       dbProducts.forEach(p => {
         const cleanName = p.nombre.replace(/^\d+\-/, '').trim();
         catMap[cleanName] = p.categoria;
         catMap[p.nombre] = p.categoria;
+        priceMap[cleanName] = Number(p.precio) || 0;
+        priceMap[p.nombre] = Number(p.precio) || 0;
       });
     }
 
@@ -42,6 +45,7 @@ export async function GET() {
           itemsPorCaso[d.caso_id].push({
             producto: d.producto || '',
             categoria: catMap[d.producto] || '',
+            precio_unitario: priceMap[d.producto] || 0,
             dientes: d.dientes || '',
             unidades: d.unidades || 1
           });
@@ -65,6 +69,7 @@ export async function GET() {
       operador_actual: row.operador_actual,
       hora_inicio: row.hora_inicio,
       comentarios: row.comentarios,
+      color: row.color,
       total_unidades: unidadesPorCaso[row.id] || 1,
       items: itemsPorCaso[row.id] || [],
       urgent: false

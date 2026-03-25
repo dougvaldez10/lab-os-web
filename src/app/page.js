@@ -1,14 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { 
-  MoreVertical, Play, CheckCircle2, PauseCircle, Plus, RefreshCw, X, ChevronDown, ChevronUp, UploadCloud, DownloadCloud
-} from "lucide-react";
-import { updateCaseState } from "./actions/cases";
-import { createNewCase } from "./actions/create-case";
-import { getClients } from "./actions/clients";
-import { getProducts } from "./actions/products";
-import { getCurrentUser, loginUser, logoutUser, getAllUsers } from "@/lib/auth";
+import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, ChevronDown, Check, RefreshCw, Layers, Smile, Shield, Smartphone, Package, Target, Sun, X, Calculator, DollarSign, Percent } from "lucide-react";
+import { verifyPin, getAllUsers, loginUser } from "@/lib/auth";
+import { generateReceipt } from "@/app/actions/receipts";
 import { Toaster, toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 
@@ -124,7 +119,7 @@ function FileProgressBar({ progress, direction }) {
   );
 }
 // Barra de acciones horizontal por caso (reemplaza los 3 puntos)
-function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onToggleExpand }) {
+function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onToggleExpand, onOpenReceipt }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [fileProgress, setFileProgress] = useState(null);
   const [fileDirection, setFileDirection] = useState(null); // 'upload' o 'download'
@@ -269,12 +264,21 @@ function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onTog
             <Play size={14} className="text-blue-600" /> Iniciar Proceso
           </button>
           
-          <button 
-            onClick={() => handleAction('COMPLETE', 'Avanzando...', `Caso ${currentCase.id} Terminado y Avanzado`)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-green-50 hover:border-green-200 transition-colors shadow-sm font-medium"
-          >
-            <CheckCircle2 size={14} className="text-green-600" /> Terminar Proceso
-          </button>
+          {currentCase.dept === 'Recibo/Factura' ? (
+             <button 
+               onClick={() => onOpenReceipt(currentCase)}
+               className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white hover:bg-black transition-colors shadow-sm font-bold"
+             >
+               <Calculator size={14} className="text-[#D4AF37]" /> Crear Recibo (Borrador)
+             </button>
+          ) : (
+             <button 
+               onClick={() => handleAction('COMPLETE', 'Avanzando...', `Caso ${currentCase.id} Terminado y Avanzado`)}
+               className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-green-50 hover:border-green-200 transition-colors shadow-sm font-medium"
+             >
+               <CheckCircle2 size={14} className="text-green-600" /> Terminar Proceso
+             </button>
+          )}
           
           <button 
             onClick={() => handleAction('PAUSE', 'Pausando...', `Caso ${currentCase.id} en Pausa`)}
@@ -716,6 +720,13 @@ function LoginScreen({ onLoginSuccess }) {
           setLoading(true);
           const res = await loginUser(selectedUser.username, val);
           if (res.success) {
+             if (res.session) {
+                await supabase.auth.setSession({
+                   access_token: res.session.access_token,
+                   refresh_token: res.session.refresh_token
+                });
+             }
+             
              const usageStr = localStorage.getItem("lab_os_user_freq");
              const usage = usageStr ? JSON.parse(usageStr) : {};
              usage[selectedUser.username] = (usage[selectedUser.username] || 0) + 1;
@@ -877,6 +888,13 @@ export default function Home() {
   const [clients, setClients] = useState([]);
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
   
+  // Recibos State
+  const [receiptCase, setReceiptCase] = useState(null);
+  const [discountType, setDiscountType] = useState("$"); 
+  const [discountValue, setDiscountValue] = useState("");
+  const [applyIva, setApplyIva] = useState(false);
+  const [receiptSaving, setReceiptSaving] = useState(false);
+  
   // Estado para los acordeones de los departamentos y de los casos individuales
   const [expandedDepts, setExpandedDepts] = useState({});
   const [expandedCases, setExpandedCases] = useState({});
@@ -1030,10 +1048,203 @@ export default function Home() {
   // para simplificar el estado.
   const isDeptHidden = (deptId) => !!expandedDepts[deptId];
 
+  // --- RECEIPTS LOGIC ---
+  const openReceiptModal = (c) => {
+      setReceiptCase(c);
+      setDiscountType("$");
+      setDiscountValue("");
+      setApplyIva(false);
+  };
+  
+  const closeReceiptModal = () => {
+      setReceiptCase(null);
+  };
+
+  const calculateReceipt = () => {
+      if (!receiptCase) return { subtotal: 0, discountAmount: 0, ivaAmount: 0, total: 0 };
+      
+      let initialSubtotal = 0;
+      if (receiptCase.items && receiptCase.items.length > 0) {
+          receiptCase.items.forEach(it => {
+              initialSubtotal += (it.precio_unitario || 0) * (it.unidades || 1);
+          });
+      }
+      
+      let discountAmount = 0;
+      const numVal = parseFloat(discountValue) || 0;
+      if (discountType === "$") {
+          discountAmount = numVal;
+      } else {
+          discountAmount = initialSubtotal * (numVal / 100);
+      }
+      
+      const afterDiscount = Math.max(0, initialSubtotal - discountAmount);
+      const ivaAmount = applyIva ? (afterDiscount * 0.16) : 0;
+      const total = afterDiscount + ivaAmount;
+      
+      return { subtotal: initialSubtotal, discountAmount, ivaAmount, total };
+  };
+
+  const handleGenerateReceipt = async () => {
+      setReceiptSaving(true);
+      const payload = {
+         ...calculateReceipt(),
+         discountType,
+         discountValue: parseFloat(discountValue) || 0,
+         applyIva
+      };
+      
+      const res = await generateReceipt(receiptCase.internal_id, payload);
+      setReceiptSaving(false);
+      
+      if (res.success) {
+         toast.success("Recibo generado y caso avanzado a Empaquetado.");
+         closeReceiptModal();
+         fetchCases();
+      } else {
+         toast.error(res.error || "Error al generar recibo.");
+      }
+  };
+
   return (
     <div className="min-h-screen bg-white sm:bg-slate-50 lg:bg-slate-100 flex flex-col font-sans transition-colors duration-300">
       <Toaster position="bottom-center" />
       <NewCaseModal isOpen={isNewCaseModalOpen} onClose={() => setIsNewCaseModalOpen(false)} clients={clients} onActionComplete={fetchCases}/>
+
+      {/* MODAL DE RECIBO / BORRADOR */}
+      {receiptCase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#0f172a]/40 backdrop-blur-sm transition-opacity" onClick={closeReceiptModal}></div>
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
+             <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white relative z-20">
+                <div>
+                   <h2 className="text-xl font-black text-slate-800 tracking-tight">Borrador de Recibo</h2>
+                   <p className="text-sm font-medium text-slate-500 mt-0.5">Orden #{receiptCase.id}</p>
+                </div>
+                <button onClick={closeReceiptModal} className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-full transition-colors">
+                   <X size={20} strokeWidth={2.5}/>
+                </button>
+             </div>
+             
+             <div className="p-6 bg-[#f8fafc] flex-1 overflow-y-auto">
+                <div className="mb-6 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                   <div className="text-sm">
+                      <span className="text-slate-400 block mb-1">Paciente</span>
+                      <span className="font-bold text-slate-800">{receiptCase.patient}</span>
+                   </div>
+                   <div className="w-full h-px bg-slate-50 my-3"></div>
+                   <div className="text-sm">
+                      <span className="text-slate-400 block mb-1">Doctor/Clínica</span>
+                      <span className="font-semibold text-slate-700">{receiptCase.doctor}</span>
+                   </div>
+                </div>
+
+                <div className="mb-6">
+                   <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 px-1">Desglose de Conceptos</h3>
+                   <div className="bg-white border border-slate-100 rounded-xl overflow-hidden shadow-sm">
+                      {receiptCase.items && receiptCase.items.length > 0 ? receiptCase.items.map((it, idx) => (
+                         <div key={idx} className="px-4 py-3 flex justify-between items-center border-b border-slate-50 last:border-0">
+                            <div>
+                               <div className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                                 <span className="text-blue-500">{it.unidades}x</span>
+                                 {it.producto}
+                               </div>
+                               {it.dientes && <div className="text-xs text-slate-400 font-medium mt-0.5">Piezas: #{Array.isArray(it.dientes) ? it.dientes.join(', ') : it.dientes}</div>}
+                            </div>
+                            <div className="text-sm font-bold text-slate-700">
+                               ${(typeof it.precio_unitario === 'number' ? it.precio_unitario * it.unidades : 0).toFixed(2)}
+                            </div>
+                         </div>
+                      )) : (
+                         <div className="p-4 text-center text-sm text-slate-500">Sin materiales registrados.</div>
+                      )}
+                   </div>
+                </div>
+
+                <div className="mb-2">
+                   <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 px-1">Ajustes de Cobro</h3>
+                   <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                         <div className="flex bg-slate-200/60 rounded-lg p-1 shrink-0">
+                            <button 
+                               onClick={() => { setDiscountType("$"); setDiscountValue(""); }}
+                               className={`px-3 py-1.5 rounded-md text-sm font-bold transition-all ${discountType === "$" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                            >
+                               <DollarSign size={14} className="inline-block -mt-0.5"/>
+                            </button>
+                            <button 
+                               onClick={() => { setDiscountType("%"); setDiscountValue(""); }}
+                               className={`px-3 py-1.5 rounded-md text-sm font-bold transition-all ${discountType === "%" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                            >
+                               <Percent size={14} strokeWidth={2.5} className="inline-block -mt-0.5"/>
+                            </button>
+                         </div>
+                         <div className="relative flex-1">
+                            <input
+                               type="number"
+                               placeholder={discountType === "$" ? "Monto a descontar..." : "Porcentaje (ej. 10)"}
+                               value={discountValue}
+                               onChange={(e) => setDiscountValue(e.target.value)}
+                               className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] outline-none transition-all placeholder:font-medium placeholder:text-slate-400"
+                            />
+                         </div>
+                      </div>
+
+                      <div 
+                         onClick={() => setApplyIva(!applyIva)}
+                         className="flex items-center justify-between bg-white px-4 py-3 rounded-lg border border-slate-200 cursor-pointer hover:border-[#D4AF37]/50 shadow-sm transition-colors"
+                      >
+                         <span className="text-sm font-bold text-slate-700 select-none">Aplicar 16% IVA</span>
+                         <div className={`w-11 h-6 rounded-full transition-colors relative flex items-center ${applyIva ? "bg-[#0062cc]" : "bg-slate-200"}`}>
+                            <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-all absolute ${applyIva ? "left-[22px]" : "left-[4px]"}`}></div>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+             </div>
+
+             {(() => {
+                const calc = calculateReceipt();
+                return (
+                   <div className="bg-white border-t border-slate-100 px-6 py-5">
+                      <div className="space-y-2 mb-5">
+                         <div className="flex justify-between text-sm text-slate-500 font-medium">
+                            <span>Subtotal</span>
+                            <span>${calc.subtotal.toFixed(2)}</span>
+                         </div>
+                         {calc.discountAmount > 0 && (
+                            <div className="flex justify-between text-sm text-red-500 font-semibold">
+                               <span>Descuento</span>
+                               <span>-${calc.discountAmount.toFixed(2)}</span>
+                            </div>
+                         )}
+                         {calc.ivaAmount > 0 && (
+                            <div className="flex justify-between text-sm text-slate-500 font-medium">
+                               <span>IVA (16%)</span>
+                               <span>+${calc.ivaAmount.toFixed(2)}</span>
+                            </div>
+                         )}
+                         <div className="w-full h-px bg-slate-100 my-1"></div>
+                         <div className="flex justify-between items-center mt-2">
+                            <span className="font-bold text-slate-800">Total a Cobrar</span>
+                            <span className="text-2xl font-black text-[#0062cc] tracking-tight">${calc.total.toFixed(2)}</span>
+                         </div>
+                      </div>
+                      
+                      <button
+                         disabled={receiptSaving}
+                         onClick={handleGenerateReceipt}
+                         className="w-full bg-[#1e293b] hover:bg-[#0f172a] disabled:opacity-70 text-white rounded-xl py-3.5 font-bold text-[15px] flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"
+                      >
+                         {receiptSaving ? <RefreshCw size={18} className="animate-spin" /> : <Calculator size={18} />}
+                         {receiptSaving ? "Procesando..." : "Aprobar Recibo y Avanzar"}
+                      </button>
+                   </div>
+                );
+             })()}
+          </div>
+        </div>
+      )}
 
       <main className="
         flex-1 w-full bg-white flex flex-col overflow-hidden
@@ -1251,6 +1462,11 @@ export default function Home() {
                                                           {group.extraText}
                                                         </span>
                                                       )}
+                                                      {c.color && (
+                                                        <span className="text-[12px] font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.5 rounded-md tracking-tight ml-0.5 shadow-sm border border-amber-200/50">
+                                                          {c.color}
+                                                        </span>
+                                                      )}
                                                       {teethStr && (
                                                         <span className="text-[14px] font-medium text-slate-700 truncate ml-0.5">
                                                           #{teethStr}
@@ -1290,6 +1506,7 @@ export default function Home() {
                                         {/* Row Expandible del Caso (Solo si no es monitor global / read_only) */}
                                         {!isReadOnly && (
                                            <CaseActionBar 
+                                              onOpenReceipt={openReceiptModal}
                                              currentCase={c} 
                                              onRefresh={fetchCases} 
                                              operatorName={currentOperatorName} 
