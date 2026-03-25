@@ -7,7 +7,7 @@ import crypto from 'crypto';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "https://etnfvmpywgbeqvbyieze.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0bmZ2bXB5d2diZXF2YnlpZXplIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzcwMTc3NiwiZXhwIjoyMDg5Mjc3Nzc2fQ.aE6WgegPGa426dYQKHyEMsd-GasEQa0Qqonh6EkrSC4"
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 export async function loginUser(username, password) {
   try {
@@ -38,8 +38,8 @@ export async function loginUser(username, password) {
 
     // 3. Estrategia de Usuario Fantasma para cumplir con RLS estricto
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-       email: 'autenticador@legion.com',
-       password: '5*E9uU7!4tkUN/H'
+       email: process.env.GHOST_USER_EMAIL || 'autenticador@legion.com',
+       password: process.env.GHOST_USER_PASSWORD
     });
 
     if (authError || !authData.session) {
