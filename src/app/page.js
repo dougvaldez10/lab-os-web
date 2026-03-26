@@ -690,22 +690,27 @@ function LoginScreen({ onLoginSuccess }) {
   // Load users and sort by frequency
   useEffect(() => {
     async function load() {
-      const allUsers = await getAllUsers();
-      
-      const usageStr = localStorage.getItem("lab_os_user_freq");
-      const usage = usageStr ? JSON.parse(usageStr) : {};
+      try {
+        const allUsers = await getAllUsers();
+        
+        const usageStr = localStorage.getItem("lab_os_user_freq");
+        const usage = usageStr ? JSON.parse(usageStr) : {};
 
-      const sortedUsers = [...allUsers].sort((a, b) => {
-         const freqA = usage[a.username] || 0;
-         const freqB = usage[b.username] || 0;
-         return freqB - freqA;
-      });
-      
-      setUsers(sortedUsers);
-      setLoadingUsers(false);
-      
-      if (sortedUsers.length > 0) {
-        setSelectedUser(sortedUsers[0]);
+        const sortedUsers = [...allUsers].sort((a, b) => {
+           const freqA = usage[a.username] || 0;
+           const freqB = usage[b.username] || 0;
+           return freqB - freqA;
+        });
+        
+        setUsers(sortedUsers);
+        
+        if (sortedUsers.length > 0) {
+          setSelectedUser(sortedUsers[0]);
+        }
+      } catch (e) {
+        console.error("Failed to load users:", e);
+      } finally {
+        setLoadingUsers(false);
       }
     }
     load();
