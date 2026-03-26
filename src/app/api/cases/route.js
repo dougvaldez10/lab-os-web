@@ -37,7 +37,7 @@ export async function GET(request) {
     }
 
     // 1.5 Obtener categorias y precios de productos para mapeo exacto
-    const { data: dbProducts } = await supabase.from('productos').select('nombre, categoria, precio');
+    const { data: dbProducts } = await secureClient.from('productos').select('nombre, categoria, precio');
     let catMap = {};
     let priceMap = {};
     if (dbProducts) {
@@ -55,7 +55,7 @@ export async function GET(request) {
     let unidadesPorCaso = {};
     let itemsPorCaso = {};
     if (ids.length > 0) {
-      const { data: detalles } = await supabase
+      const { data: detalles } = await secureClient
         .from('casos_detalle')
         .select('caso_id, unidades, producto, dientes')
         .in('caso_id', ids);
