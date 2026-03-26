@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, ChevronDown, ChevronUp, Plus, Check, RefreshCw, Layers, Smile, Shield, Smartphone, Package, Target, Sun, X, Calculator, DollarSign, Percent, CheckCircle2, PauseCircle, DownloadCloud, UploadCloud, PlayCircle, AlertCircle, RotateCcw } from "lucide-react";
+import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, ChevronDown, ChevronUp, Plus, Check, RefreshCw, Layers, Smile, Shield, Smartphone, Package, Target, Sun, X, Calculator, DollarSign, Percent, Pause, Download, Upload, Play, AlertTriangle } from "lucide-react";
 import { getAllUsers, loginUser, getCurrentUser, logoutUser } from "@/lib/auth";
 import { generateReceipt } from "@/app/actions/receipts";
 import { getClients } from "@/app/actions/clients";
@@ -277,7 +277,7 @@ function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onTog
                onClick={() => handleAction('COMPLETE', 'Avanzando...', `Caso ${currentCase.id} Terminado y Avanzado`)}
                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-green-50 hover:border-green-200 transition-colors shadow-sm font-medium"
              >
-               <CheckCircle2 size={14} className="text-green-600" /> Terminar Proceso
+               <Check size={14} className="text-green-600" /> Terminar Proceso
              </button>
           )}
           
@@ -285,29 +285,29 @@ function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onTog
             onClick={() => handleAction('PAUSE', 'Pausando...', `Caso ${currentCase.id} en Pausa`)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-red-50 hover:border-red-200 transition-colors shadow-sm font-medium"
           >
-            <PauseCircle size={14} className="text-red-600" /> Pausar
+            <Pause size={14} className="text-red-600" /> Pausar
           </button>
 
           {/* Archivos Dinamicos */}
           {showDownloadEscaneo && (
             <button onClick={() => handleDownload('Digital_Escaneo')} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-100 rounded-lg text-sm text-blue-700 hover:bg-blue-50 transition-colors shadow-sm font-medium">
-              <DownloadCloud size={14} /> Descargar
+              <Download size={14} /> Descargar
             </button>
           )}
           {showDownloadDiseno && (
             <button onClick={() => handleDownload('Digital_Diseno')} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-100 rounded-lg text-sm text-blue-700 hover:bg-blue-50 transition-colors shadow-sm font-medium">
-              <DownloadCloud size={14} /> Descargar
+              <Download size={14} /> Descargar
             </button>
           )}
           
           {showUploadEscaneo && (
             <button onClick={() => handleUpload('Digital_Escaneo')} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-green-100 rounded-lg text-sm text-green-700 hover:bg-green-50 transition-colors shadow-sm font-medium">
-              <UploadCloud size={14} /> Cargar
+              <Upload size={14} /> Cargar
             </button>
           )}
           {showUploadDiseno && (
             <button onClick={() => handleUpload('Digital_Diseno')} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-green-100 rounded-lg text-sm text-green-700 hover:bg-green-50 transition-colors shadow-sm font-medium">
-              <UploadCloud size={14} /> Cargar
+              <Upload size={14} /> Cargar
             </button>
           )}
         </div>
@@ -666,7 +666,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
             type="submit" 
             className={`w-full py-4 rounded-2xl font-bold text-[15px] text-white bg-slate-900 hover:bg-black transition-colors flex items-center justify-center gap-2 shadow-lg ${isSubmitting ? 'opacity-70 pointer-events-none' : ''}`}
           >
-             {isSubmitting ? <RefreshCw className="animate-spin" size={18}/> : <CheckCircle2 size={18}/>}
+             {isSubmitting ? <RefreshCw className="animate-spin" size={18}/> : <Check size={18}/>}
              Confirmar y Enviar a Laboratorio
           </button>
         </div>
