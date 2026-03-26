@@ -56,8 +56,15 @@ export async function loginUser(username, password) {
        path: '/'
     });
 
-    // Retorna la sesión de Supabase al cliente
-    return { success: true, user, session: authData.session };
+    // Retorna la sesión de Supabase al cliente parseada (solo strings para Next.js RSC)
+    return { 
+      success: true, 
+      user, 
+      session: { 
+        access_token: authData.session.access_token, 
+        refresh_token: authData.session.refresh_token 
+      } 
+    };
   } catch (err) {
     console.error("Server Action Login Error:", err);
     return { success: false, error: 'Error del servidor: ' + err.message };
