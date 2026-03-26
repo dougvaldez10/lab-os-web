@@ -55,6 +55,13 @@ export async function loginUser(username, password) {
        maxAge: 60 * 60 * 24 * 30,
        path: '/'
     });
+    // Inyectamos el JWT de Supabase Ghost User directamente en las Cookies!
+    cookieStore.set('lab_os_ghost', authData.session.access_token, {
+       httpOnly: true, 
+       secure: process.env.NODE_ENV === 'production',
+       maxAge: 60 * 60 * 24 * 30,
+       path: '/'
+    });
 
     // Retorna la sesión de Supabase al cliente parseada (solo strings para Next.js RSC)
     return { 

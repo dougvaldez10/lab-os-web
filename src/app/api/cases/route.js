@@ -1,12 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    let authHeader = request.headers.get('authorization');
+    if (!authHeader || authHeader === 'Bearer ') {
+       const ghostCookie = cookies().get('lab_os_ghost')?.value;
+       if (ghostCookie) {
+         authHeader = `Bearer ${ghostCookie}`;
+       }
+    }
+
+    if (!authHeader || authHeader === 'Bearer ') {
+      return Response.json({ error: 'Unauthorized (No Cookie or Header found)' }, { status: 401 });
     }
 
     const secureClient = createClient(
