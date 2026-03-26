@@ -923,16 +923,34 @@ export default function Home() {
     }
   };
 
-  const fetchCases = async () => {
-    setLoading(true);
+  // Renueva el JWT del Ghost User cuando expira (~1h en Supabase)
+  const refreshGhostToken = async () => {
+    try {
+      await fetch('/api/refresh-ghost', { method: 'POST' });
+    } catch (e) {
+      console.warn('Ghost refresh failed:', e);
+    }
+  };
+
+  const fetchCases = async ({ silent = false, retryOnAuth = true } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const res = await fetch('/api/cases');
+
+      // Token expirado → refrescar y reintentar UNA vez
+      if (res.status === 401 && retryOnAuth) {
+        await refreshGhostToken();
+        return fetchCases({ silent, retryOnAuth: false });
+      }
+
       const data = await res.json();
-      if (!data.error) {
+      if (Array.isArray(data)) {
         setCases(data);
       }
-    } catch (err) { } finally {
-      setLoading(false);
+    } catch (err) {
+      console.warn('fetchCases error:', err);
+    } finally {
+      if (!silent) setLoading(false);
     }
   };
 
@@ -940,15 +958,34 @@ export default function Home() {
     loadInitialData();
     fetchCases();
 
+    // Realtime subscription (refresca lista en cada cambio de DB)
     const channel = supabase
       .channel('schema-db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'casos_master' }, () => {
-        fetchCases();
+        fetchCases({ silent: true });
       })
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    // Refresca token + datos cuando la tab vuelve a estar activa (tras inactividad)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refreshGhostToken().then(() => fetchCases({ silent: true }));
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    // Heartbeat cada 45 min para mantener el token fresco
+    const heartbeat = setInterval(() => {
+      refreshGhostToken().then(() => fetchCases({ silent: true }));
+    }, 45 * 60 * 1000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      clearInterval(heartbeat);
+    };
   }, []);
+
 
   const dateTimeSort = (a, b) => {
      const timeA = a.hora_entrega ? a.hora_entrega : '23:59';
