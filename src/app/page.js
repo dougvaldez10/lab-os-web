@@ -936,29 +936,35 @@ export default function Home() {
     if (!silent) setLoading(true);
     try {
       const res = await fetch('/api/cases');
+      const data = await res.json();
 
-      // Token expirado → refrescar y reintentar UNA vez
-      if (res.status === 401 && retryOnAuth) {
+      if (Array.isArray(data) && data.length > 0) {
+        // Respuesta válida
+        setCases(data);
+      } else if (retryOnAuth) {
+        // Token probablemente expirado → refrescar y reintentar UNA vez
         await refreshGhostToken();
         return fetchCases({ silent, retryOnAuth: false });
       }
-
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setCases(data);
-      }
     } catch (err) {
       console.warn('fetchCases error:', err);
+      if (retryOnAuth) {
+        await refreshGhostToken();
+        return fetchCases({ silent, retryOnAuth: false });
+      }
     } finally {
       if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadInitialData();
-    fetchCases();
+    // Siempre refrescar el token al cargar la página, LUEGO traer datos
+    refreshGhostToken().then(() => {
+      loadInitialData();
+      fetchCases();
+    });
 
-    // Realtime subscription (refresca lista en cada cambio de DB)
+    // Realtime subscription
     const channel = supabase
       .channel('schema-db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'casos_master' }, () => {
