@@ -7,6 +7,7 @@ import { generateReceipt } from "@/app/actions/receipts";
 import { getClients } from "@/app/actions/clients";
 import { getProducts } from "@/app/actions/products";
 import { updateCaseState } from "@/app/actions/cases";
+import { createNewCase } from "@/app/actions/create-case";
 import { Toaster, toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 
