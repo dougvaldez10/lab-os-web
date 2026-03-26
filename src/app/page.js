@@ -834,10 +834,7 @@ function LoginScreen({ onLoginSuccess }) {
                            )}
                         </div>
                         
-                        <div className={`mt-5 w-32 text-center transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
-                           <p className="text-sm font-bold text-slate-800 truncate">{user.username}</p>
-                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{user.rol?.split(',')[0] || 'Personal'}</p>
-                        </div>
+                         {/* Nombre y rol ocultos */}
                      </div>
                   );
                })}
