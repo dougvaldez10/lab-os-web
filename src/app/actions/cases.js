@@ -1,6 +1,6 @@
 "use server";
 
-import { supabase } from '@/lib/supabase';
+import { getSecureClient } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
 
 // Flujo lógico de departamentos ahora dictado por objeto
@@ -36,6 +36,7 @@ const FLUJO_ANALOGO = {
 
 export async function updateCaseState(internalId, action, operatorName = null) {
   try {
+    const supabase = await getSecureClient();
     if (!internalId || !['START', 'PAUSE', 'COMPLETE'].includes(action)) {
       return { success: false, error: "Datos de acción inválidos." };
     }
