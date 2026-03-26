@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, ChevronDown, ChevronUp, Plus, Check, RefreshCw, Layers, Smile, Shield, Smartphone, Package, Target, Sun, X, Calculator, DollarSign, Percent } from "lucide-react";
+import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, ChevronDown, ChevronUp, Plus, Check, RefreshCw, Layers, Smile, Shield, Smartphone, Package, Target, Sun, X, Calculator, DollarSign, Percent, CheckCircle2 } from "lucide-react";
 import { getAllUsers, loginUser, getCurrentUser, logoutUser } from "@/lib/auth";
 import { generateReceipt } from "@/app/actions/receipts";
 import { getClients } from "@/app/actions/clients";
