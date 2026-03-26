@@ -19,8 +19,8 @@ export async function GET(request) {
     }
 
     const secureClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://etnfvmpywgbeqvbyieze.supabase.co',
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ZGAVQvsSWDTmZbY6dj0UUQ_YOa3Dn8L',
       { global: { headers: { Authorization: authHeader } } }
     );
 
