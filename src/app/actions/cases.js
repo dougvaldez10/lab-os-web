@@ -1,26 +1,14 @@
 "use server";
 
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 
-export async function getSecureClient() {
-  try {
-    const cookieStore = await cookies();
-    const ghostCookie = cookieStore.get('lab_os_ghost')?.value;
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://etnfvmpywgbeqvbyieze.supabase.co';
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ZGAVQvsSWDTmZbY6dj0UUQ_YOa3Dn8L';
-    
-    if (!ghostCookie) {
-      return createClient(url, key);
-    }
-    return createClient(url, key, { global: { headers: { Authorization: `Bearer ${ghostCookie}` } } });
-  } catch (e) {
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://etnfvmpywgbeqvbyieze.supabase.co',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ZGAVQvsSWDTmZbY6dj0UUQ_YOa3Dn8L'
-    );
-  }
+// Cliente Admin — bypasses RLS. Seguro porque "use server" nunca llega al navegador.
+function getAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
 }
 
 // Flujo lógico de departamentos ahora dictado por objeto
@@ -56,7 +44,7 @@ const FLUJO_ANALOGO = {
 
 export async function updateCaseState(internalId, action, operatorName = null) {
   try {
-    const supabase = await getSecureClient();
+    const supabase = getAdminClient();
     if (!internalId || !['START', 'PAUSE', 'COMPLETE'].includes(action)) {
       return { success: false, error: "Datos de acción inválidos." };
     }
