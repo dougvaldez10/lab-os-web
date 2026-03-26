@@ -7,7 +7,8 @@ export async function GET(request) {
   try {
     let authHeader = request.headers.get('authorization');
     if (!authHeader || authHeader === 'Bearer ') {
-       const ghostCookie = cookies().get('lab_os_ghost')?.value;
+       const cookieStore = await cookies();
+       const ghostCookie = cookieStore.get('lab_os_ghost')?.value;
        if (ghostCookie) {
          authHeader = `Bearer ${ghostCookie}`;
        }
