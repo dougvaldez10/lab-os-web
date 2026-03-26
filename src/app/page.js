@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, ChevronDown, Check, RefreshCw, Layers, Smile, Shield, Smartphone, Package, Target, Sun, X, Calculator, DollarSign, Percent } from "lucide-react";
-import { getAllUsers, loginUser } from "@/lib/auth";
+import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, ChevronDown, ChevronUp, Check, RefreshCw, Layers, Smile, Shield, Smartphone, Package, Target, Sun, X, Calculator, DollarSign, Percent } from "lucide-react";
+import { getAllUsers, loginUser, getCurrentUser } from "@/lib/auth";
 import { generateReceipt } from "@/app/actions/receipts";
 import { Toaster, toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
