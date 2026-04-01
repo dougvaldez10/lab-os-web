@@ -22,7 +22,7 @@ const FLUJO_DIGITAL = {
     "Inspección": "Recibo/Factura",
     "Recibo/Factura": "Empaquetado",
     "Empaquetado": "Envío",
-    "Envío": "Terminado",
+    "Envío": "Facturación",
     "Yesos": "Digital_Escaneo",
     "Digital_Escaneo": "Digital_Diseno"
 };
@@ -39,13 +39,13 @@ const FLUJO_ANALOGO = {
     "Inspección": "Recibo/Factura",
     "Recibo/Factura": "Empaquetado",
     "Empaquetado": "Envío",
-    "Envío": "Terminado"
+    "Envío": "Facturación"
 };
 
 export async function updateCaseState(internalId, action, operatorName = null) {
   try {
     const supabase = getAdminClient();
-    if (!internalId || !['START', 'PAUSE', 'COMPLETE'].includes(action)) {
+    if (!internalId || !['START', 'PAUSE', 'COMPLETE', 'SHIP'].includes(action)) {
       return { success: false, error: "Datos de acción inválidos." };
     }
 
@@ -120,6 +120,9 @@ export async function updateCaseState(internalId, action, operatorName = null) {
         }
         
         updateData = { depto_actual: nextDept, estado: 'Pendiente', operador_actual: null, hora_inicio: null };
+    } else if (action === 'SHIP' || (action === 'COMPLETE' && currentCase.depto_actual === 'Envío')) {
+        // Envío final: el caso sale del laboratorio hacia el cliente
+        updateData = { depto_actual: 'Facturación', estado: 'Finalizado', operador_actual: null, hora_inicio: null };
     }
 
     const { error: updateError } = await supabase

@@ -18,11 +18,11 @@ const departments = [
   { id: "Digital_Diseno", name: "Diseño" },
   { id: "Digital_Fresado", name: "Fresado" },
   { id: "Sinterizado", name: "Sinterizado" },
-
-
   { id: "Ajuste", name: "Ajuste" },
   { id: "Terminado", name: "Terminado" },
   { id: "Inspección", name: "Inspección" },
+  { id: "Empaquetado", name: "Empaquetado" },
+  { id: "Envío", name: "Envío" },
 ];
 
 // Selector Personalizado Inteligente Extirpado de Modal
@@ -885,6 +885,44 @@ function LoginScreen({ onLoginSuccess }) {
   );
 }
 
+
+function ShipActionButton({ currentCase, onRefresh }) {
+  const [isShipping, setIsShipping] = useState(false);
+
+  const handleShip = async () => {
+    if (!window.confirm(`¿Confirmar que el caso #${currentCase.id} (${currentCase.patient}) fue ENVIADO al cliente?`)) return;
+    setIsShipping(true);
+    const toastId = toast.loading('Registrando envío...');
+    try {
+      const res = await updateCaseState(currentCase.internal_id, 'SHIP');
+      if (res.success) {
+        toast.success(`✅ Caso #${currentCase.id} enviado. Pasó a Facturación.`, { id: toastId });
+        onRefresh();
+      } else {
+        toast.error(res.error || "Error al registrar envío.", { id: toastId });
+      }
+    } catch {
+      toast.error("Error de servidor.", { id: toastId });
+    } finally {
+      setIsShipping(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleShip}
+      disabled={isShipping}
+      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm text-white shadow-sm transition-all active:scale-95 whitespace-nowrap
+        ${isShipping ? 'bg-green-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+    >
+      {isShipping
+        ? <RefreshCw size={15} className="animate-spin" />
+        : <Package size={15} />}
+      {isShipping ? 'Enviando...' : 'Enviar al Cliente'}
+    </button>
+  );
+}
+
 export default function Home() {
   const [activeDept, setActiveDept] = useState("Producción");
   const [cases, setCases] = useState([]);
@@ -1554,14 +1592,21 @@ export default function Home() {
 
                                         {/* Row Expandible del Caso (Solo si no es monitor global / read_only) */}
                                         {!isReadOnly && (
-                                           <CaseActionBar 
-                                              onOpenReceipt={openReceiptModal}
-                                             currentCase={c} 
-                                             onRefresh={fetchCases} 
-                                             operatorName={currentOperatorName} 
-                                             isExpanded={cExpanded} 
-                                             onToggleExpand={() => toggleCase(c.internal_id)} 
-                                           />
+                                          <>
+                                            {c.dept === 'Envío' && (
+                                              <div className="px-4 py-2 flex justify-end">
+                                                <ShipActionButton currentCase={c} onRefresh={fetchCases} />
+                                              </div>
+                                            )}
+                                            <CaseActionBar 
+                                               onOpenReceipt={openReceiptModal}
+                                              currentCase={c} 
+                                              onRefresh={fetchCases} 
+                                              operatorName={currentOperatorName} 
+                                              isExpanded={cExpanded} 
+                                              onToggleExpand={() => toggleCase(c.internal_id)} 
+                                            />
+                                          </>
                                         )}
                                       </li>
                                   );
