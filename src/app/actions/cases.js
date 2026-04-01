@@ -11,7 +11,7 @@ function getAdminClient() {
   );
 }
 
-// Flujo lógico de departamentos ahora dictado por objeto
+// Flujo lógico de departamentos
 const FLUJO_DIGITAL = {
     "Recepción": "Digital_Diseno",
     "Digital_Diseno": "Digital_Fresado",
@@ -42,6 +42,73 @@ const FLUJO_ANALOGO = {
     "Envío": "Facturación"
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Genera el CARGO en cuenta_corriente_clinica cuando un caso es enviado.
+// Equivalente exacto a lo que hace el Lab OS de escritorio en _cargo_envio_bg().
+// ─────────────────────────────────────────────────────────────────────────────
+async function registrarCargoEnvio(supabase, caseId, codigo, paciente) {
+  try {
+    // 1. Obtener cliente_id del caso
+    const { data: master, error: masterErr } = await supabase
+      .from('casos_master')
+      .select('cliente_id')
+      .eq('id', caseId)
+      .single();
+
+    if (masterErr || !master?.cliente_id) {
+      console.error('[CARGO] No se encontró cliente_id para el caso', caseId, masterErr);
+      return;
+    }
+    const clienteId = master.cliente_id;
+
+    // 2. Comprobar si ya existe un CARGO para este caso (evitar duplicados)
+    const { data: existing } = await supabase
+      .from('cuenta_corriente_clinica')
+      .select('id')
+      .eq('caso_id', caseId)
+      .eq('tipo', 'CARGO')
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      console.log('[CARGO] Ya existe un CARGO para el caso', codigo, '— omitiendo duplicado.');
+      return;
+    }
+
+    // 3. Sumar subtotales de casos_detalle
+    const { data: detalles } = await supabase
+      .from('casos_detalle')
+      .select('subtotal')
+      .eq('caso_id', caseId);
+
+    const total = (detalles || []).reduce((acc, r) => acc + (parseFloat(r.subtotal) || 0), 0);
+
+    if (total <= 0) {
+      console.warn('[CARGO] Caso', codigo, 'sin importe — CARGO omitido.');
+      return;
+    }
+
+    // 4. Insertar CARGO
+    const { error: insertErr } = await supabase
+      .from('cuenta_corriente_clinica')
+      .insert({
+        cliente_id: clienteId,
+        caso_id:    caseId,
+        tipo:       'CARGO',
+        descripcion: `Trabajo enviado: ${codigo} - ${paciente}`,
+        monto:      Math.round(total * 100) / 100,
+        fecha:      new Date().toISOString()
+      });
+
+    if (insertErr) {
+      console.error('[CARGO] Error insertando CARGO:', insertErr);
+    } else {
+      console.log(`[CARGO] ✅ CARGO registrado → caso=${codigo} cliente=${clienteId} total=$${total.toFixed(2)}`);
+    }
+  } catch (err) {
+    console.error('[CARGO] Error inesperado en registrarCargoEnvio:', err);
+  }
+}
+
 export async function updateCaseState(internalId, action, operatorName = null) {
   try {
     const supabase = getAdminClient();
@@ -49,10 +116,10 @@ export async function updateCaseState(internalId, action, operatorName = null) {
       return { success: false, error: "Datos de acción inválidos." };
     }
 
-    // Consulta el estado actual y el tipo
+    // Consulta el estado actual, tipo y metadata de display
     const { data: currentCase, error: fetchError } = await supabase
       .from('casos_master')
-      .select('depto_actual, tipo')
+      .select('depto_actual, tipo, codigo, paciente')
       .eq('id', internalId)
       .single();
     
@@ -61,17 +128,26 @@ export async function updateCaseState(internalId, action, operatorName = null) {
       return { success: false, error: "Caso no encontrado." };
     }
 
+    const deptoLimpio = currentCase.depto_actual ? currentCase.depto_actual.trim() : "";
+    const tipoLimpio  = currentCase.tipo ? currentCase.tipo.trim().toLowerCase() : "análogo";
+
     let updateData = {};
+    let esEnvioFinal = false;
 
     if (action === 'START') {
         const utcIso = new Date().toISOString();
         updateData = { estado: 'En Proceso', operador_actual: operatorName, hora_inicio: utcIso };
+
     } else if (action === 'PAUSE') {
         updateData = { estado: 'En Pausa' };
+
+    } else if (action === 'SHIP' || (action === 'COMPLETE' && deptoLimpio === 'Envío')) {
+        // ── ENVÍO FINAL: caso sale del laboratorio ──
+        // Se chequea ANTES del bloque COMPLETE general para evitar que caiga ahí.
+        esEnvioFinal = true;
+        updateData = { depto_actual: 'Facturación', estado: 'Finalizado', operador_actual: null, hora_inicio: null };
+
     } else if (action === 'COMPLETE') {
-        const deptoLimpio = currentCase.depto_actual ? currentCase.depto_actual.trim() : "";
-        const tipoLimpio = currentCase.tipo ? currentCase.tipo.trim().toLowerCase() : "análogo";
-        
         let nextDept = "Terminado";
         if (tipoLimpio === "digital") {
             nextDept = FLUJO_DIGITAL[deptoLimpio] || "Terminado";
@@ -79,9 +155,8 @@ export async function updateCaseState(internalId, action, operatorName = null) {
             nextDept = FLUJO_ANALOGO[deptoLimpio] || "Terminado";
         }
         
-        // --- REGLA DE ENRUTAMIENTO DINAMICO POR MATERIAL ---
-        // Si sale de Fresado Digital, evaluar si de verdad requiere Sinterizado
-        if (deptoLimpio === "digital_fresado" || currentCase.depto_actual === 'Digital_Fresado') {
+        // Regla dinámica: si sale de Digital_Fresado, evaluar si requiere Sinterizado
+        if (deptoLimpio === 'Digital_Fresado') {
             const { data: detalles } = await supabase
                 .from('casos_detalle')
                 .select('producto')
@@ -90,7 +165,6 @@ export async function updateCaseState(internalId, action, operatorName = null) {
             let requiereSinterizado = false;
             
             if (detalles && detalles.length > 0) {
-               // Pre-cargar todos los productos una vez (está cacheado en bd usualmente)
                const { data: catData } = await supabase.from('productos').select('nombre, categoria');
                const catMap = {};
                if (catData) {
@@ -104,8 +178,6 @@ export async function updateCaseState(internalId, action, operatorName = null) {
                for (const d of detalles) {
                    const prod = d.producto ? d.producto.toLowerCase() : "";
                    const cat = catMap[prod] || "";
-                   
-                   // Validar la categoría o el nombre del producto
                    if (cat.includes("zr") || cat.includes("zirconia") || prod.includes("zr") || prod.includes("zirconia")) {
                        requiereSinterizado = true;
                        break;
@@ -114,17 +186,14 @@ export async function updateCaseState(internalId, action, operatorName = null) {
             }
             
             if (!requiereSinterizado) {
-                // Si es puro PMMA, Emax, Metal, etc., salta Sinterizado -> Ajuste
                 nextDept = "Ajuste";
             }
         }
         
         updateData = { depto_actual: nextDept, estado: 'Pendiente', operador_actual: null, hora_inicio: null };
-    } else if (action === 'SHIP' || (action === 'COMPLETE' && currentCase.depto_actual === 'Envío')) {
-        // Envío final: el caso sale del laboratorio hacia el cliente
-        updateData = { depto_actual: 'Facturación', estado: 'Finalizado', operador_actual: null, hora_inicio: null };
     }
 
+    // Actualizar casos_master
     const { error: updateError } = await supabase
       .from('casos_master')
       .update(updateData)
@@ -135,6 +204,16 @@ export async function updateCaseState(internalId, action, operatorName = null) {
       return { success: false, error: "No se pudo modificar el registro." };
     }
 
+    // Si es envío final → generar CARGO en cuenta corriente
+    if (esEnvioFinal) {
+      await registrarCargoEnvio(
+        supabase,
+        internalId,
+        currentCase.codigo || String(internalId),
+        currentCase.paciente || ''
+      );
+    }
+
     revalidatePath('/');
     return { success: true };
 
@@ -143,4 +222,3 @@ export async function updateCaseState(internalId, action, operatorName = null) {
     return { success: false, error: "Error interno al guardar." };
   }
 }
-
