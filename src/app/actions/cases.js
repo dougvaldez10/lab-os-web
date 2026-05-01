@@ -209,7 +209,10 @@ export async function updateCaseState(internalId, action, operatorName = null) {
       return { success: false, error: "No se pudo modificar el registro." };
     }
 
-    // Captura de tiempos historicos\n    if (action === 'START') { registrarInicio(supabase, internalId, _deptoActualForHistorico).catch(() => {}); } else if (action === 'COMPLETE') { registrarTermino(supabase, internalId, _deptoActualForHistorico, _nextDeptForHistorico).catch(() => {}); }\n// Si es envío final → generar CARGO en cuenta corriente
+    // Captura de tiempos historicos
+    if (action === 'START') { registrarInicio(supabase, internalId, _deptoActualForHistorico).catch(() => {}); } else if (action === 'COMPLETE') { registrarTermino(supabase, internalId, _deptoActualForHistorico, _nextDeptForHistorico).catch(() => {}); }
+
+    // Si es envío final → generar CARGO en cuenta corriente
     if (esEnvioFinal) {
       await registrarCargoEnvio(
         supabase,
@@ -217,7 +220,6 @@ export async function updateCaseState(internalId, action, operatorName = null) {
         currentCase.codigo || String(internalId),
         currentCase.paciente || ''
       );
->>>>>>> f48d075c0a8f483dc9bf9a387d50e86796cb7002
     }
 
     revalidatePath('/');

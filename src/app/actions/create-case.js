@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';\n\n// Cliente Admin - usa la service role key\nimport { cookies } from 'next/headers';
+import { cookies } from 'next/headers';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cliente Admin — usa la service role key para bypassear RLS de forma segura.
