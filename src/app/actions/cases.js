@@ -11,7 +11,8 @@ function getAdminClient() {
   );
 }
 
-// Flujo lógico de departamentos
+    // Captura de tiempos historicos\n    if (action === 'START') { registrarInicio(supabase, internalId, _deptoActualForHistorico).catch(() => {}); } else if (action === 'COMPLETE') { registrarTermino(supabase, internalId, _deptoActualForHistorico, _nextDeptForHistorico).catch(() => {}); }\n// Flujo lógico de departamentos
+>>>>>>> f48d075c0a8f483dc9bf9a387d50e86796cb7002
 const FLUJO_DIGITAL = {
     "Recepción": "Digital_Diseno",
     "Digital_Diseno": "Digital_Fresado",
@@ -134,6 +135,9 @@ export async function updateCaseState(internalId, action, operatorName = null) {
     let updateData = {};
     let esEnvioFinal = false;
 
+    let _deptoActualForHistorico = currentCase.depto_actual || '';
+    let _nextDeptForHistorico = null;
+
     if (action === 'START') {
         const utcIso = new Date().toISOString();
         updateData = { estado: 'En Proceso', operador_actual: operatorName, hora_inicio: utcIso };
@@ -191,6 +195,7 @@ export async function updateCaseState(internalId, action, operatorName = null) {
         }
         
         updateData = { depto_actual: nextDept, estado: 'Pendiente', operador_actual: null, hora_inicio: null };
+        _nextDeptForHistorico = nextDept;
     }
 
     // Actualizar casos_master
@@ -204,7 +209,7 @@ export async function updateCaseState(internalId, action, operatorName = null) {
       return { success: false, error: "No se pudo modificar el registro." };
     }
 
-    // Si es envío final → generar CARGO en cuenta corriente
+    // Captura de tiempos historicos\n    if (action === 'START') { registrarInicio(supabase, internalId, _deptoActualForHistorico).catch(() => {}); } else if (action === 'COMPLETE') { registrarTermino(supabase, internalId, _deptoActualForHistorico, _nextDeptForHistorico).catch(() => {}); }\n// Si es envío final → generar CARGO en cuenta corriente
     if (esEnvioFinal) {
       await registrarCargoEnvio(
         supabase,
@@ -212,6 +217,7 @@ export async function updateCaseState(internalId, action, operatorName = null) {
         currentCase.codigo || String(internalId),
         currentCase.paciente || ''
       );
+>>>>>>> f48d075c0a8f483dc9bf9a387d50e86796cb7002
     }
 
     revalidatePath('/');

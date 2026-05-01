@@ -1,10 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 
 export async function GET(request) {
   try {
+    // Verificar autenticación vía cookie antes de servir datos
     let authHeader = request.headers.get('authorization');
     if (!authHeader || authHeader === 'Bearer ') {
        const cookieStore = await cookies();
@@ -18,18 +22,22 @@ export async function GET(request) {
       return Response.json({ error: 'Unauthorized (No Cookie or Header found)' }, { status: 401 });
     }
 
+    // Usar service role key para bypasear RLS y ver TODOS los casos del laboratorio.
+    // La autenticación ya se validó arriba con la cookie del ghost user.
     const secureClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://etnfvmpywgbeqvbyieze.supabase.co',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ZGAVQvsSWDTmZbY6dj0UUQ_YOa3Dn8L',
-      { global: { headers: { Authorization: authHeader } } }
+      process.env.SUPABASE_SERVICE_ROLE_KEY 
     );
 
     // 1. Traer los casos
     const { data: rows, error } = await secureClient
       .from('casos_master')
       .select('*')
+      .neq('estado', 'Entregado')
+      .neq('estado', 'Finalizado')
+      .neq('depto_actual', 'Facturación')
       .order('fecha_entrega', { ascending: true, nullsFirst: false })
-      .limit(100);
+      .limit(5000);
 
     if (error) {
       console.error('Supabase query error:', error);
@@ -74,6 +82,33 @@ export async function GET(request) {
       }
     }
 
+
+    // 2.5 Obtener la hora_llegada mas reciente de cada caso desde el historico
+    let horaLlegadaPorCaso = {};
+    if (ids.length > 0) {
+      const adminClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      );
+      const { data: tiempos } = await adminClient
+        .from('casos_tiempos_historicos')
+        .select('id_caso, hora_llegada')
+        .in('id_caso', ids)
+        .not('hora_llegada', 'is', null)
+        .is('hora_termino', null)
+        .order('hora_llegada', { ascending: false });
+
+      if (tiempos) {
+        const seen = new Set();
+        for (const t of tiempos) {
+          if (!seen.has(t.id_caso)) {
+            horaLlegadaPorCaso[t.id_caso] = t.hora_llegada;
+            seen.add(t.id_caso);
+          }
+        }
+      }
+    }
+
     // 3. Mapear con total_unidades
     const cases = rows.map(row => ({
       internal_id: row.id,
@@ -92,13 +127,16 @@ export async function GET(request) {
       color: row.color,
       total_unidades: unidadesPorCaso[row.id] || 1,
       items: itemsPorCaso[row.id] || [],
-      urgent: false
+      urgent: false,
+      hora_llegada: horaLlegadaPorCaso[row.id] || null,
     }));
 
+    revalidatePath('/');
     return Response.json(cases);
   } catch (error) {
     console.error('Database error:', error);
     return Response.json({ error: 'Failed to fetch cases', details: error.message }, { status: 500 });
   }
 }
+
 

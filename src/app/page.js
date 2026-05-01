@@ -8,6 +8,7 @@ import { getClients } from "@/app/actions/clients";
 import { getProducts } from "@/app/actions/products";
 import { updateCaseState } from "@/app/actions/cases";
 import { createNewCase } from "@/app/actions/create-case";
+import { getAllDeptAverages } from "@/app/actions/sla";
 import { Toaster, toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 
@@ -931,6 +932,8 @@ export default function Home() {
   const [authChecked, setAuthChecked] = useState(false);
   const [clients, setClients] = useState([]);
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
+  // SLA dinámico: mapa depto → media real en minutos
+  const [slaAverages, setSlaAverages] = useState({});
   
   // Recibos State
   const [receiptCase, setReceiptCase] = useState(null);
@@ -973,7 +976,10 @@ export default function Home() {
   const fetchCases = async ({ silent = false, retryOnAuth = true } = {}) => {
     if (!silent) setLoading(true);
     try {
-      const res = await fetch('/api/cases');
+      const res = await fetch('/api/cases?t=' + new Date().getTime(), { 
+        cache: 'no-store',
+        headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+      });
       const data = await res.json();
 
       if (Array.isArray(data) && data.length > 0) {
@@ -1001,6 +1007,12 @@ export default function Home() {
       loadInitialData();
       fetchCases();
     });
+
+    // Cargar promedios históricos para el semáforo predictivo
+    const deptIds = departments.map(d => d.id);
+    getAllDeptAverages(deptIds)
+      .then(avgs => setSlaAverages(avgs))
+      .catch(() => {}); // silencioso si falla
 
     // Realtime subscription
     const channel = supabase
@@ -1034,8 +1046,13 @@ export default function Home() {
   const dateTimeSort = (a, b) => {
      const timeA = a.hora_entrega ? a.hora_entrega : '23:59';
      const timeB = b.hora_entrega ? b.hora_entrega : '23:59';
-     const dateA = new Date(`${a.fecha_entrega}T${timeA}`);
-     const dateB = new Date(`${b.fecha_entrega}T${timeB}`);
+     const dateA = new Date(`${a.fecha_entrega || '2099-12-31'}T${timeA}`).getTime();
+     const dateB = new Date(`${b.fecha_entrega || '2099-12-31'}T${timeB}`).getTime();
+     
+     if (isNaN(dateA) && isNaN(dateB)) return 0;
+     if (isNaN(dateA)) return 1;
+     if (isNaN(dateB)) return -1;
+     
      return dateA - dateB;
   };
 
@@ -1073,27 +1090,22 @@ export default function Home() {
     } catch { return null; }
   };
 
-  const SLA_CONFIG = {
-    Yesos:           { baseMin: 160,  perUnit: 0,  byDays: false },
-    Digital_Escaneo: { baseMin: 20,   perUnit: 10, byDays: false },
-    Digital_Diseno:  { baseMin: 15,   perUnit: 15, byDays: false },
-    Digital_Fresado: { baseMin: 0,    perUnit: 40, byDays: false },
-    Ajuste:          { baseMin: 20,   perUnit: 10, byDays: false },
-    Sinterizado:     { baseMin: 480,  perUnit: 0,  byDays: false },
-    Ceramica:        { baseMin: 480,  perUnit: 0,  byDays: true  },
-  };
-
-  const getSlaColor = (horaInicio, depto, total_unidades = 1) => {
-    if (!horaInicio) return null;
-    const cfg = SLA_CONFIG[depto];
-    if (!cfg) return null;
-    const startObj = new Date(horaInicio);
-    if (isNaN(startObj)) return null;
-    const diffMins = (new Date() - startObj) / 60000;
-    const slaMins = cfg.baseMin + (cfg.perUnit * Math.max(1, total_unidades));
-    const pct = diffMins / slaMins;
-    if (pct < 0.8) return 'green';
-    if (pct < 1.0) return 'yellow';
+  /**
+   * Semáforo Predictivo (Inteligencia Predictiva).
+   * TV  = HoraActual − hora_llegada  (tiempo real que el caso lleva en el depto)
+   * MD  = media histórica de los últimos 30 casos del mismo depto
+   * 🟢  TV < 50% de MD
+   * 🟡  TV entre 50% y 85% de MD
+   * 🔴  TV >= 85% de MD (ya está tarde según el ritmo real del lab)
+   */
+  const getSlaColor = (horaLlegada, depto) => {
+    if (!horaLlegada || !depto) return null;
+    const tv = (Date.now() - new Date(horaLlegada).getTime()) / 60000; // minutos
+    if (tv <= 0) return null;
+    const md = slaAverages[depto] ?? 120; // 120 min por defecto si no hay datos aún
+    const ratio = tv / md;
+    if (ratio < 0.50) return 'green';
+    if (ratio < 0.85) return 'yellow';
     return 'red';
   };
 
@@ -1125,7 +1137,12 @@ export default function Home() {
     if (isAdmin) {
       groupsToRender = departments;
     } else {
-      groupsToRender = departments.filter(d => rawRoles.includes(d.id) || d.id === "Sinterizado");
+      groupsToRender = departments.filter(d => {
+         const hasExactId = rawRoles.includes(d.id);
+         const hasName = rawRoles.includes(d.name);
+         const hasStrippedId = rawRoles.includes(d.id.replace("Digital_", ""));
+         return hasExactId || hasName || hasStrippedId || d.id === "Sinterizado";
+      });
     }
   }
 
@@ -1423,7 +1440,7 @@ export default function Home() {
                              <ul className="flex flex-col">
                                {casosEnGrupo.map((c) => {
                                   const devProps = getDeliveryDateProps(c.fecha_entrega, c.hora_entrega);
-                                  const slaColor = c.status === 'En Proceso' ? getSlaColor(c.hora_inicio, c.dept, c.total_unidades) : null;
+                                  const slaColor = getSlaColor(c.hora_llegada, c.dept);
                                   const borderClass = c.urgent
                                     ? 'border-l-4 border-red-500 pl-3'
                                     : slaColor === 'red'    ? 'border-l-4 border-red-400 pl-3'

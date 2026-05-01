@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { cookies } from 'next/headers';\n\n// Cliente Admin - usa la service role key\nimport { cookies } from 'next/headers';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cliente Admin — usa la service role key para bypassear RLS de forma segura.
@@ -34,6 +34,14 @@ async function getCurrentUserFromCookie() {
   } catch {
     return null;
   }
+}
+>>>>>>> f48d075c0a8f483dc9bf9a387d50e86796cb7002
+
+function getAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
 }
 
 export async function createNewCase(formData) {
@@ -119,6 +127,21 @@ export async function createNewCase(formData) {
     }
 
     const masterId = insertedData.id;
+
+    // ── EVENTO LLEGADA: registrar en historico al crear caso ──────────────────
+    // Usamos el admin client para bypasear RLS (fire-and-forget, no bloquea)
+    Promise.resolve().then(async () => {
+      try {
+        const adminSb = getAdminClient();
+        await adminSb.from('casos_tiempos_historicos').insert({
+          id_caso: masterId,
+          departamento: depto_actual,
+          hora_llegada: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.warn('[HISTORICO] Error registrando llegada en create-case:', e.message);
+      }
+    });
 
     // Insertar ítems si existen
     if (items.length > 0) {
