@@ -35,14 +35,7 @@ async function getCurrentUserFromCookie() {
     return null;
   }
 }
->>>>>>> f48d075c0a8f483dc9bf9a387d50e86796cb7002
 
-function getAdminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
-}
 
 export async function createNewCase(formData) {
   try {

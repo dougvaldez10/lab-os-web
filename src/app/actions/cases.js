@@ -11,8 +11,7 @@ function getAdminClient() {
   );
 }
 
-    // Captura de tiempos historicos\n    if (action === 'START') { registrarInicio(supabase, internalId, _deptoActualForHistorico).catch(() => {}); } else if (action === 'COMPLETE') { registrarTermino(supabase, internalId, _deptoActualForHistorico, _nextDeptForHistorico).catch(() => {}); }\n// Flujo lógico de departamentos
->>>>>>> f48d075c0a8f483dc9bf9a387d50e86796cb7002
+// Flujo lógico de departamentos
 const FLUJO_DIGITAL = {
     "Recepción": "Digital_Diseno",
     "Digital_Diseno": "Digital_Fresado",
