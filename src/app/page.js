@@ -40,11 +40,7 @@ const ClientSelect = ({ clients, selected, onChange }) => {
   const selectedClient = clients.find(c => c.id === selected);
 
 
-  // Variable global: casos de Yesos En Proceso/Pausa para mostrar como stack
-  const casosYesosEnProceso = cases.filter(c =>
-    c.dept === 'Yesos' &&
-    (c.status === 'En Proceso' || c.status === 'En Pausa')
-  );
+
   return (
     <div className="relative">
       <input type="hidden" name="cliente_id" value={selected || ''} required />
@@ -1294,6 +1290,12 @@ export default function Home() {
   const rawRoles = userRolesStr.split(',').map(r => r.trim());
   const isAdmin = rawRoles.some(r => !!r.match(/admin/i));
   const hasAdminAccess = currentUser?.username?.toLowerCase() === 'admin' || currentUser?.username?.toLowerCase() === 'coloraturacorp';
+
+  // Variable global: casos de Yesos En Proceso/Pausa para mostrar como stack
+  const casosYesosEnProceso = cases.filter(c =>
+    c.dept === 'Yesos' &&
+    (c.status === 'En Proceso' || c.status === 'En Pausa')
+  );
 
   let groupsToRender = [];
   if (activeDept === "all") {
