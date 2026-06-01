@@ -48,7 +48,12 @@ export async function deleteAdminCase(internalId) {
     await checkAdminAccess();
     const supabase = getAdminClient();
 
-    // Eliminar el caso maestro (las FK con cascade o limpieza manual si es necesario)
+    // Limpieza manual (Cascade) de tablas relacionadas para evitar errores de llave foránea
+    await supabase.from('casos_detalle').delete().eq('caso_id', internalId);
+    await supabase.from('casos_tiempos_historicos').delete().eq('caso_id', internalId);
+    await supabase.from('cuenta_corriente_clinica').delete().eq('caso_id', internalId);
+
+    // Eliminar el caso maestro
     const { error } = await supabase
       .from('casos_master')
       .delete()
