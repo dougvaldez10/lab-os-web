@@ -286,3 +286,5 @@ export default function AdminBoard() {
     </div>
   );
 }
+
+export const dynamic = 'force-dynamic';

@@ -91,7 +91,7 @@ export async function getCurrentUser() {
 
     if (!username) return null;
 
-    const { data: user, error } = await supabase
+    const { data: user, error } = await supabaseAdmin
       .from('usuarios')
       .select('*')
       .eq('username', username)
