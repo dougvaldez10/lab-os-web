@@ -11,6 +11,61 @@ function getAdminClient() {
   );
 }
 
+// =====================================================================
+// FUNCIONES DE CAPTURA DE TIEMPOS HISTÓRICOS (SLA)
+// =====================================================================
+async function registrarInicio(supabase, caseId, departamento) {
+  if (!departamento || departamento === 'Facturación') return;
+  try {
+    const { error } = await supabase
+      .from('casos_tiempos_historicos')
+      .insert({
+        caso_id: caseId,
+        departamento: departamento,
+        hora_inicio: new Date().toISOString()
+      });
+    if (error) console.error('[Historico] Error registrarInicio:', error);
+  } catch (err) {
+    console.error('[Historico] Exception registrarInicio:', err);
+  }
+}
+
+async function registrarTermino(supabase, caseId, departamento, nextDept) {
+  if (!departamento || departamento === 'Facturación') return;
+  try {
+    // 1. Obtener la hora_inicio para calcular minutos
+    const { data: registro } = await supabase
+      .from('casos_tiempos_historicos')
+      .select('id, hora_inicio')
+      .eq('caso_id', caseId)
+      .eq('departamento', departamento)
+      .is('hora_termino', null)
+      .order('hora_inicio', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (registro && registro.hora_inicio) {
+      const inicio = new Date(registro.hora_inicio);
+      const termino = new Date();
+      const diffMs = termino - inicio;
+      const mins = Math.round(diffMs / 60000);
+
+      // 2. Actualizar registro con hora_termino y minutos
+      await supabase
+        .from('casos_tiempos_historicos')
+        .update({
+          hora_termino: termino.toISOString(),
+          minutos_totales: mins,
+          departamento_siguiente: nextDept || null
+        })
+        .eq('id', registro.id);
+    }
+  } catch (err) {
+    console.error('[Historico] Exception registrarTermino:', err);
+  }
+}
+
+
 // Flujo lÃƒÂ³gico de departamentos
 const FLUJO_DIGITAL = {
     "RecepciÃƒÂ³n": "Digital_Diseno",
