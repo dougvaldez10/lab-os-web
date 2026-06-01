@@ -1,10 +1,15 @@
 "use server";
 
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://etnfvmpywgbeqvbyieze.supabase.co",
+  process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy-key"
+);
 
 export async function getProducts() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('productos')
       .select('nombre, categoria')
       .order('nombre', { ascending: true });
