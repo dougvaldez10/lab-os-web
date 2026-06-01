@@ -26,8 +26,9 @@ export default async function AdminLayout({ children }) {
       {/* Sidebar de Administración */}
       <aside className="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0">
         <div className="p-6 flex items-center justify-between border-b border-slate-800">
-          <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
-            <span className="text-[#D4AF37]">Admin</span> OS
+          <h2 className="text-xl text-white tracking-tight flex items-center gap-1.5">
+            <span className="text-[#D4AF37] font-normal">Lab</span>
+            <span className="font-black">OS</span>
           </h2>
         </div>
 
