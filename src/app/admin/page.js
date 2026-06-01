@@ -1,34 +1,42 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Edit, Trash2, Search, RefreshCw, AlertCircle, X, Save } from "lucide-react";
+import { Edit, Trash2, Search, RefreshCw, AlertCircle, X, Save, Plus } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { updateAdminCase, deleteAdminCase } from "@/app/actions/admin-cases";
+import { getClients } from "@/app/actions/clients";
+import NewCaseModal from "@/components/NewCaseModal";
 
 export default function AdminBoard() {
   const [cases, setCases] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCase, setEditingCase] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
 
-  const fetchCases = async () => {
+  const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/cases?t=' + new Date().getTime());
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setCases(data);
+      const [casesRes, clientsData] = await Promise.all([
+        fetch('/api/cases?t=' + new Date().getTime()),
+        getClients()
+      ]);
+      const casesData = await casesRes.json();
+      if (Array.isArray(casesData)) {
+        setCases(casesData);
       }
+      setClients(clientsData || []);
     } catch (err) {
-      toast.error("Error al cargar casos");
+      toast.error("Error al cargar datos iniciales");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCases();
+    fetchInitialData();
   }, []);
 
   const handleDelete = async (id, codigo) => {
@@ -39,7 +47,7 @@ export default function AdminBoard() {
     const res = await deleteAdminCase(id);
     if (res.success) {
       toast.success("Caso eliminado correctamente", { id: toastId });
-      fetchCases();
+      fetchInitialData();
     } else {
       toast.error(res.error || "Error al eliminar", { id: toastId });
     }
@@ -76,7 +84,7 @@ export default function AdminBoard() {
     if (res.success) {
       toast.success("Caso actualizado correctamente", { id: toastId });
       setEditingCase(null);
-      fetchCases();
+      fetchInitialData();
     } else {
       toast.error(res.error || "Error al guardar", { id: toastId });
     }
@@ -98,12 +106,21 @@ export default function AdminBoard() {
       
       <div className="flex justify-between items-center mb-6 shrink-0">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Pizarrón Global de Casos</h1>
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Casos en curso</h1>
           <p className="text-sm text-slate-500 mt-1">Vista administrativa. Puedes modificar cualquier detalle del caso.</p>
         </div>
-        <button onClick={fetchCases} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
-          <RefreshCw size={20} className={loading ? "animate-spin text-blue-500" : ""} />
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsNewCaseModalOpen(true)}
+            className="px-4 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold transition-colors flex items-center gap-2 shadow-md"
+          >
+            <Plus size={18} />
+            Nuevo trabajo
+          </button>
+          <button onClick={fetchInitialData} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
+            <RefreshCw size={20} className={loading ? "animate-spin text-blue-500" : ""} />
+          </button>
+        </div>
       </div>
 
       <div className="mb-4 relative shrink-0">
@@ -283,6 +300,14 @@ export default function AdminBoard() {
           </div>
         </div>
       )}
+
+      {/* MODAL DE NUEVO TRABAJO */}
+      <NewCaseModal 
+        isOpen={isNewCaseModalOpen} 
+        onClose={() => setIsNewCaseModalOpen(false)} 
+        clients={clients} 
+        onActionComplete={fetchInitialData} 
+      />
     </div>
   );
 }
