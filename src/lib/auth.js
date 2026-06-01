@@ -30,10 +30,10 @@ export async function loginUser(username, password) {
        return { success: false, error: 'Usuario no existe' };
     }
 
-    // 2. Compara el Hash (Idéntico a Python)
+    // 2. Compara el Hash (IdÃ©ntico a Python)
     if (user.password_hash !== pwd_hash) {
        console.log(`Hash Mismatch para ${username}. InputHash: ${pwd_hash} | DBHash: ${user.password_hash}`);
-       return { success: false, error: 'Contraseña incorrecta' };
+       return { success: false, error: 'ContraseÃ±a incorrecta' };
     }
 
     // 3. Estrategia de Usuario Fantasma para cumplir con RLS estricto
@@ -44,7 +44,7 @@ export async function loginUser(username, password) {
 
     if (authError || !authData.session) {
        console.error("Ghost login error:", authError);
-       return { success: false, error: 'Error interno de autenticación RLS' };
+       return { success: false, error: 'Error interno de autenticaciÃ³n RLS' };
     }
 
     // Set cookie persistence (30 days) para nuestro auth nativo
@@ -63,7 +63,7 @@ export async function loginUser(username, password) {
        path: '/'
     });
 
-    // Retorna la sesión de Supabase al cliente parseada (solo strings para Next.js RSC)
+    // Retorna la sesiÃ³n de Supabase al cliente parseada (solo strings para Next.js RSC)
     return { 
       success: true, 
       user, 

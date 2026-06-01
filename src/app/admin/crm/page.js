@@ -25,7 +25,7 @@ export default function AdminCRM() {
       getAdminDoctors()
     ]);
     if (resClients.success) setClientes(resClients.data);
-    else toast.error("Error cargando cl├¡nicas");
+    else toast.error("Error cargando clínicas");
     
     if (resDocs.success) setDoctores(resDocs.data);
     else toast.error("Error cargando doctores");
@@ -108,11 +108,11 @@ export default function AdminCRM() {
       <div className="flex justify-between items-center mb-6 shrink-0">
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">Directorio CRM</h1>
-          <p className="text-sm text-slate-500 mt-1">Gesti├│n de Cl├¡nicas y Doctores.</p>
+          <p className="text-sm text-slate-500 mt-1">Gestión de Clínicas y Doctores.</p>
         </div>
         <div className="flex items-center gap-3">
           <button onClick={() => openModal()} className="px-4 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold transition-colors flex items-center gap-2 shadow-sm">
-            <Plus size={18} /> Agregar {activeTab === "clinicas" ? "Cl├¡nica" : "Doctor"}
+            <Plus size={18} /> Agregar {activeTab === "clinicas" ? "Clínica" : "Doctor"}
           </button>
           <button onClick={fetchData} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
             <RefreshCw size={20} className={loading ? "animate-spin text-blue-500" : ""} />
@@ -126,7 +126,7 @@ export default function AdminCRM() {
           onClick={() => setActiveTab("clinicas")}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'clinicas' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
         >
-          <Building2 size={18} /> Cl├¡nicas
+          <Building2 size={18} /> Clínicas
         </button>
         <button 
           onClick={() => setActiveTab("doctores")}
@@ -142,16 +142,16 @@ export default function AdminCRM() {
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-10">
                 <tr>
-                  <th className="px-4 py-3">Nombre Cl├¡nica</th>
-                  <th className="px-4 py-3">Tel├⌐fono</th>
+                  <th className="px-4 py-3">Nombre Clínica</th>
+                  <th className="px-4 py-3">Teléfono</th>
                   <th className="px-4 py-3">Email</th>
-                  <th className="px-4 py-3">Direcci├│n</th>
+                  <th className="px-4 py-3">Dirección</th>
                   <th className="px-4 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {loading && clientes.length === 0 ? (
-                  <tr><td colSpan="5" className="px-4 py-8 text-center text-slate-400">Cargando cl├¡nicas...</td></tr>
+                  <tr><td colSpan="5" className="px-4 py-8 text-center text-slate-400">Cargando clínicas...</td></tr>
                 ) : clientes.map(c => (
                   <tr key={c.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 font-bold text-slate-800">{c.nombre}</td>
@@ -171,8 +171,8 @@ export default function AdminCRM() {
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-10">
                 <tr>
                   <th className="px-4 py-3">Nombre Doctor</th>
-                  <th className="px-4 py-3">Cl├¡nica (Asignada)</th>
-                  <th className="px-4 py-3">Tel├⌐fono</th>
+                  <th className="px-4 py-3">Clínica (Asignada)</th>
+                  <th className="px-4 py-3">Teléfono</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3 text-right">Acciones</th>
                 </tr>
@@ -183,7 +183,7 @@ export default function AdminCRM() {
                 ) : doctores.map(d => (
                   <tr key={d.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 font-bold text-slate-800">{d.trato} {d.nombre} {d.apellido}</td>
-                    <td className="px-4 py-3 text-slate-600">{d.clientes?.nombre || "Sin Cl├¡nica"}</td>
+                    <td className="px-4 py-3 text-slate-600">{d.clientes?.nombre || "Sin Clínica"}</td>
                     <td className="px-4 py-3 text-slate-600">{d.telefono}</td>
                     <td className="px-4 py-3 text-slate-600">{d.email}</td>
                     <td className="px-4 py-3 text-right">
@@ -205,7 +205,7 @@ export default function AdminCRM() {
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl relative z-10 flex flex-col">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <h2 className="text-lg font-black text-slate-800">
-                {editingItem.isNew ? "Agregar" : "Editar"} {activeTab === "clinicas" ? "Cl├¡nica" : "Doctor"}
+                {editingItem.isNew ? "Agregar" : "Editar"} {activeTab === "clinicas" ? "Clínica" : "Doctor"}
               </h2>
               <button onClick={() => setEditingItem(null)} className="p-1 text-slate-400 hover:bg-slate-100 rounded-full">
                 <X size={20} />
@@ -216,12 +216,12 @@ export default function AdminCRM() {
               {activeTab === "clinicas" ? (
                 <>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Nombre de Cl├¡nica</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Nombre de Clínica</label>
                     <input type="text" value={editingItem.nombre} onChange={e => setEditingItem({...editingItem, nombre: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none" required />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-500 uppercase">Tel├⌐fono</label>
+                      <label className="text-xs font-bold text-slate-500 uppercase">Teléfono</label>
                       <input type="text" value={editingItem.telefono || ""} onChange={e => setEditingItem({...editingItem, telefono: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none" />
                     </div>
                     <div className="space-y-1">
@@ -230,7 +230,7 @@ export default function AdminCRM() {
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Direcci├│n</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Dirección</label>
                     <textarea value={editingItem.direccion || ""} onChange={e => setEditingItem({...editingItem, direccion: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none resize-none"></textarea>
                   </div>
                 </>
@@ -251,15 +251,15 @@ export default function AdminCRM() {
                     <input type="text" value={editingItem.apellido || ""} onChange={e => setEditingItem({...editingItem, apellido: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Cl├¡nica a la que pertenece</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Clínica a la que pertenece</label>
                     <select value={editingItem.cliente_id || ""} onChange={e => setEditingItem({...editingItem, cliente_id: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none">
-                      <option value="">-- Sin Cl├¡nica --</option>
+                      <option value="">-- Sin Clínica --</option>
                       {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                     </select>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-500 uppercase">Tel├⌐fono</label>
+                      <label className="text-xs font-bold text-slate-500 uppercase">Teléfono</label>
                       <input type="text" value={editingItem.telefono || ""} onChange={e => setEditingItem({...editingItem, telefono: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none" />
                     </div>
                     <div className="space-y-1">

@@ -3,49 +3,49 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 
-// Cliente Admin — bypasses RLS. Seguro porque "use server" nunca llega al navegador.
+// Cliente Admin Ã¢â‚¬â€ bypasses RLS. Seguro porque "use server" nunca llega al navegador.
 function getAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy-key-for-build-only"
   );
 }
 
-// Flujo lógico de departamentos
+// Flujo lÃƒÂ³gico de departamentos
 const FLUJO_DIGITAL = {
-    "Recepción": "Digital_Diseno",
+    "RecepciÃƒÂ³n": "Digital_Diseno",
     "Digital_Diseno": "Digital_Fresado",
     "Digital_Fresado": "Sinterizado",
     "Sinterizado": "Ajuste",
     "Ajuste": "Terminado",
-    "Terminado": "Inspección",
-    "Inspección": "Recibo/Factura",
+    "Terminado": "InspecciÃƒÂ³n",
+    "InspecciÃƒÂ³n": "Recibo/Factura",
     "Recibo/Factura": "Empaquetado",
-    "Empaquetado": "Envío",
-    "Envío": "Facturación",
+    "Empaquetado": "EnvÃƒÂ­o",
+    "EnvÃƒÂ­o": "FacturaciÃƒÂ³n",
     "Yesos": "Digital_Escaneo",
     "Digital_Escaneo": "Digital_Diseno"
 };
 
 const FLUJO_ANALOGO = {
-    "Recepción": "Yesos",
+    "RecepciÃƒÂ³n": "Yesos",
     "Yesos": "Digital_Escaneo",
     "Digital_Escaneo": "Digital_Diseno",
     "Digital_Diseno": "Digital_Fresado",
     "Digital_Fresado": "Sinterizado",
     "Sinterizado": "Ajuste",
     "Ajuste": "Terminado",
-    "Terminado": "Inspección",
-    "Inspección": "Recibo/Factura",
+    "Terminado": "InspecciÃƒÂ³n",
+    "InspecciÃƒÂ³n": "Recibo/Factura",
     "Recibo/Factura": "Empaquetado",
-    "Empaquetado": "Envío",
-    "Envío": "Facturación"
+    "Empaquetado": "EnvÃƒÂ­o",
+    "EnvÃƒÂ­o": "FacturaciÃƒÂ³n"
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 // Genera el CARGO en cuenta_corriente_clinica cuando un caso es enviado.
 // Equivalente exacto a lo que hace el Lab OS de escritorio en _cargo_envio_bg().
-// ─────────────────────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 async function registrarCargoEnvio(supabase, caseId, codigo, paciente) {
   try {
     // 1. Obtener cliente_id del caso
@@ -56,7 +56,7 @@ async function registrarCargoEnvio(supabase, caseId, codigo, paciente) {
       .single();
 
     if (masterErr || !master?.cliente_id) {
-      console.error('[CARGO] No se encontró cliente_id para el caso', caseId, masterErr);
+      console.error('[CARGO] No se encontrÃƒÂ³ cliente_id para el caso', caseId, masterErr);
       return;
     }
     const clienteId = master.cliente_id;
@@ -70,7 +70,7 @@ async function registrarCargoEnvio(supabase, caseId, codigo, paciente) {
       .limit(1);
 
     if (existing && existing.length > 0) {
-      console.log('[CARGO] Ya existe un CARGO para el caso', codigo, '— omitiendo duplicado.');
+      console.log('[CARGO] Ya existe un CARGO para el caso', codigo, 'Ã¢â‚¬â€ omitiendo duplicado.');
       return;
     }
 
@@ -83,7 +83,7 @@ async function registrarCargoEnvio(supabase, caseId, codigo, paciente) {
     const total = (detalles || []).reduce((acc, r) => acc + (parseFloat(r.subtotal) || 0), 0);
 
     if (total <= 0) {
-      console.warn('[CARGO] Caso', codigo, 'sin importe — CARGO omitido.');
+      console.warn('[CARGO] Caso', codigo, 'sin importe Ã¢â‚¬â€ CARGO omitido.');
       return;
     }
 
@@ -102,7 +102,7 @@ async function registrarCargoEnvio(supabase, caseId, codigo, paciente) {
     if (insertErr) {
       console.error('[CARGO] Error insertando CARGO:', insertErr);
     } else {
-      console.log(`[CARGO] ✅ CARGO registrado → caso=${codigo} cliente=${clienteId} total=$${total.toFixed(2)}`);
+      console.log(`[CARGO] Ã¢Å“â€¦ CARGO registrado Ã¢â€ â€™ caso=${codigo} cliente=${clienteId} total=$${total.toFixed(2)}`);
     }
   } catch (err) {
     console.error('[CARGO] Error inesperado en registrarCargoEnvio:', err);
@@ -113,7 +113,7 @@ export async function updateCaseState(internalId, action, operatorName = null) {
   try {
     const supabase = getAdminClient();
     if (!internalId || !['START', 'PAUSE', 'COMPLETE', 'SHIP'].includes(action)) {
-      return { success: false, error: "Datos de acción inválidos." };
+      return { success: false, error: "Datos de acciÃƒÂ³n invÃƒÂ¡lidos." };
     }
 
     // Consulta el estado actual, tipo y metadata de display
@@ -129,7 +129,7 @@ export async function updateCaseState(internalId, action, operatorName = null) {
     }
 
     const deptoLimpio = currentCase.depto_actual ? currentCase.depto_actual.trim() : "";
-    const tipoLimpio  = currentCase.tipo ? currentCase.tipo.trim().toLowerCase() : "análogo";
+    const tipoLimpio  = currentCase.tipo ? currentCase.tipo.trim().toLowerCase() : "anÃƒÂ¡logo";
 
     let updateData = {};
     let esEnvioFinal = false;
@@ -144,11 +144,11 @@ export async function updateCaseState(internalId, action, operatorName = null) {
     } else if (action === 'PAUSE') {
         updateData = { estado: 'En Pausa' };
 
-    } else if (action === 'SHIP' || (action === 'COMPLETE' && deptoLimpio === 'Envío')) {
-        // ── ENVÍO FINAL: caso sale del laboratorio ──
-        // Se chequea ANTES del bloque COMPLETE general para evitar que caiga ahí.
+    } else if (action === 'SHIP' || (action === 'COMPLETE' && deptoLimpio === 'EnvÃƒÂ­o')) {
+        // Ã¢â€â‚¬Ã¢â€â‚¬ ENVÃƒÂO FINAL: caso sale del laboratorio Ã¢â€â‚¬Ã¢â€â‚¬
+        // Se chequea ANTES del bloque COMPLETE general para evitar que caiga ahÃƒÂ­.
         esEnvioFinal = true;
-        updateData = { depto_actual: 'Facturación', estado: 'Finalizado', operador_actual: null, hora_inicio: null };
+        updateData = { depto_actual: 'FacturaciÃƒÂ³n', estado: 'Finalizado', operador_actual: null, hora_inicio: null };
 
     } else if (action === 'COMPLETE') {
         let nextDept = "Terminado";
@@ -158,7 +158,7 @@ export async function updateCaseState(internalId, action, operatorName = null) {
             nextDept = FLUJO_ANALOGO[deptoLimpio] || "Terminado";
         }
         
-        // Regla dinámica: si sale de Digital_Fresado, evaluar si requiere Sinterizado
+        // Regla dinÃƒÂ¡mica: si sale de Digital_Fresado, evaluar si requiere Sinterizado
         if (deptoLimpio === 'Digital_Fresado') {
             const { data: detalles } = await supabase
                 .from('casos_detalle')
@@ -211,7 +211,7 @@ export async function updateCaseState(internalId, action, operatorName = null) {
     // Captura de tiempos historicos
     if (action === 'START') { registrarInicio(supabase, internalId, _deptoActualForHistorico).catch(() => {}); } else if (action === 'COMPLETE') { registrarTermino(supabase, internalId, _deptoActualForHistorico, _nextDeptForHistorico).catch(() => {}); }
 
-    // Si es envío final → generar CARGO en cuenta corriente
+    // Si es envÃƒÂ­o final Ã¢â€ â€™ generar CARGO en cuenta corriente
     if (esEnvioFinal) {
       await registrarCargoEnvio(
         supabase,

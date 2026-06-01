@@ -32,7 +32,7 @@ export default function AdminBoard() {
   }, []);
 
   const handleDelete = async (id, codigo) => {
-    if (!window.confirm(`┬┐Est├ís seguro de que deseas eliminar permanentemente el caso ${codigo}? Esta acci├│n no se puede deshacer.`)) {
+    if (!window.confirm(`┬┐Estís seguro de que deseas eliminar permanentemente el caso ${codigo}? Esta acción no se puede deshacer.`)) {
       return;
     }
     const toastId = toast.loading("Eliminando caso...");
@@ -59,7 +59,7 @@ export default function AdminBoard() {
     // Preparar el payload con los campos editables del master
     const payload = {
       paciente: editingCase.patient,
-      codigo: editingCase.id, // el codigo visual se mape├│ como 'id' en el frontend
+      codigo: editingCase.id, // el codigo visual se mapeó como 'id' en el frontend
       doctor: editingCase.doctor,
       color: editingCase.color,
       fecha_entrega: editingCase.fecha_entrega,
@@ -98,7 +98,7 @@ export default function AdminBoard() {
       
       <div className="flex justify-between items-center mb-6 shrink-0">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Pizarr├│n Global de Casos</h1>
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Pizarrón Global de Casos</h1>
           <p className="text-sm text-slate-500 mt-1">Vista administrativa. Puedes modificar cualquier detalle del caso.</p>
         </div>
         <button onClick={fetchCases} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
@@ -177,7 +177,7 @@ export default function AdminBoard() {
         </div>
       </div>
 
-      {/* MODAL DE EDICI├ôN */}
+      {/* MODAL DE EDICIÓN */}
       {editingCase && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditingCase(null)}></div>
@@ -192,7 +192,7 @@ export default function AdminBoard() {
             <form onSubmit={handleSaveEdit} className="overflow-y-auto p-6 flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Orden (C├│digo)</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase">Orden (Código)</label>
                   <input type="text" value={editingCase.id} onChange={e => setEditingCase({...editingCase, id: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none" required />
                 </div>
                 <div className="space-y-1">
@@ -227,7 +227,7 @@ export default function AdminBoard() {
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-500 uppercase">Departamento</label>
                   <select value={editingCase.dept} onChange={e => setEditingCase({...editingCase, dept: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none">
-                    <option value="Recepci├│n">Recepci├│n</option>
+                    <option value="Recepción">Recepción</option>
                     <option value="Yesos">Yesos</option>
                     <option value="Digital_Escaneo">Digital_Escaneo</option>
                     <option value="Digital_Diseno">Digital_Diseno</option>
@@ -235,11 +235,11 @@ export default function AdminBoard() {
                     <option value="Sinterizado">Sinterizado</option>
                     <option value="Ajuste">Ajuste</option>
                     <option value="Terminado">Terminado</option>
-                    <option value="Inspecci├│n">Inspecci├│n</option>
+                    <option value="Inspección">Inspección</option>
                     <option value="Recibo/Factura">Recibo/Factura</option>
                     <option value="Empaquetado">Empaquetado</option>
-                    <option value="Env├¡o">Env├¡o</option>
-                    <option value="Facturaci├│n">Facturaci├│n</option>
+                    <option value="Envío">Envío</option>
+                    <option value="Facturación">Facturación</option>
                   </select>
                 </div>
                 <div className="space-y-1">
@@ -258,8 +258,8 @@ export default function AdminBoard() {
               <div className="grid grid-cols-1 gap-4">
                  <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-500 uppercase">Tipo Protocolo</label>
-                    <select value={editingCase.tipo || "An├ílogo"} onChange={e => setEditingCase({...editingCase, tipo: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none">
-                       <option value="An├ílogo">An├ílogo (F├¡sico)</option>
+                    <select value={editingCase.tipo || "Anílogo"} onChange={e => setEditingCase({...editingCase, tipo: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none">
+                       <option value="Anílogo">Anílogo (Físico)</option>
                        <option value="Digital">Digital</option>
                     </select>
                  </div>

@@ -5,16 +5,16 @@ import { createClient } from '@supabase/supabase-js';
 function getAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy-key-for-build-only"
   );
 }
 
 /**
- * Calcula la Media Dinámica de los últimos 30 casos completados para un departamento.
- * Implementa la lógica definida en la Directiva de Inteligencia Predictiva.
+ * Calcula la Media DinÃƒÂ¡mica de los ÃƒÂºltimos 30 casos completados para un departamento.
+ * Implementa la lÃƒÂ³gica definida en la Directiva de Inteligencia Predictiva.
  *
  * @param {string} departamento - ID exacto del departamento (ej. "Digital_Diseno")
- * @returns {Promise<number>} Media en minutos. Retorna 120 si no hay datos históricos.
+ * @returns {Promise<number>} Media en minutos. Retorna 120 si no hay datos histÃƒÂ³ricos.
  */
 export async function getRealAverage(departamento) {
   try {
@@ -28,12 +28,12 @@ export async function getRealAverage(departamento) {
       .limit(30);
 
     if (error) {
-      console.warn('[SLA] Error consultando histórico:', error.message);
+      console.warn('[SLA] Error consultando histÃƒÂ³rico:', error.message);
       return 120;
     }
 
     if (!data || data.length === 0) {
-      // Sin datos históricos → tiempo base por defecto
+      // Sin datos histÃƒÂ³ricos Ã¢â€ â€™ tiempo base por defecto
       return 120;
     }
 
@@ -47,11 +47,11 @@ export async function getRealAverage(departamento) {
 }
 
 /**
- * Carga las medias de múltiples departamentos en una sola llamada.
- * Útil para precalcular todos los SLAs del dashboard en el servidor.
+ * Carga las medias de mÃƒÂºltiples departamentos en una sola llamada.
+ * ÃƒÅ¡til para precalcular todos los SLAs del dashboard en el servidor.
  *
  * @param {string[]} departamentos - Array de IDs de departamentos
- * @returns {Promise<Record<string, number>>} Mapa depto → media en minutos
+ * @returns {Promise<Record<string, number>>} Mapa depto Ã¢â€ â€™ media en minutos
  */
 export async function getAllDeptAverages(departamentos) {
   const supabase = getAdminClient();
@@ -70,7 +70,7 @@ export async function getAllDeptAverages(departamentos) {
       return Object.fromEntries(departamentos.map(d => [d, 120]));
     }
 
-    // Agrupar por departamento y tomar los últimos 30 de cada uno
+    // Agrupar por departamento y tomar los ÃƒÂºltimos 30 de cada uno
     const grouped = {};
     for (const row of data) {
       const dept = row.departamento;

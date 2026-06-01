@@ -1,7 +1,8 @@
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ClipboardList, Users, ArrowLeft } from "lucide-react";
+import { ClipboardList, Users } from "lucide-react";
+import LogoutButton from "./LogoutButton";
 
 export const metadata = {
   title: 'Lab OS - Administración',
@@ -42,10 +43,7 @@ export default async function AdminLayout({ children }) {
         </nav>
 
         <div className="p-4 border-t border-slate-800 flex flex-col gap-2">
-          <Link href="/" className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors font-medium">
-            <ArrowLeft size={16} />
-            Volver a Producción
-          </Link>
+          <LogoutButton />
         </div>
       </aside>
 

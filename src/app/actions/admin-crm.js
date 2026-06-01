@@ -7,7 +7,7 @@ import { getCurrentUser } from '@/lib/auth';
 function getAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy-key-for-build-only"
   );
 }
 
@@ -18,7 +18,7 @@ async function checkAdminAccess() {
   }
 }
 
-// ---- CLIENTES (Cl├¡nicas) ----
+// ---- CLIENTES (ClÃƒÂ­nicas) ----
 
 export async function getAdminClients() {
   try {

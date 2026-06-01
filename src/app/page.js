@@ -14,17 +14,17 @@ import { Toaster, toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 
 const departments = [
-  { id: "Recepci├│n", name: "Recepci├│n" },
+  { id: "Recepción", name: "Recepción" },
   { id: "Yesos", name: "Yesos" },
   { id: "Digital_Escaneo", name: "Escaneo" },
-  { id: "Digital_Diseno", name: "Dise├▒o" },
+  { id: "Digital_Diseno", name: "Diseño" },
   { id: "Digital_Fresado", name: "Fresado" },
   { id: "Sinterizado", name: "Sinterizado" },
 
 
   { id: "Ajuste", name: "Ajuste" },
   { id: "Terminado", name: "Terminado" },
-  { id: "Inspecci├│n", name: "Inspecci├│n" },
+  { id: "Inspección", name: "Inspección" },
 ];
 
 // Selector Personalizado Inteligente Extirpado de Modal
@@ -56,7 +56,7 @@ const ClientSelect = ({ clients, selected, onChange }) => {
               {selectedClient.nombre_dentista && <span className="text-xs text-slate-400 truncate hidden sm:inline-block">({selectedClient.nombre})</span>}
             </span>
           ) : (
-            <span className="text-slate-400 text-sm">Buscar doctor o cl├¡nica...</span>
+            <span className="text-slate-400 text-sm">Buscar doctor o clínica...</span>
           )}
         </span>
         <ChevronDown size={16} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -151,7 +151,7 @@ function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onTog
         toast.success(successMsg, { id });
         onRefresh();
       } else {
-        toast.error(res.error || "Error de validaci├│n.", { id });
+        toast.error(res.error || "Error de validación.", { id });
       }
     } catch (err) {
       toast.error("Error de servidor.", { id });
@@ -233,7 +233,7 @@ function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onTog
 
   return (
     <div className="w-full relative flex flex-col items-center">
-      {/* Bot├│n Expansor en el centro de la tarjeta */}
+      {/* Botón Expansor en el centro de la tarjeta */}
       <button 
         onClick={onToggleExpand}
         disabled={isUpdating}
@@ -332,9 +332,9 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
   const [material, setMaterial] = useState('');
   const [producto, setProducto] = useState('');
   const [productsMap, setProductsMap] = useState({});
-  const [tipo, setTipo] = useState('An├ílogo');
+  const [tipo, setTipo] = useState('Anílogo');
 
-  // Cargar cat├ílogo de productos desde Supabase al abrir el modal
+  // Cargar catílogo de productos desde Supabase al abrir el modal
   useEffect(() => {
     if (isOpen && Object.keys(productsMap).length === 0) {
       getProducts().then(data => setProductsMap(data));
@@ -349,7 +349,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
       const isDigitalInName = p.raw.toLowerCase().includes('digital');
       return tipo === 'Digital' ? isDigitalInName : !isDigitalInName;
     });
-    // Regla de respaldo: Si el filtro se queda vac├¡o, mostramos todos
+    // Regla de respaldo: Si el filtro se queda vacío, mostramos todos
     return filtered.length > 0 ? filtered : allProductsForMaterial;
   };
   
@@ -391,7 +391,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
     
     let finalItems = [...items];
     
-    // Auto-agregar si olvid├│ pulsar "A├▒adir Piezas"
+    // Auto-agregar si olvidó pulsar "Añadir Piezas"
     if (material && producto) {
        const hasTeeth = selectedTeeth.length > 0;
        finalItems.push({
@@ -417,7 +417,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
     try {
       const result = await createNewCase(formData);
       if (result.success) {
-        toast.success(`Registrado con ├⌐xito. Pasa a: ${result.deptoAsignado}.`, { id: loadingToast });
+        toast.success(`Registrado con éxito. Pasa a: ${result.deptoAsignado}.`, { id: loadingToast });
         setItems([]); setSelectedTeeth([]); setMaterial(''); setProducto(''); setSelectedClient(null);
         onActionComplete();
         onClose();
@@ -425,7 +425,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
         toast.error(result.error || "Error al registrar.", { id: loadingToast });
       }
     } catch (err) {
-      toast.error("Error de conexi├│n al servidor.", { id: loadingToast });
+      toast.error("Error de conexión al servidor.", { id: loadingToast });
     } finally {
       setIsSubmitting(false);
     }
@@ -504,10 +504,10 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
                     <input 
                       type="radio" 
                       name="tipo" 
-                      value="An├ílogo" 
+                      value="Anílogo" 
                       required 
                       className="w-4 h-4 text-[#D4AF37] focus:ring-[#D4AF37]"
-                      checked={tipo === 'An├ílogo'}
+                      checked={tipo === 'Anílogo'}
                       onChange={(e) => {
                         setTipo(e.target.value);
                         setMaterial('');
@@ -515,8 +515,8 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
                       }}
                     />
                     <div className="flex flex-col">
-                       <span className="text-sm font-bold text-slate-800 leading-tight">F├¡sico (An├ílogo)</span>
-                       <span className="text-xs text-slate-500">Impresi├│n &gt; Yesos</span>
+                       <span className="text-sm font-bold text-slate-800 leading-tight">Físico (Anílogo)</span>
+                       <span className="text-xs text-slate-500">Impresión &gt; Yesos</span>
                     </div>
                   </label>
                   <label className="flex items-center gap-3 p-3.5 border border-slate-200 rounded-xl bg-white hover:border-blue-500 cursor-pointer transition-colors shadow-sm">
@@ -535,7 +535,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
                     />
                     <div className="flex flex-col">
                        <span className="text-sm font-bold text-slate-800 leading-tight">Digital</span>
-                       <span className="text-xs text-slate-500">STL &gt; Dise├▒o</span>
+                       <span className="text-xs text-slate-500">STL &gt; Diseño</span>
                     </div>
                   </label>
                </div>
@@ -615,7 +615,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
                  </select>
                </div>
                <div className="flex-1 w-full space-y-1.5">
-                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Producto (Restauraci├│n)</label>
+                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Producto (Restauración)</label>
                  <select value={producto} onChange={(e) => setProducto(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-medium" disabled={!material}>
                     <option value="">{material ? 'Seleccionar...' : 'Elige material primero'}</option>
                     {currentProducts.map(p => <option key={p.raw} value={p.display}>{p.display}</option>)}
@@ -626,14 +626,14 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
                  onClick={handleAddItem}
                  className="w-full sm:w-auto bg-[#D4AF37] hover:bg-[#B8860B] text-white font-bold px-6 py-2.5 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
                >
-                 <Plus size={16} /> A├▒adir Piezas
+                 <Plus size={16} /> Añadir Piezas
                </button>
             </div>
 
             {/* Listado de Items en "Pills" */}
             {items.length > 0 && (
               <div className="space-y-3">
-                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Especificaciones A├▒adidas ({items.length})</h4>
+                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Especificaciones Añadidas ({items.length})</h4>
                  <ul className="flex flex-col gap-2">
                    {items.map(item => (
                      <li key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white border border-slate-200 p-3 rounded-xl shadow-sm gap-3">
@@ -656,7 +656,7 @@ function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
               <textarea 
                 name="comentarios" 
                 rows="2" 
-                placeholder="Ej. El doctor prefiere un color m├ís c├ílido en incisal..."
+                placeholder="Ej. El doctor prefiere un color mís cílido en incisal..."
                 className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-medium shadow-sm resize-none transition-all placeholder:text-slate-400"
               ></textarea>
             </div>
@@ -726,7 +726,7 @@ function StackedCases({ cases, onRefresh, operatorName }) {
 
   return (
     <div className="px-4 mb-2">
-      {/* Header de secci├│n */}
+      {/* Header de sección */}
       <div className="flex items-center gap-2 mb-3 mt-6">
         <div className="flex-1 h-px bg-amber-200/80" />
         <span className="text-[11px] font-black uppercase tracking-widest text-amber-600/80 flex items-center gap-1.5">
@@ -745,7 +745,7 @@ function StackedCases({ cases, onRefresh, operatorName }) {
         >
           {/* Tarjetas apiladas (de abajo hacia arriba) */}
           {Array.from({ length: STACK_PREVIEW }).map((_, i) => {
-            const c = cases[STACK_PREVIEW - 1 - i]; // ├║ltimo = m├ís abajo
+            const c = cases[STACK_PREVIEW - 1 - i]; // último = mís abajo
             const isTop = i === STACK_PREVIEW - 1;
             const offsetY = (STACK_PREVIEW - 1 - i) * -10;
             const scale = 1 - (STACK_PREVIEW - 1 - i) * 0.04;
@@ -774,7 +774,7 @@ function StackedCases({ cases, onRefresh, operatorName }) {
                     </span>
                     {cases.length > 1 && (
                       <span className="text-[11px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
-                        +{cases.length - 1} m├ís
+                        +{cases.length - 1} mís
                       </span>
                     )}
                   </div>
@@ -849,7 +849,7 @@ function StackedCases({ cases, onRefresh, operatorName }) {
             })}
           </ul>
 
-          {/* Barra de acci├│n ΓÇö aparece solo cuando hay un caso seleccionado */}
+          {/* Barra de acción ΓÇö aparece solo cuando hay un caso seleccionado */}
           {selectedCase && (
             <div className="border-t border-amber-200 bg-white/90 p-3 flex flex-col gap-2 animate-in slide-in-from-bottom-2 duration-200">
               <p className="text-[11px] font-bold text-slate-500 text-center">
@@ -1087,14 +1087,14 @@ function LoginScreen({ onLoginSuccess }) {
 }
 
 export default function Home() {
-  const [activeDept, setActiveDept] = useState("Producci├│n");
+  const [activeDept, setActiveDept] = useState("Producción");
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [clients, setClients] = useState([]);
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
-  // SLA din├ímico: mapa depto ΓåÆ media real en minutos
+  // SLA dinímico: mapa depto ΓåÆ media real en minutos
   const [slaAverages, setSlaAverages] = useState({});
   
   // Recibos State
@@ -1145,7 +1145,7 @@ export default function Home() {
       const data = await res.json();
 
       if (Array.isArray(data) && data.length > 0) {
-        // Respuesta v├ílida
+        // Respuesta vílida
         setCases(data);
       } else if (retryOnAuth) {
         // Token probablemente expirado ΓåÆ refrescar y reintentar UNA vez
@@ -1164,13 +1164,13 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // Siempre refrescar el token al cargar la p├ígina, LUEGO traer datos
+    // Siempre refrescar el token al cargar la pígina, LUEGO traer datos
     refreshGhostToken().then(() => {
       loadInitialData();
       fetchCases();
     });
 
-    // Cargar promedios hist├│ricos para el sem├íforo predictivo
+    // Cargar promedios históricos para el semíforo predictivo
     const deptIds = departments.map(d => d.id);
     getAllDeptAverages(deptIds)
       .then(avgs => setSlaAverages(avgs))
@@ -1253,18 +1253,18 @@ export default function Home() {
   };
 
   /**
-   * Sem├íforo Predictivo (Inteligencia Predictiva).
+   * Semíforo Predictivo (Inteligencia Predictiva).
    * TV  = HoraActual ΓêÆ hora_llegada  (tiempo real que el caso lleva en el depto)
-   * MD  = media hist├│rica de los ├║ltimos 30 casos del mismo depto
+   * MD  = media histórica de los últimos 30 casos del mismo depto
    * ≡ƒƒó  TV < 50% de MD
    * ≡ƒƒí  TV entre 50% y 85% de MD
-   * ≡ƒö┤  TV >= 85% de MD (ya est├í tarde seg├║n el ritmo real del lab)
+   * ≡ƒö┤  TV >= 85% de MD (ya estí tarde según el ritmo real del lab)
    */
   const getSlaColor = (horaLlegada, depto) => {
     if (!horaLlegada || !depto) return null;
     const tv = (Date.now() - new Date(horaLlegada).getTime()) / 60000; // minutos
     if (tv <= 0) return null;
-    const md = slaAverages[depto] ?? 120; // 120 min por defecto si no hay datos a├║n
+    const md = slaAverages[depto] ?? 120; // 120 min por defecto si no hay datos aún
     const ratio = tv / md;
     if (ratio < 0.50) return 'green';
     if (ratio < 0.85) return 'yellow';
@@ -1291,6 +1291,21 @@ export default function Home() {
   const isAdmin = rawRoles.some(r => !!r.match(/admin/i));
   const hasAdminAccess = currentUser?.username?.toLowerCase() === 'admin' || currentUser?.username?.toLowerCase() === 'coloraturacorp';
 
+  useEffect(() => {
+    if (hasAdminAccess) {
+      window.location.replace('/admin');
+    }
+  }, [hasAdminAccess]);
+
+  if (hasAdminAccess) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+        <RefreshCw className="animate-spin text-slate-400 mb-4" size={32} />
+        <p className="text-slate-500 font-medium">Redirigiendo a Administración...</p>
+      </div>
+    );
+  }
+
   // Variable global: casos de Yesos En Proceso/Pausa para mostrar como stack
   const casosYesosEnProceso = cases.filter(c =>
     c.dept === 'Yesos' &&
@@ -1302,7 +1317,7 @@ export default function Home() {
     // Si estamos en TODAS (Monitor Global), renderizar TODOS los departamentos operativos
     groupsToRender = departments;
   } else {
-    // Si estamos en Departamentos Operativos, renderizar solo las ├íreas asignadas al usuario
+    // Si estamos en Departamentos Operativos, renderizar solo las íreas asignadas al usuario
     if (isAdmin) {
       groupsToRender = departments;
     } else {
@@ -1316,7 +1331,7 @@ export default function Home() {
   }
 
   // Pre-abrir todos los acordeones en la carga inicial (hacemos un set 1 vez)
-  // Como Set no funciona f├ícil, lo inicializamos solo la primera vez en useEffect si fuera util,
+  // Como Set no funciona fícil, lo inicializamos solo la primera vez en useEffect si fuera util,
   // pero podemos basarnos predeterminadamente en que false/undefined = "Abierto", true = "Cerrado"
   // para simplificar el estado.
   const isDeptHidden = (deptId) => !!expandedDepts[deptId];
@@ -1407,7 +1422,7 @@ export default function Home() {
                    </div>
                    <div className="w-full h-px bg-slate-50 my-3"></div>
                    <div className="text-sm">
-                      <span className="text-slate-400 block mb-1">Doctor/Cl├¡nica</span>
+                      <span className="text-slate-400 block mb-1">Doctor/Clínica</span>
                       <span className="font-semibold text-slate-700">{receiptCase.doctor}</span>
                    </div>
                 </div>
@@ -1530,14 +1545,14 @@ export default function Home() {
         <header className="px-5 py-4 border-b border-slate-100 flex items-center justify-center relative shrink-0 h-14 bg-white z-20">
           <h1
             className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none"
-            onClick={() => setActiveDept("Producci├│n")}
+            onClick={() => setActiveDept("Producción")}
             title="Volver a Inicio"
           >
             Lab OS
           </h1>
           <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
             {hasAdminAccess && (
-              <Link href="/admin" className="text-slate-500 hover:text-[#D4AF37] transition-colors" title="Administraci├│n">
+              <Link href="/admin" className="text-slate-500 hover:text-[#D4AF37] transition-colors" title="Administración">
                 <Settings size={20} />
               </Link>
             )}
@@ -1555,7 +1570,7 @@ export default function Home() {
                 onChange={(e) => setActiveDept(e.target.value)}
                 className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 text-center font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none shadow-sm text-[15px]"
              >
-                <option value="Producci├│n">Producci├│n</option>
+                <option value="Producción">Producción</option>
                 <option value="all">TODAS (Monitor Global)</option>
              </select>
              <div className="absolute right-4 top-4 text-slate-400 pointer-events-none">
@@ -1615,8 +1630,8 @@ export default function Home() {
                        {/* Contenido Colapsable */}
                        {!collapsed && (
                          <div className="bg-transparent mt-2">
-                           {/* Boton Agregar solo en Recepci├│n */}
-                           {grupo.id === "Recepci├│n" && canCreateCases && activeDept !== "all" && (
+                           {/* Boton Agregar solo en Recepción */}
+                           {grupo.id === "Recepción" && canCreateCases && activeDept !== "all" && (
                              <div className="px-4 pt-4 pb-2">
                                <button 
                                   onClick={() => setIsNewCaseModalOpen(true)}
@@ -1670,7 +1685,7 @@ export default function Home() {
                                             </p>
                                             
                                             {c.items && c.items.length > 0 && (() => {
-                                              // AGRUPACI├ôN Y FORMATEO
+                                              // AGRUPACIÓN Y FORMATEO
                                               const grouped = {};
                                               
                                               c.items.forEach(item => {
@@ -1836,7 +1851,7 @@ export default function Home() {
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <button
             onClick={handleLogout}
-            title="Cerrar sesi├│n"
+            title="Cerrar sesión"
             className="w-11 h-11 rounded-full bg-white border border-slate-200 shadow-lg flex items-center justify-center text-slate-700 font-bold text-[15px] hover:bg-slate-50 hover:shadow-xl transition-all active:scale-95 select-none"
           >
             {currentUser.username?.charAt(0).toUpperCase()}

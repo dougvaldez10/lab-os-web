@@ -8,7 +8,7 @@ export const revalidate = 0;
 
 export async function GET(request) {
   try {
-    // Verificar autenticación vía cookie antes de servir datos
+    // Verificar autenticaciÃƒÂ³n vÃƒÂ­a cookie antes de servir datos
     let authHeader = request.headers.get('authorization');
     if (!authHeader || authHeader === 'Bearer ') {
        const cookieStore = await cookies();
@@ -23,10 +23,10 @@ export async function GET(request) {
     }
 
     // Usar service role key para bypasear RLS y ver TODOS los casos del laboratorio.
-    // La autenticación ya se validó arriba con la cookie del ghost user.
+    // La autenticaciÃƒÂ³n ya se validÃƒÂ³ arriba con la cookie del ghost user.
     const secureClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://etnfvmpywgbeqvbyieze.supabase.co',
-      process.env.SUPABASE_SERVICE_ROLE_KEY 
+      process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy-key-for-build-only" 
     );
 
     // 1. Traer los casos
@@ -35,7 +35,7 @@ export async function GET(request) {
       .select('*')
       .neq('estado', 'Entregado')
       .neq('estado', 'Finalizado')
-      .neq('depto_actual', 'Facturación')
+      .neq('depto_actual', 'FacturaciÃƒÂ³n')
       .order('fecha_entrega', { ascending: true, nullsFirst: false })
       .limit(5000);
 
@@ -88,7 +88,7 @@ export async function GET(request) {
     if (ids.length > 0) {
       const adminClient = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY
+        process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy-key-for-build-only"
       );
       const { data: tiempos } = await adminClient
         .from('casos_tiempos_historicos')
