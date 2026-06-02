@@ -61,7 +61,7 @@ export async function deleteAdminCase(internalId) {
 
     if (error) {
       console.error(error);
-      return { success: false, error: "Error al eliminar el caso." };
+      return { success: false, error: `Error DB: ${error.message || JSON.stringify(error)}` };
     }
 
     revalidatePath('/');
