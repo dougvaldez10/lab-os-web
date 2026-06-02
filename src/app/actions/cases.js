@@ -20,7 +20,7 @@ async function registrarInicio(supabase, caseId, departamento) {
     const { error } = await supabase
       .from('casos_tiempos_historicos')
       .insert({
-        caso_id: caseId,
+        id_caso: caseId,
         departamento: departamento,
         hora_inicio: new Date().toISOString()
       });
@@ -37,7 +37,7 @@ async function registrarTermino(supabase, caseId, departamento, nextDept) {
     const { data: registro } = await supabase
       .from('casos_tiempos_historicos')
       .select('id, hora_inicio')
-      .eq('caso_id', caseId)
+      .eq('id_caso', caseId)
       .eq('departamento', departamento)
       .is('hora_termino', null)
       .order('hora_inicio', { ascending: false })
