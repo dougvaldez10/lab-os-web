@@ -48,15 +48,26 @@ export async function deleteAdminCase(internalId) {
     await checkAdminAccess();
     const supabase = getAdminClient();
 
-    // Limpieza manual (Cascade) de tablas relacionadas para evitar errores de llave foránea
-    const { error: err1 } = await supabase.from('casos_detalle').delete().eq('caso_id', internalId);
-    if (err1) { console.error("Error deleting detalles:", err1); return { success: false, error: "Error eliminando detalles: " + err1.message }; }
+    // Primero obtener el caso para tener todos sus posibles identificadores
+    const { data: casoMaster } = await supabase.from('casos_master').select('*').eq('id', internalId).single();
+    
+    // Limpieza agresiva de tablas relacionadas
+    await supabase.from('casos_detalle').delete().eq('caso_id', internalId);
+    if (casoMaster && casoMaster.codigo) {
+      await supabase.from('casos_detalle').delete().eq('caso_id', casoMaster.codigo);
+    }
 
-    const { error: err2 } = await supabase.from('casos_tiempos_historicos').delete().eq('id_caso', internalId);
-    if (err2) { console.error("Error deleting tiempos:", err2); return { success: false, error: "Error eliminando tiempos: " + err2.message }; }
+    await supabase.from('casos_tiempos_historicos').delete().eq('caso_id', internalId);
+    await supabase.from('casos_tiempos_historicos').delete().eq('id_caso', internalId);
+    if (casoMaster && casoMaster.codigo) {
+      await supabase.from('casos_tiempos_historicos').delete().eq('caso_id', casoMaster.codigo);
+      await supabase.from('casos_tiempos_historicos').delete().eq('id_caso', casoMaster.codigo);
+    }
 
-    const { error: err3 } = await supabase.from('cuenta_corriente_clinica').delete().eq('caso_id', internalId);
-    if (err3) { console.error("Error deleting cuenta:", err3); return { success: false, error: "Error eliminando cuenta: " + err3.message }; }
+    await supabase.from('cuenta_corriente_clinica').delete().eq('caso_id', internalId);
+    if (casoMaster && casoMaster.codigo) {
+      await supabase.from('cuenta_corriente_clinica').delete().eq('caso_id', casoMaster.codigo);
+    }
 
     // Eliminar el caso maestro
     const { error } = await supabase
