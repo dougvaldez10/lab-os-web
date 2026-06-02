@@ -109,7 +109,7 @@ export async function getBillingSummary() {
     const { data: cases, error } = await supabase
       .from('casos_master')
       .select('id, codigo, paciente, total_caso, saldo_pendiente, fecha_entrega, cliente_id, clientes(nombre)')
-      .eq('depto_actual', 'FacturaciÃ³n')
+      .eq('depto_actual', 'Facturación')
       .gt('saldo_pendiente', 0)
       .order('fecha_entrega', { ascending: true });
 
@@ -119,7 +119,7 @@ export async function getBillingSummary() {
     const clinicsMap = {};
     (cases || []).forEach(c => {
       const cliId = c.cliente_id;
-      const cliName = c.clientes?.nombre || 'ClÃ­nica Sin Nombre';
+      const cliName = c.clientes?.nombre || 'Clínica Sin Nombre';
       if (!clinicsMap[cliId]) {
         clinicsMap[cliId] = {
           id: cliId,
@@ -154,7 +154,7 @@ export async function getBillingHistory() {
     const { data: cases, error: errCases } = await supabase
       .from('casos_master')
       .select('id, codigo, paciente, total_caso, saldo_pendiente, fecha_entrega, cliente_id, clientes(nombre)')
-      .eq('depto_actual', 'FacturaciÃ³n')
+      .eq('depto_actual', 'Facturación')
       .eq('estado_pago', 'Pagado')
       .order('fecha_entrega', { ascending: false });
 
@@ -194,7 +194,7 @@ export async function getBillingStats() {
     const { data: pendingCases, error: errPending } = await supabase
       .from('casos_master')
       .select('saldo_pendiente')
-      .eq('depto_actual', 'FacturaciÃ³n')
+      .eq('depto_actual', 'Facturación')
       .gt('saldo_pendiente', 0);
 
     if (errPending) throw errPending;
@@ -234,7 +234,7 @@ export async function getBillingStats() {
       monto: p.monto_abono,
       metodo: p.metodo_pago,
       fecha: p.fecha_pago,
-      clinica: p.clientes?.nombre || 'ClÃ­nica Desconocida',
+      clinica: p.clientes?.nombre || 'Clínica Desconocida',
       folio: p.casos_master?.codigo || 'N/A',
       creado_por: p.creado_por
     }));
@@ -315,7 +315,7 @@ export async function registerGlobalPayment(formData) {
       .from('casos_master')
       .select('id, codigo, paciente, saldo_pendiente, total_caso')
       .eq('cliente_id', clienteId)
-      .eq('depto_actual', 'FacturaciÃ³n')
+      .eq('depto_actual', 'Facturación')
       .gt('saldo_pendiente', 0)
       .order('fecha_entrega', { ascending: true })
       .order('id', { ascending: true });

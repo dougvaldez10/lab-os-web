@@ -1,0 +1,1 @@
+const { createClient } = require('@supabase/supabase-js'); const supabase = createClient('https://etnfvmpywgbeqvbyieze.supabase.co', 'sb_publishable_ZGAVQvsSWDTmZbY6dj0UUQ_YOa3Dn8L'); supabase.from('casos_tiempos_historicos').select('*').limit(1).then(res = 

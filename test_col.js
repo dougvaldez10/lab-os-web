@@ -1,0 +1,2 @@
+const { createClient } = require('@supabase/supabase-js');
+const supabase = createClient('https://etnfvmpywgbeqvbyieze.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0bmZ2bXB5d2diZXF2YnlpZXplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY3Mjc5MTIsImV4cCI6MjA0MjMwMzkxMn0.xxxx'); // Actually, I don't need the anon key to just look at a public schema maybe? No, I need a valid key.
