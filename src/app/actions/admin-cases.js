@@ -49,9 +49,14 @@ export async function deleteAdminCase(internalId) {
     const supabase = getAdminClient();
 
     // Limpieza manual (Cascade) de tablas relacionadas para evitar errores de llave foránea
-    await supabase.from('casos_detalle').delete().eq('caso_id', internalId);
-    await supabase.from('casos_tiempos_historicos').delete().eq('id_caso', internalId);
-    await supabase.from('cuenta_corriente_clinica').delete().eq('caso_id', internalId);
+    const { error: err1 } = await supabase.from('casos_detalle').delete().eq('caso_id', internalId);
+    if (err1) { console.error("Error deleting detalles:", err1); return { success: false, error: "Error eliminando detalles: " + err1.message }; }
+
+    const { error: err2 } = await supabase.from('casos_tiempos_historicos').delete().eq('id_caso', internalId);
+    if (err2) { console.error("Error deleting tiempos:", err2); return { success: false, error: "Error eliminando tiempos: " + err2.message }; }
+
+    const { error: err3 } = await supabase.from('cuenta_corriente_clinica').delete().eq('caso_id', internalId);
+    if (err3) { console.error("Error deleting cuenta:", err3); return { success: false, error: "Error eliminando cuenta: " + err3.message }; }
 
     // Eliminar el caso maestro
     const { error } = await supabase
