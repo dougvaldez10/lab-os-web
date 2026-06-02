@@ -1,10 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { 
   Wallet, 
   History, 
-  BarChart3, 
   ChevronRight, 
   Search, 
   RefreshCw, 
@@ -28,7 +27,6 @@ import { getCurrentUser } from "@/lib/auth";
 import { 
   getBillingSummary, 
   getBillingHistory, 
-  getBillingStats, 
   registrarAbono,
   registerGlobalPayment
 } from "@/app/actions/billing";
@@ -49,14 +47,6 @@ export default function BillingPanel() {
   const [historyCases, setHistoryCases] = useState([]);
   const [historySearchTerm, setHistorySearchTerm] = useState("");
   const [expandedCaseId, setExpandedCaseId] = useState(null);
-
-  // States for Analytics
-  const [stats, setStats] = useState({
-    totalCxC: 0,
-    totalRecaudado: 0,
-    methods: [],
-    recentPayments: []
-  });
 
   // Modal registrar abono
   const [abonoModal, setAbonoModal] = useState(null); // contains case object
@@ -104,13 +94,6 @@ export default function BillingPanel() {
         } else {
           toast.error("Error al cargar historial: " + res.error);
         }
-      } else if (activeTab === "analytics") {
-        const res = await getBillingStats();
-        if (res.success) {
-          setStats(res.stats);
-        } else {
-          toast.error("Error al cargar estadísticas: " + res.error);
-        }
       }
     } catch (err) {
       toast.error("Error inesperado al cargar datos");
@@ -135,12 +118,12 @@ export default function BillingPanel() {
     
     const abonoVal = parseFloat(montoAbono);
     if (isNaN(abonoVal) || abonoVal <= 0) {
-      toast.error("Por favor ingresa un monto válido mayor a 0");
+      toast.error("Por favor ingresa un monto vÃ¡lido mayor a 0");
       return;
     }
 
     if (abonoVal > abonoModal.saldo_pendiente) {
-      if (!window.confirm(`El monto ingresado ($${abonoVal}) es mayor que el saldo pendiente del caso ($${abonoModal.saldo_pendiente}). ¿Deseas registrar un saldo a favor o prefieres ajustar el abono al total del saldo pendiente?`)) {
+      if (!window.confirm(`El monto ingresado ($${abonoVal}) es mayor que el saldo pendiente del caso ($${abonoModal.saldo_pendiente}). Â¿Deseas registrar un saldo a favor o prefieres ajustar el abono al total del saldo pendiente?`)) {
         return;
       }
     }
@@ -161,11 +144,11 @@ export default function BillingPanel() {
         setAbonoModal(null);
         // Refrescar datos
         fetchData();
-        // Si teníamos una clínica seleccionada en drill-down, actualizar su balance o datos
+        // Si tenÃ­amos una clÃ­nica seleccionada en drill-down, actualizar su balance o datos
         if (selectedClinic) {
-          // Si el caso actual se liquidó por completo, y ya no hay casos pendientes para esta clínica
-          // opcionalmente podemos refrescar. El fetchData actualizará las listas
-          // Buscar si la clínica seleccionada aún tiene casos pendientes.
+          // Si el caso actual se liquidÃ³ por completo, y ya no hay casos pendientes para esta clÃ­nica
+          // opcionalmente podemos refrescar. El fetchData actualizarÃ¡ las listas
+          // Buscar si la clÃ­nica seleccionada aÃºn tiene casos pendientes.
           const updatedSummary = await getBillingSummary();
           if (updatedSummary.success) {
             setClinics(updatedSummary.clinics || []);
@@ -192,12 +175,12 @@ export default function BillingPanel() {
   const handleRegisterGlobalPayment = async (e) => {
     e.preventDefault();
     if (!globalClienteId) {
-      toast.error("Por favor selecciona una clínica");
+      toast.error("Por favor selecciona una clÃ­nica");
       return;
     }
     const montoVal = parseFloat(globalMonto);
     if (isNaN(montoVal) || montoVal <= 0) {
-      toast.error("Por favor ingresa un monto válido mayor a 0");
+      toast.error("Por favor ingresa un monto vÃ¡lido mayor a 0");
       return;
     }
 
@@ -216,7 +199,7 @@ export default function BillingPanel() {
 
       const res = await registerGlobalPayment(fd);
       if (res.success) {
-        toast.success(`Pago registrado. Se saldaron ${res.casosSaldadosCount} casos automáticamente.`, { 
+        toast.success(`Pago registrado. Se saldaron ${res.casosSaldadosCount} casos automÃ¡ticamente.`, { 
           id: toastId,
           duration: 5000 
         });
@@ -243,12 +226,12 @@ export default function BillingPanel() {
     cl.nombre.toLowerCase().includes(globalPickerSearch.toLowerCase())
   );
 
-  // Filtrado de Clínicas (CxC Nivel 1)
+  // Filtrado de ClÃ­nicas (CxC Nivel 1)
   const filteredClinics = clinics.filter(cl => 
     cl.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Casos de la clínica seleccionada (CxC Nivel 2)
+  // Casos de la clÃ­nica seleccionada (CxC Nivel 2)
   const selectedClinicCases = cases.filter(c => c.cliente_id === selectedClinic?.id);
 
   // Filtrado de Historial
@@ -267,10 +250,10 @@ export default function BillingPanel() {
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
             <Wallet className="text-[#D4AF37]" size={28} />
-            Módulo Financiero y Facturación
+            MÃ³dulo Financiero y FacturaciÃ³n
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Administración de cuentas por cobrar, registro de abonos y control de historial de pagos.
+            AdministraciÃ³n de cuentas por cobrar, registro de abonos y control de historial de pagos.
           </p>
         </div>
         <button 
@@ -287,8 +270,7 @@ export default function BillingPanel() {
       <div className="flex border-b border-slate-200 mb-6 shrink-0 relative p-1 bg-slate-200/50 rounded-xl max-w-md">
         {[
           { id: "cxc", label: "Cuentas por Cobrar", icon: Wallet },
-          { id: "history", label: "Historial de Pagos", icon: History },
-          { id: "analytics", label: "Métricas y Análisis", icon: BarChart3 }
+          { id: "history", label: "Historial de Pagos", icon: History }
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -328,7 +310,7 @@ export default function BillingPanel() {
 
         {!loading && (
           <AnimatePresence mode="wait">
-            {/* PESTAÑA 1: CUENTAS POR COBRAR (CxC) */}
+            {/* PESTAÃ‘A 1: CUENTAS POR COBRAR (CxC) */}
             {activeTab === "cxc" && (
               <motion.div
                 key="cxc-tab"
@@ -338,10 +320,10 @@ export default function BillingPanel() {
                 transition={{ duration: 0.2 }}
                 className="h-full flex flex-col"
               >
-                {/* CxC - Nivel 1: Resumen de Clínicas */}
+                {/* CxC - Nivel 1: Resumen de ClÃ­nicas */}
                 {!selectedClinic ? (
                   <div className="flex-1 flex flex-col">
-                    {/* Buscador y Botón de Pago Global */}
+                    {/* Buscador y BotÃ³n de Pago Global */}
                     <div className="flex flex-col sm:flex-row gap-4 mb-4 shrink-0">
                       <div className="relative flex-1 max-w-md">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -349,7 +331,7 @@ export default function BillingPanel() {
                         </div>
                         <input
                           type="text"
-                          placeholder="Buscar clínica con deuda..."
+                          placeholder="Buscar clÃ­nica con deuda..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none shadow-sm transition-all"
@@ -372,9 +354,9 @@ export default function BillingPanel() {
                     {filteredClinics.length === 0 ? (
                       <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
                         <CheckCircle2 className="mx-auto text-emerald-500 w-12 h-12 mb-3" />
-                        <h3 className="text-lg font-bold text-slate-800">¡Al día!</h3>
+                        <h3 className="text-lg font-bold text-slate-800">Â¡Al dÃ­a!</h3>
                         <p className="text-slate-500 text-sm mt-1 max-w-sm mx-auto">
-                          No se encontraron clínicas con saldo pendiente acumulado en el departamento de Facturación.
+                          No se encontraron clÃ­nicas con saldo pendiente acumulado en el departamento de FacturaciÃ³n.
                         </p>
                       </div>
                     ) : (
@@ -390,7 +372,7 @@ export default function BillingPanel() {
                             <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-400 group-hover:bg-[#D4AF37] transition-colors" />
 
                             <div className="pl-2">
-                              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Clínica</span>
+                              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">ClÃ­nica</span>
                               <h3 className="text-base font-black text-slate-800 tracking-tight group-hover:text-[#D4AF37] transition-colors line-clamp-1 mt-0.5">
                                 {cli.nombre}
                               </h3>
@@ -417,7 +399,7 @@ export default function BillingPanel() {
                     )}
                   </div>
                 ) : (
-                  /* CxC - Nivel 2: Detalle de Casos de la Clínica */
+                  /* CxC - Nivel 2: Detalle de Casos de la ClÃ­nica */
                   <div className="flex-1 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     {/* Breadcrumbs / Header */}
                     <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
@@ -426,7 +408,7 @@ export default function BillingPanel() {
                           onClick={() => setSelectedClinic(null)}
                           className="text-slate-500 hover:text-[#D4AF37] font-semibold transition-colors flex items-center gap-1"
                         >
-                          Facturación
+                          FacturaciÃ³n
                         </button>
                         <ChevronRight size={14} className="text-slate-400" />
                         <span className="text-slate-800 font-bold max-w-[200px] truncate">
@@ -453,14 +435,14 @@ export default function BillingPanel() {
                             <th className="px-6 py-4">Fecha Entrega</th>
                             <th className="px-6 py-4">Total</th>
                             <th className="px-6 py-4">Saldo Pendiente</th>
-                            <th className="px-6 py-4 text-right">Acción</th>
+                            <th className="px-6 py-4 text-right">AcciÃ³n</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {selectedClinicCases.length === 0 ? (
                             <tr>
                               <td colSpan="6" className="px-6 py-8 text-center text-slate-400">
-                                No hay casos con saldo pendiente para esta clínica.
+                                No hay casos con saldo pendiente para esta clÃ­nica.
                               </td>
                             </tr>
                           ) : (
@@ -479,7 +461,7 @@ export default function BillingPanel() {
                                       {c.fecha_entrega}
                                     </span>
                                   ) : (
-                                    <span className="text-slate-400">—</span>
+                                    <span className="text-slate-400">â€”</span>
                                   )}
                                 </td>
                                 <td className="px-6 py-4 font-medium text-slate-600">
@@ -509,7 +491,7 @@ export default function BillingPanel() {
 
                     {/* Resumen final en pie de tabla */}
                     <div className="bg-slate-50/80 px-6 py-4 border-t border-slate-200 flex justify-between items-center shrink-0">
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Acumulado Clínica:</span>
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Acumulado ClÃ­nica:</span>
                       <span className="text-lg font-black text-rose-600">
                         ${selectedClinic.total_deuda.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
@@ -519,7 +501,7 @@ export default function BillingPanel() {
               </motion.div>
             )}
 
-            {/* PESTAÑA 2: HISTORIAL DE CASOS PAGADOS */}
+            {/* PESTAÃ‘A 2: HISTORIAL DE CASOS PAGADOS */}
             {activeTab === "history" && (
               <motion.div
                 key="history-tab"
@@ -536,7 +518,7 @@ export default function BillingPanel() {
                   </div>
                   <input
                     type="text"
-                    placeholder="Buscar por folio, paciente o clínica..."
+                    placeholder="Buscar por folio, paciente o clÃ­nica..."
                     value={historySearchTerm}
                     onChange={(e) => setHistorySearchTerm(e.target.value)}
                     className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none shadow-sm transition-all"
@@ -549,7 +531,7 @@ export default function BillingPanel() {
                       <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0">
                         <tr>
                           <th className="px-6 py-4">Folio</th>
-                          <th className="px-6 py-4">Clínica</th>
+                          <th className="px-6 py-4">ClÃ­nica</th>
                           <th className="px-6 py-4">Paciente</th>
                           <th className="px-6 py-4">Fecha Entrega</th>
                           <th className="px-6 py-4">Total</th>
@@ -580,7 +562,7 @@ export default function BillingPanel() {
                                     {c.paciente}
                                   </td>
                                   <td className="px-6 py-4 text-slate-500 text-xs">
-                                    {c.fecha_entrega || "—"}
+                                    {c.fecha_entrega || "â€”"}
                                   </td>
                                   <td className="px-6 py-4 font-bold text-slate-800">
                                     ${Number(c.total_caso).toFixed(2)}
@@ -650,7 +632,7 @@ export default function BillingPanel() {
               </motion.div>
             )}
 
-            {/* PESTAÑA 3: METRICAS Y ANALISIS */}
+            {/* PESTAÃ‘A 3: METRICAS Y ANALISIS */}
             {activeTab === "analytics" && (
               <motion.div
                 key="analytics-tab"
@@ -672,7 +654,7 @@ export default function BillingPanel() {
                       <h3 className="text-2xl font-black text-slate-800 tracking-tight mt-1">
                         ${stats.totalCxC.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                       </h3>
-                      <p className="text-[10px] text-slate-500 mt-0.5">Suma de saldos pendientes en Facturación.</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Suma de saldos pendientes en FacturaciÃ³n.</p>
                     </div>
                   </div>
 
@@ -686,7 +668,7 @@ export default function BillingPanel() {
                       <h3 className="text-2xl font-black text-slate-800 tracking-tight mt-1">
                         ${stats.totalRecaudado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                       </h3>
-                      <p className="text-[10px] text-slate-500 mt-0.5">Total de abonos registrados históricamente.</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Total de abonos registrados histÃ³ricamente.</p>
                     </div>
                   </div>
 
@@ -704,7 +686,7 @@ export default function BillingPanel() {
                           "0.0%"
                         )}
                       </h3>
-                      <p className="text-[10px] text-slate-500 mt-0.5">Porcentaje de cartera de facturación liquidada.</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Porcentaje de cartera de facturaciÃ³n liquidada.</p>
                     </div>
                   </div>
                 </div>
@@ -731,7 +713,7 @@ export default function BillingPanel() {
                               </div>
                               <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-1">
                                 <span>{p.metodo}</span>
-                                <span>•</span>
+                                <span>â€¢</span>
                                 <span>{p.fecha ? new Date(p.fecha).toLocaleDateString() : 'N/A'}</span>
                               </div>
                             </div>
@@ -750,7 +732,7 @@ export default function BillingPanel() {
                     <div>
                       <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase tracking-wider mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
                         <CreditCard size={16} className="text-[#D4AF37]" />
-                        Desglose de Métodos de Pago
+                        Desglose de MÃ©todos de Pago
                       </h3>
 
                       <div className="space-y-4">
@@ -783,7 +765,7 @@ export default function BillingPanel() {
                     <div className="mt-6 bg-slate-50 border border-slate-100 rounded-xl p-4 flex items-start gap-3">
                       <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={16} />
                       <p className="text-[11px] text-slate-500 leading-relaxed">
-                        Los montos desglosados arriba corresponden al monto real capturado en pesos mexicanos (MXN) en el momento del abono. Asegúrate de registrar correctamente la forma de pago (Efectivo/Transferencia) para fines de auditoría.
+                        Los montos desglosados arriba corresponden al monto real capturado en pesos mexicanos (MXN) en el momento del abono. AsegÃºrate de registrar correctamente la forma de pago (Efectivo/Transferencia) para fines de auditorÃ­a.
                       </p>
                     </div>
                   </div>
@@ -817,7 +799,7 @@ export default function BillingPanel() {
               </div>
               <div>
                 <h3 className="font-black text-slate-800">Registrar Abono</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Caso #{abonoModal.codigo} — Paciente: {abonoModal.paciente}</p>
+                <p className="text-xs text-slate-500 mt-0.5">Caso #{abonoModal.codigo} â€” Paciente: {abonoModal.paciente}</p>
               </div>
             </div>
 
@@ -854,7 +836,7 @@ export default function BillingPanel() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Método de pago</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">MÃ©todo de pago</label>
                 <select
                   value={metodoPago}
                   onChange={(e) => setMetodoPago(e.target.value)}
@@ -862,7 +844,7 @@ export default function BillingPanel() {
                 >
                   <option value="Transferencia">Transferencia bancaria</option>
                   <option value="Efectivo">Efectivo</option>
-                  <option value="Tarjeta">Tarjeta de Crédito / Débito</option>
+                  <option value="Tarjeta">Tarjeta de CrÃ©dito / DÃ©bito</option>
                   <option value="Cheque">Cheque</option>
                   <option value="Otro">Otro</option>
                 </select>
@@ -934,7 +916,7 @@ export default function BillingPanel() {
               </div>
               <div>
                 <h3 className="font-black text-slate-800">Motor de Cobranza Global</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Distribución FIFO (First In First Out) por clínica</p>
+                <p className="text-xs text-slate-500 mt-0.5">DistribuciÃ³n FIFO (First In First Out) por clÃ­nica</p>
               </div>
             </div>
 
@@ -942,7 +924,7 @@ export default function BillingPanel() {
             <form onSubmit={handleRegisterGlobalPayment} className="p-6 space-y-4">
               {/* Clinic Picker */}
               <div className="space-y-1 relative">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Clínica Deudora</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">ClÃ­nica Deudora</label>
                 {globalClienteId ? (
                   <div className="flex items-center justify-between bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800">
                     <span className="flex items-center gap-2">
@@ -964,7 +946,7 @@ export default function BillingPanel() {
                   <div>
                     <input
                       type="text"
-                      placeholder="Escribe para buscar clínica con deuda..."
+                      placeholder="Escribe para buscar clÃ­nica con deuda..."
                       value={globalPickerSearch}
                       onChange={(e) => {
                         setGlobalPickerSearch(e.target.value);
@@ -978,7 +960,7 @@ export default function BillingPanel() {
                       <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto divide-y divide-slate-50">
                         {filteredPickerClinics.length === 0 ? (
                           <div className="px-3 py-3 text-xs text-slate-400 text-center">
-                            {globalPickerSearch ? "No se encontraron clínicas deudoras" : "Escribe el nombre de una clínica"}
+                            {globalPickerSearch ? "No se encontraron clÃ­nicas deudoras" : "Escribe el nombre de una clÃ­nica"}
                           </div>
                         ) : (
                           filteredPickerClinics.map(cl => (
@@ -1024,9 +1006,9 @@ export default function BillingPanel() {
                 </div>
               </div>
 
-              {/* Método de pago */}
+              {/* MÃ©todo de pago */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Método de pago</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">MÃ©todo de pago</label>
                 <select
                   value={globalMetodo}
                   onChange={(e) => setGlobalMetodo(e.target.value)}
@@ -1034,7 +1016,7 @@ export default function BillingPanel() {
                 >
                   <option value="Transferencia">Transferencia bancaria</option>
                   <option value="Efectivo">Efectivo</option>
-                  <option value="Tarjeta">Tarjeta de Crédito / Débito</option>
+                  <option value="Tarjeta">Tarjeta de CrÃ©dito / DÃ©bito</option>
                   <option value="Cheque">Cheque</option>
                   <option value="Otro">Otro</option>
                 </select>
@@ -1135,3 +1117,4 @@ export default function BillingPanel() {
     </div>
   );
 }
+

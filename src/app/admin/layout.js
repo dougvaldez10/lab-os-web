@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ClipboardList, Users, Wallet } from "lucide-react";
+import { ClipboardList, Users, Wallet, BarChart3 } from "lucide-react";
 import LogoutButton from "./LogoutButton";
 
 export const metadata = {
@@ -43,6 +43,10 @@ export default async function AdminLayout({ children }) {
           <Link href="/admin/facturacion" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 hover:text-white transition-colors">
             <Wallet size={20} className="text-amber-400" />
             <span className="font-medium">Facturación</span>
+          </Link>
+          <Link href="/admin/analisis" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 hover:text-white transition-colors">
+            <BarChart3 size={20} className="text-purple-400" />
+            <span className="font-medium">Métricas y Análisis</span>
           </Link>
         </nav>
 
