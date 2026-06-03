@@ -420,7 +420,7 @@ export default function AdminBoard() {
                                 onChange={(e) => handleProductChange(idx, e.target.value)}
                                 className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none bg-white"
                               >
-                                <option value="" disabled>Seleccionar...</option>
+                                <option value="" disabled hidden></option>
                                 {det.producto_base && !Object.values(productosCat).flat().some(p => p.raw === det.producto_base) && (
                                   <option value={det.producto_base}>{det.producto_base}</option>
                                 )}
@@ -439,20 +439,20 @@ export default function AdminBoard() {
                                 onChange={(e) => handleSubtipoChange(idx, e.target.value)}
                                 className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none bg-white"
                               >
-                                <option value="">Ninguno</option>
+                                <option value="">N/A</option>
                                 {det.producto_base && (det.producto_base.toLowerCase().includes('emax') || det.producto_base.toLowerCase().includes('litio')) && (
-                                  <optgroup label="Emax / Disilicato">
+                                  <>
                                     <option value="HT">HT</option>
                                     <option value="LT">LT</option>
                                     <option value="MT">MT</option>
                                     <option value="MO">MO</option>
-                                  </optgroup>
+                                  </>
                                 )}
                                 {det.producto_base && (det.producto_base.toLowerCase().includes('zr') || det.producto_base.toLowerCase().includes('zirconia') || det.producto_base.toLowerCase().includes('pmma')) && (
-                                  <optgroup label="Zirconia / PMMA">
+                                  <>
                                     <option value="ML">ML</option>
                                     <option value="Mono">Mono</option>
-                                  </optgroup>
+                                  </>
                                 )}
                               </select>
                             </td>
