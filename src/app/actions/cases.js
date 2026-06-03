@@ -522,3 +522,27 @@ export async function updateCaseProductionDetails(caseId, detailsUpdates) {
     return { success: false, error: err.message };
   }
 }
+
+export async function returnCaseToBoard(caseId) {
+  try {
+    const supabase = getAdminClient();
+    
+    // Devolver al depto Inspección, estado En Proceso
+    const { error } = await supabase
+      .from('casos_master')
+      .update({
+        depto_actual: 'Inspección',
+        estado: 'En Proceso'
+      })
+      .eq('id', caseId);
+
+    if (error) throw error;
+    
+    revalidatePath('/');
+    revalidatePath('/admin/facturacion');
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: err.message };
+  }
+}
