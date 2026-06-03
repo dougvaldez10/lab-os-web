@@ -325,15 +325,11 @@ export async function registerGlobalPayment(formData) {
       return { success: false, error: `Error al consultar casos con saldo pendiente: ${fetchErr.message}` };
     }
 
-    if (!cases || cases.length === 0) {
-      return { success: false, error: "Esta clínica no tiene deudas pendientes." };
-    }
-
     let saldoRestante = montoTotal;
     const casosSaldados = [];
     const updates = [];
 
-    for (const caso of cases) {
+    for (const caso of (cases || [])) {
       if (saldoRestante <= 0) break;
 
       const deudaCaso = parseFloat(caso.saldo_pendiente) || 0;
@@ -379,7 +375,16 @@ export async function registerGlobalPayment(formData) {
     }
 
     // 3. Auditoría: insertar registro único en pagos_historico
-    const notasMsg = `Pago global distribuido en casos: ${updates.map(u => `${u.codigo} ($${u.monto_aplicado.toFixed(2)})`).join(', ')}`;
+    let notasMsg = "";
+    if (updates.length > 0) {
+      notasMsg = `Pago global distribuido en casos: ${updates.map(u => `${u.codigo} ($${u.monto_aplicado.toFixed(2)})`).join(', ')}`;
+      if (saldoRestante > 0) {
+        notasMsg += ` | Saldo a favor restante: $${saldoRestante.toFixed(2)}`;
+      }
+    } else {
+      notasMsg = `Anticipo / Saldo a favor (Clínica sin casos con deuda). Monto: $${saldoRestante.toFixed(2)}`;
+    }
+    
     const { error: insertErr } = await supabase
       .from('pagos_historico')
       .insert({
