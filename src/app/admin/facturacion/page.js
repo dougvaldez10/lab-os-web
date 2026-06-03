@@ -19,7 +19,8 @@ import {
   FileText,
   AlertCircle,
   X,
-  UploadCloud
+  UploadCloud,
+  Edit
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast, Toaster } from "sonner";
@@ -78,6 +79,31 @@ export default function BillingPanel() {
     fetchData();
   }, [activeTab]);
 
+  // Manejar el boton "Atras" del navegador o mouse
+  useEffect(() => {
+    const handlePopState = (e) => {
+      if (!e.state || !e.state.clinicSelected) {
+        setSelectedClinic(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleSelectClinic = (cli) => {
+    setSelectedClinic(cli);
+    window.history.pushState({ clinicSelected: true }, "", window.location.pathname + "?clinic=" + cli.id);
+  };
+
+  const handleBackToClinics = () => {
+    setSelectedClinic(null);
+    if (window.history.state && window.history.state.clinicSelected) {
+       window.history.back();
+    } else {
+       window.history.pushState(null, "", window.location.pathname);
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -115,6 +141,11 @@ export default function BillingPanel() {
     if (currentUser) {
       setAdminName(currentUser.username || "");
     }
+  };
+
+  const handleOpenEdit = (c) => {
+    // Placeholder for opening Edit Case Modal
+    console.log("Abrir modal de edicion para:", c);
   };
 
   const handleRegisterAbono = async (e) => {
@@ -376,7 +407,7 @@ export default function BillingPanel() {
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                               {filteredClinics.map((cli) => (
-                                <tr key={cli.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer group" onClick={() => setSelectedClinic(cli)}>
+                                <tr key={cli.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer group" onClick={() => handleSelectClinic(cli)}>
                                   <td className="px-6 py-4 font-bold text-slate-800 flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-full bg-amber-100 text-[#D4AF37] flex items-center justify-center font-black group-hover:bg-[#D4AF37] group-hover:text-white transition-colors">
                                       {cli.nombre.charAt(0).toUpperCase()}
@@ -411,7 +442,7 @@ export default function BillingPanel() {
                     <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
                       <div className="flex items-center gap-2 text-xs md:text-sm">
                         <button 
-                          onClick={() => setSelectedClinic(null)}
+                          onClick={handleBackToClinics}
                           className="text-slate-500 hover:text-[#D4AF37] font-semibold transition-colors flex items-center gap-1"
                         >
                           Facturación
@@ -423,7 +454,7 @@ export default function BillingPanel() {
                       </div>
 
                       <button 
-                        onClick={() => setSelectedClinic(null)}
+                        onClick={handleBackToClinics}
                         className="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm transition-colors"
                       >
                         <ArrowLeft size={14} />
@@ -479,13 +510,22 @@ export default function BillingPanel() {
                                     {Number(c.saldo_pendiente).toFixed(2)}
                                   </span>
                                 </td>
-                                <td className="px-6 py-4 text-right">
+                                <td className="px-6 py-4 text-right flex justify-end gap-2">
+                                  {currentUser?.username?.toLowerCase() === 'coloraturacorp' && (
+                                    <button
+                                      title="Editar Caso"
+                                      onClick={() => handleOpenEdit(c)}
+                                      className="inline-flex items-center justify-center w-8 h-8 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-all shadow-sm"
+                                    >
+                                      <Edit size={16} />
+                                    </button>
+                                  )}
                                   <button
+                                    title="Registrar Abono"
                                     onClick={() => handleOpenAbono(c)}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-lg text-xs font-bold transition-all shadow-sm hover:shadow"
+                                    className="inline-flex items-center justify-center w-8 h-8 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-all shadow-sm"
                                   >
-                                    <PlusCircle size={14} />
-                                    Registrar Abono
+                                    <PlusCircle size={16} />
                                   </button>
                                 </td>
                               </tr>
