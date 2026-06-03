@@ -202,7 +202,7 @@ export default function AdminBoard() {
     // Save Master
     const res = await updateAdminCase(editingCase.internal_id, payload);
     // Save Detalles (updates underlying financial prices)
-    const resDet = await updateCaseProductionDetails(editingCase.id, detalles);
+    const resDet = await updateCaseProductionDetails(editingCase.internal_id, detalles);
     
     setIsSaving(false);
 
