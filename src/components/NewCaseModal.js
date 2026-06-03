@@ -86,6 +86,7 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
   const [items, setItems] = useState([]);
   const [material, setMaterial] = useState('');
   const [producto, setProducto] = useState('');
+  const [subtipo, setSubtipo] = useState('');
   const [productsMap, setProductsMap] = useState({});
   const [tipo, setTipo] = useState('Análogo');
 
@@ -110,7 +111,7 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
   
   const currentProducts = material ? getFilteredProducts() : [];
 
-  const handleMaterialChange = (val) => { setMaterial(val); setProducto(''); };
+  const handleMaterialChange = (val) => { setMaterial(val); setProducto(''); setSubtipo(''); };
 
   const upperTeeth = [18,17,16,15,14,13,12,11, 21,22,23,24,25,26,27,28];
   const lowerTeeth = [48,47,46,45,44,43,42,41, 31,32,33,34,35,36,37,38];
@@ -133,10 +134,15 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
        toast.error("Selecciona el material y producto.");
        return;
     }
-    setItems([...items, { id: Date.now(), dientes: selectedTeeth.sort(), material, producto, unidades: selectedTeeth.length }]);
+    
+    // El producto final contiene el subtipo en el nombre para conservar compatibilidad financiera.
+    const finalProducto = subtipo ? `${producto} - ${subtipo}` : producto;
+    
+    setItems([...items, { id: Date.now(), dientes: selectedTeeth.sort(), material, producto: finalProducto, unidades: selectedTeeth.length }]);
     setSelectedTeeth([]);
     setMaterial('');
     setProducto('');
+    setSubtipo('');
   };
 
   const handleRemoveItem = (id) => setItems(items.filter(i => i.id !== id));
@@ -149,11 +155,12 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
     // Auto-agregar si olvidó pulsar "Añadir Piezas"
     if (material && producto) {
        const hasTeeth = selectedTeeth.length > 0;
+       const finalProducto = subtipo ? `${producto} - ${subtipo}` : producto;
        finalItems.push({
          id: Date.now(),
          dientes: hasTeeth ? selectedTeeth.sort() : [],
          material,
-         producto,
+         producto: finalProducto,
          unidades: hasTeeth ? selectedTeeth.length : 1
        });
     }
@@ -173,7 +180,7 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
       const result = await createNewCase(formData);
       if (result.success) {
         toast.success(`Registrado con éxito. Pasa a: ${result.deptoAsignado}.`, { id: loadingToast });
-        setItems([]); setSelectedTeeth([]); setMaterial(''); setProducto(''); setSelectedClient(null);
+        setItems([]); setSelectedTeeth([]); setMaterial(''); setProducto(''); setSubtipo(''); setSelectedClient(null);
         onActionComplete();
         onClose();
       } else {
@@ -267,6 +274,7 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
                         setTipo(e.target.value);
                         setMaterial('');
                         setProducto('');
+                        setSubtipo('');
                       }}
                     />
                     <div className="flex flex-col">
@@ -286,6 +294,7 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
                         setTipo(e.target.value);
                         setMaterial('');
                         setProducto('');
+                        setSubtipo('');
                       }}
                     />
                     <div className="flex flex-col">
@@ -369,11 +378,27 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
                     {categoriesList.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                  </select>
                </div>
-               <div className="flex-1 w-full space-y-1.5">
+               <div className="flex-1 w-full space-y-1.5 min-w-[200px]">
                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Producto (Restauración)</label>
                  <select value={producto} onChange={(e) => setProducto(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-medium" disabled={!material}>
                     <option value="">{material ? 'Seleccionar...' : 'Elige material primero'}</option>
-                    {currentProducts.map(p => <option key={p.raw} value={p.display}>{p.display}</option>)}
+                    {currentProducts.map(p => <option key={p.raw} value={p.raw}>{p.display}</option>)}
+                 </select>
+               </div>
+               <div className="w-full sm:w-32 space-y-1.5 shrink-0">
+                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Subtipo</label>
+                 <select value={subtipo} onChange={(e) => setSubtipo(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-medium" disabled={!material}>
+                    <option value="">N/A</option>
+                    <optgroup label="Emax">
+                      <option value="HT">HT</option>
+                      <option value="LT">LT</option>
+                      <option value="MT">MT</option>
+                      <option value="MO">MO</option>
+                    </optgroup>
+                    <optgroup label="Zirconia / PMMA">
+                      <option value="ML">ML</option>
+                      <option value="Mono">Mono</option>
+                    </optgroup>
                  </select>
                </div>
                <button 

@@ -1290,14 +1290,20 @@ export default function Home() {
                                                       matText += " Co";
                                                   }
 
-                                                  // 3. Translucidez (HT, LT, etc.)
+                                                  // 3. Translucidez (Subtipo, ej. HT, LT, ML)
                                                   let extraText = "";
-                                                  const parenMatch = item.producto.match(/\(([^)]+)\)/);
-                                                  if (parenMatch) {
-                                                     const val = parenMatch[1].toUpperCase();
-                                                     if (["HT", "LT", "MT", "MO", "HO"].includes(val)) {
-                                                         extraText += ` (${val})`;
-                                                     }
+                                                  const dashMatch = item.producto.match(/\s-\s([A-Za-z0-9]+)/);
+                                                  const parenMatch = item.producto.match(/\(([^)]+)\)/); // Compatibilidad vieja
+                                                  let subtipo = "";
+                                                  
+                                                  if (dashMatch) {
+                                                      subtipo = dashMatch[1];
+                                                  } else if (parenMatch) {
+                                                      subtipo = parenMatch[1].toUpperCase();
+                                                  }
+                                                  
+                                                  if (["HT", "LT", "MT", "MO", "HO", "ML", "Mono"].includes(subtipo)) {
+                                                      extraText += ` "${subtipo}"`;
                                                   }
 
                                                   const groupKey = `${matText}|${matColor}|${extraText}`;

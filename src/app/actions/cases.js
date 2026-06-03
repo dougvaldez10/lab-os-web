@@ -468,3 +468,57 @@ export async function updateCaseFinancials(caseId, detailsUpdates, discount, app
     return { success: false, error: error.message };
   }
 }
+
+export async function updateCaseProductionDetails(caseId, detailsUpdates) {
+  try {
+    const supabase = getAdminClient();
+    
+    // 0. Eliminar los items removidos
+    const { data: currentDetails } = await supabase.from('casos_detalle').select('id').eq('caso_id', caseId);
+    const currentIds = currentDetails ? currentDetails.map(d => d.id) : [];
+    const updatedIds = detailsUpdates.filter(d => d.id && !String(d.id).startsWith('temp_')).map(d => d.id);
+    const idsToDelete = currentIds.filter(id => !updatedIds.includes(id));
+    if (idsToDelete.length > 0) await supabase.from('casos_detalle').delete().in('id', idsToDelete);
+    
+    // 1. Guardar items
+    let totalSubtotal = 0;
+    for (const det of detailsUpdates) {
+      const pUnit = Number(det.precio_unit) || 0;
+      const cant = Number(det.unidades) || 0;
+      const sub = pUnit * cant;
+      totalSubtotal += sub;
+      
+      if (det.id && typeof det.id === 'string' && det.id.startsWith('temp_')) {
+        await supabase.from('casos_detalle').insert({
+          caso_id: caseId, producto: det.producto, dientes: det.dientes, unidades: cant, precio_unit: pUnit, subtotal: sub
+        });
+      } else {
+        await supabase.from('casos_detalle').update({
+          producto: det.producto, dientes: det.dientes, unidades: cant, precio_unit: pUnit, subtotal: sub
+        }).eq('id', det.id);
+      }
+    }
+    
+    // 2. Traer info maestra para mantener descuentos intactos
+    const { data: master } = await supabase.from('casos_master').select('descuento, iva_aplicado, total_caso, saldo_pendiente').eq('id', caseId).single();
+    const desc = Number(master?.descuento) || 0;
+    const applyIva = master?.iva_aplicado || false;
+    
+    const baseAmount = Math.max(0, totalSubtotal - desc);
+    const newTotal = applyIva ? baseAmount * 1.08 : baseAmount;
+    
+    const oldTotal = Number(master?.total_caso) || 0;
+    const oldSaldo = Number(master?.saldo_pendiente) || 0;
+    let newSaldo = oldSaldo + (newTotal - oldTotal);
+    if (newSaldo < 0) newSaldo = 0;
+    
+    // 3. Actualizar Master
+    await supabase.from('casos_master').update({ total_caso: newTotal, saldo_pendiente: newSaldo }).eq('id', caseId);
+    
+    revalidatePath('/');
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: err.message };
+  }
+}

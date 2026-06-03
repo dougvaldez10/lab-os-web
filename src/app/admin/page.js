@@ -5,6 +5,8 @@ import { Edit, Trash2, Search, RefreshCw, AlertCircle, X, Save, Plus } from "luc
 import { toast, Toaster } from "sonner";
 import { updateAdminCase, deleteAdminCase } from "@/app/actions/admin-cases";
 import { getClients, getAllClinics } from "@/app/actions/clients";
+import { getProducts } from "@/app/actions/products";
+import { getCaseDetailsForEdit, updateCaseProductionDetails } from "@/app/actions/cases";
 import NewCaseModal from "@/components/NewCaseModal";
 
 export default function AdminBoard() {
@@ -14,7 +16,10 @@ export default function AdminBoard() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCase, setEditingCase] = useState(null);
+  const [detalles, setDetalles] = useState([]);
+  const [productosCat, setProductosCat] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
 
   const fetchInitialData = async () => {
@@ -56,8 +61,79 @@ export default function AdminBoard() {
     }
   };
 
-  const handleEdit = (c) => {
+  const handleEdit = async (c) => {
     setEditingCase({ ...c }); // Copia para editar
+    setIsLoadingDetails(true);
+    setDetalles([]);
+    const [res, prods] = await Promise.all([
+      getCaseDetailsForEdit(c.id),
+      getProducts()
+    ]);
+    if (res.success) {
+      setDetalles(res.detalles ? res.detalles.map(d => {
+        const parts = (d.producto || '').split(' - ');
+        return {
+          ...d,
+          producto_base: parts[0] || '',
+          subtipo: parts[1] || ''
+        };
+      }) : []);
+    } else {
+      toast.error("Error al cargar detalles");
+    }
+    setProductosCat(prods || {});
+    setIsLoadingDetails(false);
+  };
+
+  const handleProductChange = (index, baseName) => {
+    const newDetalles = [...detalles];
+    newDetalles[index].producto_base = baseName;
+    newDetalles[index].producto = newDetalles[index].subtipo ? `${baseName} - ${newDetalles[index].subtipo}` : baseName;
+    // Autocompletar precio unitario para mantener finanzas sanas (aunque aqui no se muestre)
+    let newPrice = 0;
+    for (const cat of Object.values(productosCat)) {
+      const found = cat.find(p => p.raw === baseName);
+      if (found) {
+        newPrice = found.precio;
+        break;
+      }
+    }
+    newDetalles[index].precio_unit = newPrice;
+    setDetalles(newDetalles);
+  };
+
+  const handleSubtipoChange = (index, sub) => {
+    const newDetalles = [...detalles];
+    newDetalles[index].subtipo = sub;
+    newDetalles[index].producto = sub ? `${newDetalles[index].producto_base || ''} - ${sub}` : newDetalles[index].producto_base || '';
+    setDetalles(newDetalles);
+  };
+
+  const handleDetailChange = (index, field, value) => {
+    const newDetalles = [...detalles];
+    newDetalles[index][field] = value;
+    setDetalles(newDetalles);
+  };
+
+  const handleAddRow = () => {
+    setDetalles([
+      ...detalles,
+      {
+        id: `temp_${Date.now()}`,
+        producto: '',
+        producto_base: '',
+        subtipo: '',
+        dientes: '',
+        unidades: 1,
+        precio_unit: 0
+      }
+    ]);
+  };
+
+  const handleRemoveRow = (index) => {
+    const newDetalles = [...detalles];
+    newDetalles.splice(index, 1);
+    setDetalles(newDetalles);
   };
 
   const handleSaveEdit = async (e) => {
@@ -82,15 +158,19 @@ export default function AdminBoard() {
       tipo: editingCase.tipo
     };
 
+    // Save Master
     const res = await updateAdminCase(editingCase.internal_id, payload);
+    // Save Detalles (updates underlying financial prices)
+    const resDet = await updateCaseProductionDetails(editingCase.id, detalles);
+    
     setIsSaving(false);
 
-    if (res.success) {
+    if (res.success && resDet.success) {
       toast.success("Caso actualizado correctamente", { id: toastId });
       setEditingCase(null);
       fetchInitialData();
     } else {
-      toast.error(res.error || "Error al guardar", { id: toastId });
+      toast.error(res.error || resDet.error || "Error al guardar", { id: toastId });
     }
   };
 
@@ -307,14 +387,104 @@ export default function AdminBoard() {
               <div className="grid grid-cols-1 gap-4">
                  <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-500 uppercase">Tipo Protocolo</label>
-                    <select value={editingCase.tipo || "Anílogo"} onChange={e => setEditingCase({...editingCase, tipo: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none">
-                       <option value="Anílogo">Anílogo (Físico)</option>
+                    <select value={editingCase.tipo || "Análogo"} onChange={e => setEditingCase({...editingCase, tipo: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none">
+                       <option value="Análogo">Análogo (Físico)</option>
                        <option value="Digital">Digital</option>
                     </select>
                  </div>
               </div>
 
-              <div className="space-y-1">
+              {/* TABLA DE CONCEPTOS DE PRODUCCION */}
+              <div className="mt-4 border-t border-slate-100 pt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Conceptos de Producción (Material y Piezas)</label>
+                  {isLoadingDetails && <RefreshCw size={14} className="animate-spin text-slate-400" />}
+                </div>
+                {!isLoadingDetails && (
+                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                        <tr>
+                          <th className="px-3 py-2">Material / Producto</th>
+                          <th className="px-3 py-2 w-32">Subtipo</th>
+                          <th className="px-3 py-2 w-32">Piezas (#)</th>
+                          <th className="px-2 py-2 w-10 text-center"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {detalles.map((det, idx) => (
+                          <tr key={det.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-3 py-2">
+                              <select
+                                value={det.producto_base || ''}
+                                onChange={(e) => handleProductChange(idx, e.target.value)}
+                                className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none bg-white"
+                              >
+                                <option value="" disabled>Seleccionar...</option>
+                                {det.producto_base && !Object.values(productosCat).flat().some(p => p.raw === det.producto_base) && (
+                                  <option value={det.producto_base}>{det.producto_base}</option>
+                                )}
+                                {Object.entries(productosCat).map(([cat, prods]) => (
+                                  <optgroup key={cat} label={cat}>
+                                    {prods.map(p => (
+                                      <option key={p.raw} value={p.raw}>{p.display}</option>
+                                    ))}
+                                  </optgroup>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="px-3 py-2">
+                              <select
+                                value={det.subtipo || ''}
+                                onChange={(e) => handleSubtipoChange(idx, e.target.value)}
+                                className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none bg-white"
+                              >
+                                <option value="">Ninguno</option>
+                                <optgroup label="Emax">
+                                  <option value="HT">HT</option>
+                                  <option value="LT">LT</option>
+                                  <option value="MT">MT</option>
+                                  <option value="MO">MO</option>
+                                </optgroup>
+                                <optgroup label="Zirconia / PMMA">
+                                  <option value="ML">ML</option>
+                                  <option value="Mono">Mono</option>
+                                </optgroup>
+                              </select>
+                            </td>
+                            <td className="px-3 py-2">
+                              <input
+                                type="text"
+                                value={det.dientes || ''}
+                                onChange={(e) => handleDetailChange(idx, 'dientes', e.target.value)}
+                                className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none"
+                                placeholder="Ej. 11, 12"
+                              />
+                            </td>
+                            <td className="px-2 py-2 text-center">
+                              <button type="button" onClick={() => handleRemoveRow(idx)} className="text-slate-300 hover:text-rose-500 transition-colors p-1" title="Eliminar fila">
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {detalles.length === 0 && (
+                          <tr><td colSpan="4" className="px-4 py-4 text-center text-slate-400">Sin piezas asignadas</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {!isLoadingDetails && (
+                  <div className="mt-2">
+                    <button type="button" onClick={handleAddRow} className="text-xs font-bold text-[#D4AF37] hover:text-[#B8860B] flex items-center gap-1.5 bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 px-3 py-1.5 rounded-lg transition-colors">
+                      <Plus size={14} /> Añadir Pieza
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1 mt-2 border-t border-slate-100 pt-4">
                 <label className="text-xs font-bold text-slate-500 uppercase">Comentarios</label>
                 <textarea rows="3" value={editingCase.comentarios || ""} onChange={e => setEditingCase({...editingCase, comentarios: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none resize-none"></textarea>
               </div>
