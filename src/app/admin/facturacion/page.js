@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { 
@@ -30,6 +30,7 @@ import {
   registrarAbono,
   registerGlobalPayment
 } from "@/app/actions/billing";
+import { getAllClinics } from "@/app/actions/clients";
 
 export default function BillingPanel() {
   // Navigation tabs
@@ -39,6 +40,7 @@ export default function BillingPanel() {
 
   // States for CxC
   const [clinics, setClinics] = useState([]);
+  const [allClinics, setAllClinics] = useState([]);
   const [cases, setCases] = useState([]);
   const [selectedClinic, setSelectedClinic] = useState(null); // Level 2 selection
   const [searchTerm, setSearchTerm] = useState("");
@@ -79,6 +81,9 @@ export default function BillingPanel() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      const allRes = await getAllClinics();
+      if (allRes) setAllClinics(allRes);
+
       if (activeTab === "cxc") {
         const res = await getBillingSummary();
         if (res.success) {
@@ -219,10 +224,8 @@ export default function BillingPanel() {
     }
   };
 
-  // Filter clinics with total_deuda > 0 for global picker
-  const clinicsWithDebt = clinics.filter(cl => cl.total_deuda > 0);
-  
-  const filteredPickerClinics = clinicsWithDebt.filter(cl => 
+  // Global picker searches through ALL clinics
+  const filteredPickerClinics = allClinics.filter(cl => 
     cl.nombre.toLowerCase().includes(globalPickerSearch.toLowerCase())
   );
 
@@ -360,41 +363,44 @@ export default function BillingPanel() {
                         </p>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pb-6">
-                        {filteredClinics.map((cli) => (
-                          <motion.div
-                            key={cli.id}
-                            whileHover={{ y: -3, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)" }}
-                            onClick={() => setSelectedClinic(cli)}
-                            className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-amber-300 transition-all cursor-pointer flex flex-col justify-between h-40 group relative overflow-hidden"
-                          >
-                            {/* Accent line */}
-                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-400 group-hover:bg-[#D4AF37] transition-colors" />
-
-                            <div className="pl-2">
-                              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Clínica</span>
-                              <h3 className="text-base font-black text-slate-800 tracking-tight group-hover:text-[#D4AF37] transition-colors line-clamp-1 mt-0.5">
-                                {cli.nombre}
-                              </h3>
-                              <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                                <FileText size={12} className="text-slate-400" />
-                                {cli.casos_count} {cli.casos_count === 1 ? 'caso pendiente' : 'casos pendientes'}
-                              </p>
-                            </div>
-
-                            <div className="pl-2 mt-4 flex justify-between items-end border-t border-slate-100 pt-3">
-                              <div>
-                                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Deuda Total</span>
-                                <div className="text-lg font-black text-rose-600 tracking-tight">
-                                  ${cli.total_deuda.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </div>
-                              </div>
-                              <span className="p-1.5 bg-slate-50 rounded-lg group-hover:bg-amber-50 group-hover:text-[#D4AF37] text-slate-400 transition-colors">
-                                <ChevronRight size={18} />
-                              </span>
-                            </div>
-                          </motion.div>
-                        ))}
+                      <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                        <div className="overflow-x-auto flex-1">
+                          <table className="w-full text-left text-sm whitespace-nowrap">
+                            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0">
+                              <tr>
+                                <th className="px-6 py-4">Clínica</th>
+                                <th className="px-6 py-4">Casos Pendientes</th>
+                                <th className="px-6 py-4">Deuda Total</th>
+                                <th className="px-6 py-4 text-right">Detalle</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {filteredClinics.map((cli) => (
+                                <tr key={cli.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer group" onClick={() => setSelectedClinic(cli)}>
+                                  <td className="px-6 py-4 font-bold text-slate-800 flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-amber-100 text-[#D4AF37] flex items-center justify-center font-black group-hover:bg-[#D4AF37] group-hover:text-white transition-colors">
+                                      {cli.nombre.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span className="group-hover:text-[#D4AF37] transition-colors">{cli.nombre}</span>
+                                  </td>
+                                  <td className="px-6 py-4 text-slate-600 font-medium">
+                                    <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-xs font-semibold">
+                                      {cli.casos_count} {cli.casos_count === 1 ? 'caso' : 'casos'}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 font-black text-rose-600">
+                                    ${cli.total_deuda.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </td>
+                                  <td className="px-6 py-4 text-right">
+                                    <button className="p-1.5 bg-slate-50 group-hover:bg-amber-50 text-slate-400 group-hover:text-[#D4AF37] rounded-lg transition-colors inline-flex">
+                                      <ChevronRight size={18} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -929,7 +935,7 @@ export default function BillingPanel() {
                   <div className="flex items-center justify-between bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800">
                     <span className="flex items-center gap-2">
                       <Building2 size={16} className="text-[#D4AF37]" />
-                      {clinics.find(cl => cl.id === globalClienteId)?.nombre}
+                      {allClinics.find(cl => cl.id === globalClienteId)?.nombre}
                     </span>
                     <button 
                       type="button" 
@@ -963,22 +969,27 @@ export default function BillingPanel() {
                             {globalPickerSearch ? "No se encontraron clínicas deudoras" : "Escribe el nombre de una clínica"}
                           </div>
                         ) : (
-                          filteredPickerClinics.map(cl => (
-                            <button
-                              key={cl.id}
-                              type="button"
-                              onClick={() => {
-                                setGlobalClienteId(cl.id);
-                                setGlobalPickerSearch("");
-                                setGlobalPickerOpen(false);
-                                setGlobalMonto(String(cl.total_deuda));
-                              }}
-                              className="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-xs font-bold text-slate-700 flex justify-between items-center transition-colors cursor-pointer"
-                            >
-                              <span>{cl.nombre}</span>
-                              <span className="text-rose-500 font-black">${cl.total_deuda.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
-                            </button>
-                          ))
+                          filteredPickerClinics.map(cl => {
+                            const clinicWithDebt = clinics.find(c => c.id === cl.id);
+                            return (
+                              <button
+                                key={cl.id}
+                                type="button"
+                                onClick={() => {
+                                  setGlobalClienteId(cl.id);
+                                  setGlobalPickerSearch("");
+                                  setGlobalPickerOpen(false);
+                                  setGlobalMonto(clinicWithDebt ? String(clinicWithDebt.total_deuda) : "");
+                                }}
+                                className="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-xs font-bold text-slate-700 flex justify-between items-center transition-colors cursor-pointer"
+                              >
+                                <span>{cl.nombre}</span>
+                                {clinicWithDebt && (
+                                  <span className="text-rose-500 font-black">${clinicWithDebt.total_deuda.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                                )}
+                              </button>
+                            );
+                          })
                         )}
                       </div>
                     )}

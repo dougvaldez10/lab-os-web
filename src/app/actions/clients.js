@@ -29,3 +29,17 @@ export async function getClients() {
     return [];
   }
 }
+
+export async function getAllClinics() {
+  try {
+    const { data: clientes, error } = await supabaseAdmin
+      .from('clientes')
+      .select('id, nombre')
+      .order('nombre', { ascending: true });
+    if (error) throw error;
+    return clientes || [];
+  } catch (err) {
+    console.error("Error fetching all clinics:", err);
+    return [];
+  }
+}

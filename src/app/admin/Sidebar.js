@@ -27,10 +27,10 @@ export default function Sidebar() {
   };
 
   const menuItems = [
-    { href: "/admin", label: "Pizarrón (Casos)", icon: ClipboardList, iconColor: "text-blue-400" },
-    { href: "/admin/crm", label: "Directorio CRM", icon: Users, iconColor: "text-green-400" },
-    { href: "/admin/facturacion", label: "Facturación", icon: Wallet, iconColor: "text-amber-400" },
-    { href: "/admin/analisis", label: "Métricas y Análisis", icon: BarChart3, iconColor: "text-purple-400" },
+    { href: "/admin", label: "Casos", icon: ClipboardList, iconColor: "text-blue-400" },
+    { href: "/admin/facturacion", label: "Finanzas", icon: Wallet, iconColor: "text-amber-400" },
+    { href: "/admin/analisis", label: "Métricas", icon: BarChart3, iconColor: "text-purple-400" },
+    { href: "/admin/crm", label: "Directorio", icon: Users, iconColor: "text-green-400" },
   ];
 
   // During SSR or before hydration, use expanded state to prevent layout shift
