@@ -149,10 +149,16 @@ export async function createNewCase(formData) {
         });
       }
 
+      let grandTotal = 0;
+
       const detalles = items.map(item => {
-        const matchedPrice      = priceMap[item.producto] || 0;
+        const baseProduct       = item.producto.split(' - ')[0].trim();
+        const matchedPrice      = priceMap[baseProduct] || priceMap[item.producto] || 0;
         const numUnidades       = item.unidades || 1;
         const subTotalCalculado = matchedPrice * numUnidades;
+        
+        grandTotal += subTotalCalculado;
+
         return {
           caso_id:    masterId,
           dientes:    Array.isArray(item.dientes) ? item.dientes.join(',') : '',
@@ -167,6 +173,12 @@ export async function createNewCase(formData) {
       if (errorDetalles) {
         console.error("Supabase insert error (detalles):", errorDetalles);
         // No bloquear: el master ya quedÃƒÂ³ guardado
+      } else {
+        // Actualizar el master con el total y saldo
+        await supabase.from('casos_master').update({
+          total_caso: grandTotal,
+          saldo_pendiente: grandTotal
+        }).eq('id', masterId);
       }
     }
 
