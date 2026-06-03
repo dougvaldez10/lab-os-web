@@ -153,7 +153,7 @@ export async function getBillingHistory() {
     // Casos terminados en Facturación y ya liquidados
     const { data: cases, error: errCases } = await supabase
       .from('casos_master')
-      .select('id, codigo, paciente, total_caso, saldo_pendiente, fecha_entrega, cliente_id, clientes(nombre)')
+      .select('id, codigo, paciente, total_caso, saldo_pendiente, fecha_entrega, cliente_id, iva_aplicado, clientes(nombre)')
       .eq('depto_actual', 'Facturación')
       .eq('estado_pago', 'Pagado')
       .order('fecha_entrega', { ascending: false });

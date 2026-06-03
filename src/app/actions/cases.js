@@ -289,3 +289,61 @@ export async function updateCaseState(internalId, action, operatorName = null) {
     return { success: false, error: "Error interno al guardar." };
   }
 }
+
+export async function toggleCaseIVA(caseId, applyIva) {
+  try {
+    const supabase = getAdminClient();
+    
+    // 1. Obtener la suma de casos_detalle para el caso
+    const { data: detalles } = await supabase
+      .from('casos_detalle')
+      .select('subtotal')
+      .eq('caso_id', caseId);
+      
+    let subtotalItems = 0;
+    if (detalles && detalles.length > 0) {
+      subtotalItems = detalles.reduce((acc, d) => acc + (Number(d.subtotal) || 0), 0);
+    }
+    
+    // 2. Obtener el master para leer el descuento y saldo
+    const { data: master } = await supabase
+      .from('casos_master')
+      .select('descuento, total_caso, saldo_pendiente')
+      .eq('id', caseId)
+      .single();
+      
+    if (!master) return { success: false, error: 'Caso no encontrado' };
+    
+    const desc = Number(master.descuento) || 0;
+    
+    // 3. Recalcular total nuevo
+    const baseAmount = Math.max(0, subtotalItems - desc);
+    const newTotal = applyIva ? baseAmount * 1.08 : baseAmount;
+    
+    // 4. Ajustar saldo pendiente
+    const oldTotal = Number(master.total_caso) || 0;
+    const oldSaldo = Number(master.saldo_pendiente) || 0;
+    
+    let newSaldo = oldSaldo + (newTotal - oldTotal);
+    if (newSaldo < 0) newSaldo = 0;
+    
+    // 5. Update en BD
+    const { error } = await supabase
+      .from('casos_master')
+      .update({
+        iva_aplicado: applyIva,
+        total_caso: newTotal,
+        saldo_pendiente: newSaldo
+      })
+      .eq('id', caseId);
+      
+    if (error) throw error;
+    
+    revalidatePath('/admin/facturacion');
+    return { success: true, newTotal, newSaldo, iva_aplicado: applyIva };
+    
+  } catch (error) {
+    console.error("toggleCaseIVA error:", error);
+    return { success: false, error: error.message };
+  }
+}

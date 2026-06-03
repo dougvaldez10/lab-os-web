@@ -32,6 +32,7 @@ import {
   registerGlobalPayment
 } from "@/app/actions/billing";
 import { getAllClinics } from "@/app/actions/clients";
+import { toggleCaseIVA } from "@/app/actions/cases";
 
 export default function BillingPanel() {
   // Navigation tabs
@@ -146,6 +147,26 @@ export default function BillingPanel() {
   const handleOpenEdit = (c) => {
     // Placeholder for opening Edit Case Modal
     console.log("Abrir modal de edicion para:", c);
+  };
+
+  const handleToggleIVA = async (c, isChecked) => {
+    const toastId = toast.loading(isChecked ? "Aplicando IVA..." : "Removiendo IVA...");
+    try {
+      const res = await toggleCaseIVA(c.id, isChecked);
+      if (res.success) {
+        toast.success(isChecked ? "IVA aplicado al caso" : "IVA removido", { id: toastId });
+        setCases(prev => prev.map(item => {
+          if (item.id === c.id) {
+            return { ...item, iva_aplicado: isChecked, total_caso: res.newTotal, saldo_pendiente: res.newSaldo };
+          }
+          return item;
+        }));
+      } else {
+        toast.error("Error al actualizar IVA: " + res.error, { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Error de red", { id: toastId });
+    }
   };
 
   const handleRegisterAbono = async (e) => {
@@ -470,6 +491,7 @@ export default function BillingPanel() {
                             <th className="px-6 py-4">Folio</th>
                             <th className="px-6 py-4">Paciente</th>
                             <th className="px-6 py-4">Fecha Entrega</th>
+                            <th className="px-6 py-4">IVA (8%)</th>
                             <th className="px-6 py-4">Total</th>
                             <th className="px-6 py-4">Saldo Pendiente</th>
                             <th className="px-6 py-4 text-right">Acción</th>
@@ -500,6 +522,14 @@ export default function BillingPanel() {
                                   ) : (
                                     <span className="text-slate-400">â€”</span>
                                   )}
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={c.iva_aplicado || false} 
+                                    onChange={(e) => handleToggleIVA(c, e.target.checked)} 
+                                    className="w-4 h-4 text-[#D4AF37] focus:ring-[#D4AF37] rounded cursor-pointer border-slate-300" 
+                                  />
                                 </td>
                                 <td className="px-6 py-4 font-medium text-slate-600">
                                   ${c.total_caso ? Number(c.total_caso).toFixed(2) : "0.00"}
