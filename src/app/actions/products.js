@@ -11,7 +11,7 @@ export async function getProducts() {
   try {
     const { data, error } = await supabaseAdmin
       .from('productos')
-      .select('nombre, categoria')
+      .select('nombre, categoria, precio')
       .order('nombre', { ascending: true });
 
     if (error) throw error;
@@ -22,7 +22,7 @@ export async function getProducts() {
     for (const p of data) {
       const displayName = p.nombre.replace(/^\d+-/, '').trim();
       if (!grouped[p.categoria]) grouped[p.categoria] = [];
-      grouped[p.categoria].push({ raw: p.nombre, display: displayName });
+      grouped[p.categoria].push({ raw: p.nombre, display: displayName, precio: p.precio });
     }
     return grouped;
   } catch (error) {

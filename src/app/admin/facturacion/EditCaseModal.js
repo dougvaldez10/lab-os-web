@@ -6,6 +6,7 @@ import { X, Save, Plus, Trash2, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { getCaseDetailsForEdit, updateCaseFinancials } from '@/app/actions/cases';
 import { deleteAdminCase } from '@/app/actions/admin-cases';
+import { getProducts } from '@/app/actions/products';
 
 export default function EditCaseModal({ caseData, onClose, onUpdated }) {
   const [detalles, setDetalles] = useState([]);
@@ -15,6 +16,7 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [productosCat, setProductosCat] = useState({});
 
   useEffect(() => {
     if (caseData) {
@@ -42,7 +44,11 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
 
   const loadData = async () => {
     setLoading(true);
-    const res = await getCaseDetailsForEdit(caseData.id);
+    const [res, prods] = await Promise.all([
+      getCaseDetailsForEdit(caseData.id),
+      getProducts()
+    ]);
+    
     if (res.success) {
       setDetalles(res.detalles || []);
       setDescuento(Number(res.master?.descuento) || 0);
@@ -50,12 +56,29 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
     } else {
       toast.error("Error al cargar detalles del caso");
     }
+    setProductosCat(prods || {});
     setLoading(false);
   };
 
   const handleDetailChange = (index, field, value) => {
     const newDetalles = [...detalles];
     newDetalles[index][field] = value;
+    setDetalles(newDetalles);
+  };
+
+  const handleProductChange = (index, rawProducto) => {
+    const newDetalles = [...detalles];
+    newDetalles[index].producto = rawProducto;
+    // Find price in the grouped catalog
+    let newPrice = 0;
+    for (const cat of Object.values(productosCat)) {
+      const found = cat.find(p => p.raw === rawProducto);
+      if (found) {
+        newPrice = found.precio;
+        break;
+      }
+    }
+    newDetalles[index].precio_unit = newPrice;
     setDetalles(newDetalles);
   };
 
@@ -142,13 +165,24 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
                         {detalles.map((det, idx) => (
                           <tr key={det.id} className="hover:bg-slate-50 transition-colors">
                             <td className="px-4 py-3">
-                              <input
-                                type="text"
+                              <select
                                 value={det.producto || ''}
-                                onChange={(e) => handleDetailChange(idx, 'producto', e.target.value)}
-                                className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-slate-700 font-medium"
-                                placeholder="Ej. Corona Zirconia (Digital)"
-                              />
+                                onChange={(e) => handleProductChange(idx, e.target.value)}
+                                className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-slate-700 font-medium bg-white"
+                              >
+                                <option value="" disabled>Seleccione un producto</option>
+                                {/* Add current product if not in list */}
+                                {det.producto && !Object.values(productosCat).flat().some(p => p.raw === det.producto) && (
+                                  <option value={det.producto}>{det.producto}</option>
+                                )}
+                                {Object.entries(productosCat).map(([cat, prods]) => (
+                                  <optgroup key={cat} label={cat}>
+                                    {prods.map(p => (
+                                      <option key={p.raw} value={p.raw}>{p.display}</option>
+                                    ))}
+                                  </optgroup>
+                                ))}
+                              </select>
                             </td>
                             <td className="px-4 py-3">
                               <input
