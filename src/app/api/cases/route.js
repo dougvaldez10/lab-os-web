@@ -113,6 +113,7 @@ export async function GET(request) {
     const cases = rows.map(row => ({
       internal_id: row.id,
       id: row.codigo,
+      cliente_id: row.cliente_id,
       patient: row.paciente,
       doctor: row.doctor,
       dept: row.depto_actual,

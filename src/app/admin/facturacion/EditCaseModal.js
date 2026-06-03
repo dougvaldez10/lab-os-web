@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, Plus, Trash2, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
-import { getCaseDetailsForEdit, updateCaseFinancials } from '@/app/actions/cases';
+import { getCaseDetailsForEdit, updateCaseFinancials, returnCaseToBoard } from '@/app/actions/cases';
 import { deleteAdminCase } from '@/app/actions/admin-cases';
 import { getProducts } from '@/app/actions/products';
 
@@ -50,7 +50,14 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
     ]);
     
     if (res.success) {
-      setDetalles(res.detalles || []);
+      setDetalles(res.detalles ? res.detalles.map(d => {
+        const parts = (d.producto || '').split(' - ');
+        return {
+          ...d,
+          producto_base: parts[0] || '',
+          subtipo: parts[1] || ''
+        };
+      }) : []);
       setDescuento(Number(res.master?.descuento) || 0);
       setIvaAplicado(res.master?.iva_aplicado || false);
     } else {
@@ -66,13 +73,14 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
     setDetalles(newDetalles);
   };
 
-  const handleProductChange = (index, rawProducto) => {
+  const handleProductChange = (index, baseName) => {
     const newDetalles = [...detalles];
-    newDetalles[index].producto = rawProducto;
+    newDetalles[index].producto_base = baseName;
+    newDetalles[index].producto = newDetalles[index].subtipo ? `${baseName} - ${newDetalles[index].subtipo}` : baseName;
     // Find price in the grouped catalog
     let newPrice = 0;
     for (const cat of Object.values(productosCat)) {
-      const found = cat.find(p => p.raw === rawProducto);
+      const found = cat.find(p => p.raw === baseName);
       if (found) {
         newPrice = found.precio;
         break;
@@ -82,12 +90,21 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
     setDetalles(newDetalles);
   };
 
+  const handleSubtipoChange = (index, sub) => {
+    const newDetalles = [...detalles];
+    newDetalles[index].subtipo = sub;
+    newDetalles[index].producto = sub ? `${newDetalles[index].producto_base || ''} - ${sub}` : newDetalles[index].producto_base || '';
+    setDetalles(newDetalles);
+  };
+
   const handleAddRow = () => {
     setDetalles([
       ...detalles,
       {
         id: `temp_${Date.now()}`,
         producto: '',
+        producto_base: '',
+        subtipo: '',
         dientes: '',
         unidades: 1,
         precio_unit: 0
@@ -137,25 +154,24 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="bg-white rounded-2xl shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]"
-        >
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose}></motion.div>
+        
+        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl relative z-10 flex flex-col max-h-[90vh]">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
             <div>
               <h2 className="text-xl font-bold text-slate-800">Editar Caso #{caseData?.codigo}</h2>
               <p className="text-sm text-slate-500">Paciente: {caseData?.paciente}</p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors"
-            >
-              <X size={20} />
-            </button>
+            <div className="flex items-center gap-3">
+              <button onClick={handleReturnToBoard} disabled={saving} className="px-3 py-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200">
+                Devolver a Pizarrón
+              </button>
+              <button onClick={onClose} className="p-1 text-slate-400 hover:bg-slate-100 rounded-full">
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
           {/* Body */}
@@ -173,7 +189,8 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
                     <table className="w-full text-left text-sm">
                       <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                         <tr>
-                          <th className="px-4 py-3 min-w-[200px]">Concepto / Material (Tipo)</th>
+                          <th className="px-4 py-3 min-w-[200px]">Concepto / Material</th>
+                          <th className="px-4 py-3 w-32">Subtipo</th>
                           <th className="px-4 py-3 w-32">Piezas</th>
                           <th className="px-4 py-3 w-24">Cant.</th>
                           <th className="px-4 py-3 w-32">Precio Unit.</th>
@@ -186,14 +203,14 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
                           <tr key={det.id} className="hover:bg-slate-50 transition-colors">
                             <td className="px-4 py-3">
                               <select
-                                value={det.producto || ''}
+                                value={det.producto_base || ''}
                                 onChange={(e) => handleProductChange(idx, e.target.value)}
                                 className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-slate-700 font-medium bg-white"
                               >
                                 <option value="" disabled>Seleccione un producto</option>
                                 {/* Add current product if not in list */}
-                                {det.producto && !Object.values(productosCat).flat().some(p => p.raw === det.producto) && (
-                                  <option value={det.producto}>{det.producto}</option>
+                                {det.producto_base && !Object.values(productosCat).flat().some(p => p.raw === det.producto_base) && (
+                                  <option value={det.producto_base}>{det.producto_base}</option>
                                 )}
                                 {Object.entries(productosCat).map(([cat, prods]) => (
                                   <optgroup key={cat} label={cat}>
@@ -202,6 +219,25 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
                                     ))}
                                   </optgroup>
                                 ))}
+                              </select>
+                            </td>
+                            <td className="px-4 py-3">
+                              <select
+                                value={det.subtipo || ''}
+                                onChange={(e) => handleSubtipoChange(idx, e.target.value)}
+                                className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-slate-700 font-medium bg-white"
+                              >
+                                <option value="">Ninguno</option>
+                                <optgroup label="Emax">
+                                  <option value="HT">HT</option>
+                                  <option value="LT">LT</option>
+                                  <option value="MT">MT</option>
+                                  <option value="MO">MO</option>
+                                </optgroup>
+                                <optgroup label="Zirconia / PMMA">
+                                  <option value="ML">ML</option>
+                                  <option value="Mono">Mono</option>
+                                </optgroup>
                               </select>
                             </td>
                             <td className="px-4 py-3">

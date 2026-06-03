@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { Edit, Trash2, Search, RefreshCw, AlertCircle, X, Save, Plus } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { updateAdminCase, deleteAdminCase } from "@/app/actions/admin-cases";
-import { getClients } from "@/app/actions/clients";
+import { getClients, getAllClinics } from "@/app/actions/clients";
 import NewCaseModal from "@/components/NewCaseModal";
 
 export default function AdminBoard() {
   const [cases, setCases] = useState([]);
   const [clients, setClients] = useState([]);
+  const [clinicas, setClinicas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCase, setEditingCase] = useState(null);
@@ -19,15 +20,17 @@ export default function AdminBoard() {
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const [casesRes, clientsData] = await Promise.all([
+      const [casesRes, clientsData, clinicasData] = await Promise.all([
         fetch('/api/cases?t=' + new Date().getTime()),
-        getClients()
+        getClients(),
+        getAllClinics()
       ]);
       const casesData = await casesRes.json();
       if (Array.isArray(casesData)) {
         setCases(casesData);
       }
       setClients(clientsData || []);
+      setClinicas(clinicasData || []);
     } catch (err) {
       toast.error("Error al cargar datos iniciales");
     } finally {
@@ -68,6 +71,7 @@ export default function AdminBoard() {
     const payload = {
       paciente: editingCase.patient,
       codigo: editingCase.id, // el codigo visual se mapeó como 'id' en el frontend
+      cliente_id: editingCase.cliente_id,
       doctor: editingCase.doctor,
       color: editingCase.color,
       fecha_entrega: editingCase.fecha_entrega,
@@ -220,9 +224,37 @@ export default function AdminBoard() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Doctor (Libre)</label>
-                  <input type="text" value={editingCase.doctor || ""} onChange={e => setEditingCase({...editingCase, doctor: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none" />
+                  <label className="text-xs font-bold text-slate-500 uppercase">Clínica</label>
+                  <select 
+                    value={editingCase.cliente_id || ""} 
+                    onChange={e => setEditingCase({...editingCase, cliente_id: e.target.value, doctor: ""})} 
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none"
+                  >
+                    <option value="" disabled>Seleccione clínica</option>
+                    {clinicas.map(c => (
+                      <option key={c.id} value={c.id}>{c.nombre}</option>
+                    ))}
+                  </select>
                 </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Doctor (Dentista)</label>
+                  <input 
+                    type="text" 
+                    list="doctor-list"
+                    value={editingCase.doctor || ""} 
+                    onChange={e => setEditingCase({...editingCase, doctor: e.target.value})} 
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none" 
+                    placeholder="Seleccione o escriba..."
+                  />
+                  <datalist id="doctor-list">
+                    {clients.filter(c => String(c.cliente_id) === String(editingCase.cliente_id)).map(doc => (
+                      <option key={doc.id} value={doc.nombre_dentista} />
+                    ))}
+                  </datalist>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-500 uppercase">Color</label>
                   <input type="text" value={editingCase.color || ""} onChange={e => setEditingCase({...editingCase, color: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none" />
