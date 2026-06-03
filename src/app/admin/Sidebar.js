@@ -65,7 +65,7 @@ export default function Sidebar() {
           />
           {!isCollapsed && (
             <h2 className="text-xl font-black text-white tracking-tight whitespace-nowrap animate-fade-in">
-              <span style={{ color: 'red' }}>Lab</span> OS
+              <span className="text-[#D4AF37]">Lab</span> OS
             </h2>
           )}
         </div>
