@@ -52,10 +52,25 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
     if (res.success) {
       setDetalles(res.detalles ? res.detalles.map(d => {
         const parts = (d.producto || '').split(' - ');
+        const prodBase = parts[0] || '';
+        let resolvedPrice = Number(d.precio_unit) || 0;
+        
+        if (resolvedPrice === 0 && prodBase) {
+          const cleanProdBase = prodBase.trim().toLowerCase();
+          for (const cat of Object.values(prods || {})) {
+            const found = cat.find(p => p.raw.toLowerCase() === cleanProdBase || p.display.toLowerCase() === cleanProdBase);
+            if (found) {
+              resolvedPrice = found.precio;
+              break;
+            }
+          }
+        }
+
         return {
           ...d,
-          producto_base: parts[0] || '',
-          subtipo: parts[1] || ''
+          producto_base: prodBase,
+          subtipo: parts[1] || '',
+          precio_unit: resolvedPrice
         };
       }) : []);
       setDescuento(Number(res.master?.descuento) || 0);

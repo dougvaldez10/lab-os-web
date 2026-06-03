@@ -144,16 +144,17 @@ export async function createNewCase(formData) {
       if (dbProductos) {
         dbProductos.forEach(p => {
           const cleanName = p.nombre.replace(/^\d+\-/, '').trim();
-          priceMap[cleanName] = Number(p.precio) || 0;
-          priceMap[p.nombre]  = Number(p.precio) || 0;
+          priceMap[cleanName.toLowerCase()] = Number(p.precio) || 0;
+          priceMap[p.nombre.toLowerCase()]  = Number(p.precio) || 0;
         });
       }
 
       let grandTotal = 0;
 
       const detalles = items.map(item => {
-        const baseProduct       = item.producto.split(' - ')[0].trim();
-        const matchedPrice      = priceMap[baseProduct] || priceMap[item.producto] || 0;
+        const baseProduct       = item.producto.split(' - ')[0].trim().toLowerCase();
+        const fullProduct       = item.producto.toLowerCase();
+        const matchedPrice      = priceMap[baseProduct] || priceMap[fullProduct] || 0;
         const numUnidades       = item.unidades || 1;
         const subTotalCalculado = matchedPrice * numUnidades;
         
