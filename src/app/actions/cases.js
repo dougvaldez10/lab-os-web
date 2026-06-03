@@ -347,3 +347,90 @@ export async function toggleCaseIVA(caseId, applyIva) {
     return { success: false, error: error.message };
   }
 }
+
+export async function getCaseDetailsForEdit(caseId) {
+  try {
+    const supabase = getAdminClient();
+    const { data: detalles, error } = await supabase
+      .from('casos_detalle')
+      .select('*')
+      .eq('caso_id', caseId);
+      
+    if (error) throw error;
+    
+    const { data: master, error: masterErr } = await supabase
+      .from('casos_master')
+      .select('descuento, iva_aplicado, total_caso, saldo_pendiente')
+      .eq('id', caseId)
+      .single();
+      
+    if (masterErr) throw masterErr;
+    
+    return { success: true, detalles, master };
+  } catch (error) {
+    console.error("getCaseDetailsForEdit error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateCaseFinancials(caseId, detailsUpdates, discount, applyIva) {
+  try {
+    const supabase = getAdminClient();
+    
+    // 1. Update each detail (cantidad, precio_unitario, subtotal)
+    let totalSubtotal = 0;
+    for (const det of detailsUpdates) {
+      const pUnit = Number(det.precio_unitario) || 0;
+      const cant = Number(det.cantidad) || 0;
+      const sub = pUnit * cant;
+      totalSubtotal += sub;
+      
+      await supabase
+        .from('casos_detalle')
+        .update({
+          cantidad: cant,
+          precio_unitario: pUnit,
+          subtotal: sub
+        })
+        .eq('id', det.id);
+    }
+    
+    // 2. Calcular nuevo total
+    const desc = Number(discount) || 0;
+    const baseAmount = Math.max(0, totalSubtotal - desc);
+    const newTotal = applyIva ? baseAmount * 1.08 : baseAmount;
+    
+    // 3. Ajustar saldo_pendiente basado en la diferencia de total_caso
+    const { data: master } = await supabase
+      .from('casos_master')
+      .select('total_caso, saldo_pendiente')
+      .eq('id', caseId)
+      .single();
+      
+    const oldTotal = Number(master?.total_caso) || 0;
+    const oldSaldo = Number(master?.saldo_pendiente) || 0;
+    
+    let newSaldo = oldSaldo + (newTotal - oldTotal);
+    if (newSaldo < 0) newSaldo = 0;
+    
+    // 4. Guardar master
+    const { error: mErr } = await supabase
+      .from('casos_master')
+      .update({
+        descuento: desc,
+        iva_aplicado: applyIva,
+        total_caso: newTotal,
+        saldo_pendiente: newSaldo
+      })
+      .eq('id', caseId);
+      
+    if (mErr) throw mErr;
+    
+    revalidatePath('/admin/facturacion');
+    return { success: true };
+    
+  } catch (error) {
+    console.error("updateCaseFinancials error:", error);
+    return { success: false, error: error.message };
+  }
+}

@@ -33,6 +33,7 @@ import {
 } from "@/app/actions/billing";
 import { getAllClinics } from "@/app/actions/clients";
 import { toggleCaseIVA } from "@/app/actions/cases";
+import EditCaseModal from "./EditCaseModal";
 
 export default function BillingPanel() {
   // Navigation tabs
@@ -52,14 +53,12 @@ export default function BillingPanel() {
   const [historySearchTerm, setHistorySearchTerm] = useState("");
   const [expandedCaseId, setExpandedCaseId] = useState(null);
 
-  // Modal registrar abono
-  const [abonoModal, setAbonoModal] = useState(null); // contains case object
-  const [montoAbono, setMontoAbono] = useState("");
-  const [metodoPago, setMetodoPago] = useState("Transferencia");
-  const [adminName, setAdminName] = useState("");
-  const [submittingAbono, setSubmittingAbono] = useState(false);
+  // Modals state
+  const [abonoModal, setAbonoModal] = useState(null);
+  const [globalAbonoModal, setGlobalAbonoModal] = useState(false);
+  const [editModalCase, setEditModalCase] = useState(null);
 
-  // States for Global Payment
+  // Form states for Global Payment
   const [isGlobalPaymentOpen, setIsGlobalPaymentOpen] = useState(false);
   const [globalClienteId, setGlobalClienteId] = useState("");
   const [globalMonto, setGlobalMonto] = useState("");
@@ -68,6 +67,9 @@ export default function BillingPanel() {
   const [globalPickerSearch, setGlobalPickerSearch] = useState("");
   const [globalPickerOpen, setGlobalPickerOpen] = useState(false);
   const [submittingGlobal, setSubmittingGlobal] = useState(false);
+
+  // Stats for analytics
+  const [stats, setStats] = useState({ totalCxC: 0, totalRecaudado: 0, recentPayments: [], methods: [] });
 
   // Fetch current user and main data
   useEffect(() => {
@@ -145,8 +147,7 @@ export default function BillingPanel() {
   };
 
   const handleOpenEdit = (c) => {
-    // Placeholder for opening Edit Case Modal
-    console.log("Abrir modal de edicion para:", c);
+    setEditModalCase(c);
   };
 
   const handleToggleIVA = async (c, isChecked) => {
@@ -520,7 +521,7 @@ export default function BillingPanel() {
                                       {c.fecha_entrega}
                                     </span>
                                   ) : (
-                                    <span className="text-slate-400">â€”</span>
+                                    <span className="text-slate-400">—</span>
                                   )}
                                 </td>
                                 <td className="px-6 py-4 text-center">
@@ -638,7 +639,7 @@ export default function BillingPanel() {
                                     {c.paciente}
                                   </td>
                                   <td className="px-6 py-4 text-slate-500 text-xs">
-                                    {c.fecha_entrega || "â€”"}
+                                    {c.fecha_entrega || "—"}
                                   </td>
                                   <td className="px-6 py-4 font-bold text-slate-800">
                                     ${Number(c.total_caso).toFixed(2)}
@@ -789,7 +790,7 @@ export default function BillingPanel() {
                               </div>
                               <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-1">
                                 <span>{p.metodo}</span>
-                                <span>â€¢</span>
+                                <span>•</span>
                                 <span>{p.fecha ? new Date(p.fecha).toLocaleDateString() : 'N/A'}</span>
                               </div>
                             </div>
@@ -1194,6 +1195,17 @@ export default function BillingPanel() {
             </form>
           </motion.div>
         </div>
+      )}
+
+      {/* MODAL EDICION DE CASO */}
+      {editModalCase && (
+        <EditCaseModal
+          caseData={editModalCase}
+          onClose={() => setEditModalCase(null)}
+          onUpdated={() => {
+            fetchData();
+          }}
+        />
       )}
     </div>
   );
