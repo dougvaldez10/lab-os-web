@@ -371,34 +371,38 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
 
             {/* Selector de Materiales y Agregar */}
             <div className="bg-slate-100/50 p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row gap-3 items-end">
-               <div className="flex-1 w-full space-y-1.5">
+               <div className="flex-1 w-full space-y-1.5 min-w-[150px]">
                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Material</label>
                  <select value={material} onChange={(e) => handleMaterialChange(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-medium">
                     <option value="">Seleccionar...</option>
                     {categoriesList.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                  </select>
                </div>
-               <div className="flex-1 w-full space-y-1.5 min-w-[200px]">
-                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Producto (Restauración)</label>
+               <div className="flex-1 w-full space-y-1.5 min-w-[150px]">
+                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Restauración</label>
                  <select value={producto} onChange={(e) => setProducto(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-medium" disabled={!material}>
                     <option value="">{material ? 'Seleccionar...' : 'Elige material primero'}</option>
                     {currentProducts.map(p => <option key={p.raw} value={p.raw}>{p.display}</option>)}
                  </select>
                </div>
-               <div className="w-full sm:w-32 space-y-1.5 shrink-0">
-                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Subtipo</label>
+               <div className="flex-1 w-full space-y-1.5 min-w-[100px]">
+                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo</label>
                  <select value={subtipo} onChange={(e) => setSubtipo(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-medium" disabled={!material}>
                     <option value="">N/A</option>
-                    <optgroup label="Emax">
-                      <option value="HT">HT</option>
-                      <option value="LT">LT</option>
-                      <option value="MT">MT</option>
-                      <option value="MO">MO</option>
-                    </optgroup>
-                    <optgroup label="Zirconia / PMMA">
-                      <option value="ML">ML</option>
-                      <option value="Mono">Mono</option>
-                    </optgroup>
+                    {(material.toLowerCase().includes('emax') || material.toLowerCase().includes('litio')) && (
+                      <optgroup label="Emax / Disilicato">
+                        <option value="HT">HT</option>
+                        <option value="LT">LT</option>
+                        <option value="MT">MT</option>
+                        <option value="MO">MO</option>
+                      </optgroup>
+                    )}
+                    {(material.toLowerCase().includes('zr') || material.toLowerCase().includes('zirconia') || material.toLowerCase().includes('pmma')) && (
+                      <optgroup label="Zirconia / PMMA">
+                        <option value="ML">ML</option>
+                        <option value="Mono">Mono</option>
+                      </optgroup>
+                    )}
                  </select>
                </div>
                <button 

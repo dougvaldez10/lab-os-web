@@ -405,8 +405,8 @@ export default function AdminBoard() {
                     <table className="w-full text-left text-sm">
                       <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                         <tr>
-                          <th className="px-3 py-2">Material / Producto</th>
-                          <th className="px-3 py-2 w-32">Subtipo</th>
+                          <th className="px-3 py-2">Material / Restauración</th>
+                          <th className="px-3 py-2 w-32">Tipo</th>
                           <th className="px-3 py-2 w-32">Piezas (#)</th>
                           <th className="px-2 py-2 w-10 text-center"></th>
                         </tr>
@@ -440,16 +440,20 @@ export default function AdminBoard() {
                                 className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none bg-white"
                               >
                                 <option value="">Ninguno</option>
-                                <optgroup label="Emax">
-                                  <option value="HT">HT</option>
-                                  <option value="LT">LT</option>
-                                  <option value="MT">MT</option>
-                                  <option value="MO">MO</option>
-                                </optgroup>
-                                <optgroup label="Zirconia / PMMA">
-                                  <option value="ML">ML</option>
-                                  <option value="Mono">Mono</option>
-                                </optgroup>
+                                {det.producto_base && (det.producto_base.toLowerCase().includes('emax') || det.producto_base.toLowerCase().includes('litio')) && (
+                                  <optgroup label="Emax / Disilicato">
+                                    <option value="HT">HT</option>
+                                    <option value="LT">LT</option>
+                                    <option value="MT">MT</option>
+                                    <option value="MO">MO</option>
+                                  </optgroup>
+                                )}
+                                {det.producto_base && (det.producto_base.toLowerCase().includes('zr') || det.producto_base.toLowerCase().includes('zirconia') || det.producto_base.toLowerCase().includes('pmma')) && (
+                                  <optgroup label="Zirconia / PMMA">
+                                    <option value="ML">ML</option>
+                                    <option value="Mono">Mono</option>
+                                  </optgroup>
+                                )}
                               </select>
                             </td>
                             <td className="px-3 py-2">
