@@ -40,6 +40,7 @@ export default function BillingPanel() {
   const [activeTab, setActiveTab] = useState("cxc"); // cxc, history, analytics
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  const [adminName, setAdminName] = useState("");
 
   // States for CxC
   const [clinics, setClinics] = useState([]);

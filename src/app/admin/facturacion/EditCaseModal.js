@@ -134,6 +134,26 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
   const subtotalConDescuento = Math.max(0, subtotal - montoDescuentoReal);
   const total = ivaAplicado ? subtotalConDescuento * 1.08 : subtotalConDescuento;
 
+  const handleReturnToBoard = async () => {
+    if (!window.confirm("¿Seguro que deseas devolver este caso al Pizarrón (Inspección)? Se quitará de Facturación.")) return;
+    
+    setSaving(true);
+    const toastId = toast.loading("Devolviendo caso...");
+    try {
+      const res = await returnCaseToBoard(caseData.id);
+      if (res.success) {
+        toast.success("Caso devuelto a Inspección", { id: toastId });
+        onUpdated();
+        onClose();
+      } else {
+        toast.error(res.error || "Error al devolver", { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Error de conexión", { id: toastId });
+    }
+    setSaving(false);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     const toastId = toast.loading("Guardando cambios...");
