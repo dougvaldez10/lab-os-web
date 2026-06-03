@@ -515,17 +515,17 @@ export default function BillingPanel() {
                                     <button
                                       title="Editar Caso"
                                       onClick={() => handleOpenEdit(c)}
-                                      className="inline-flex items-center justify-center w-8 h-8 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-all shadow-sm"
+                                      className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-800 rounded-lg transition-all"
                                     >
-                                      <Edit size={16} />
+                                      <Edit size={18} />
                                     </button>
                                   )}
                                   <button
                                     title="Registrar Abono"
                                     onClick={() => handleOpenAbono(c)}
-                                    className="inline-flex items-center justify-center w-8 h-8 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-all shadow-sm"
+                                    className="inline-flex items-center justify-center w-8 h-8 text-emerald-600 hover:text-emerald-800 rounded-lg transition-all"
                                   >
-                                    <PlusCircle size={16} />
+                                    <PlusCircle size={18} />
                                   </button>
                                 </td>
                               </tr>
