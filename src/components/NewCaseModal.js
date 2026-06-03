@@ -84,8 +84,8 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
   const [selectedClient, setSelectedClient] = useState(null);
   const [selectedTeeth, setSelectedTeeth] = useState([]);
   const [items, setItems] = useState([]);
-  const [material, setMaterial] = useState('');
-  const [producto, setProducto] = useState('');
+  const [material, setMaterial] = useState('Zirconia');
+  const [producto, setProducto] = useState('Corona Zirconia');
   const [subtipo, setSubtipo] = useState('');
   const [productsMap, setProductsMap] = useState({});
   const [tipo, setTipo] = useState('Análogo');
@@ -146,6 +146,22 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
   };
 
   const handleRemoveItem = (id) => setItems(items.filter(i => i.id !== id));
+
+  const handleEditItem = (itemToEdit) => {
+    // Restaurar los datos al estado
+    setSelectedTeeth(itemToEdit.dientes || []);
+    setMaterial(itemToEdit.material || '');
+    
+    // El producto final tiene " - Subtipo" si hay subtipo. Separarlo para los inputs.
+    if (itemToEdit.producto) {
+      const parts = itemToEdit.producto.split(' - ');
+      setProducto(parts[0] || '');
+      setSubtipo(parts[1] || '');
+    }
+    
+    // Removerlo de la lista para editarlo y volverlo a agregar
+    handleRemoveItem(itemToEdit.id);
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -420,15 +436,40 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Especificaciones Añadidas ({items.length})</h4>
                  <ul className="flex flex-col gap-2">
                    {items.map(item => (
-                     <li key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white border border-slate-200 p-3 rounded-xl shadow-sm gap-3">
-                        <div className="flex flex-col min-w-0">
-                           <span className="text-sm font-black text-slate-800 capitalize leading-tight">{item.producto} de {item.material}</span>
-                           <span className="text-xs text-slate-500 font-medium truncate mt-0.5">Dientes: <span className="font-bold text-slate-700">{item.dientes.join(', ')}</span> ({item.unidades} un.)</span>
+                     <li key={item.id}>
+                      <div className="bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center shadow-sm relative group overflow-hidden">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#D4AF37]"></div>
+                        <div className="pl-3">
+                          <p className="font-black text-slate-800 text-sm tracking-tight">{item.producto}</p>
+                          {item.dientes && item.dientes.length > 0 ? (
+                            <p className="text-xs font-medium text-slate-500 mt-0.5 flex items-center gap-1.5">
+                              <span>Dientes: <span className="font-bold text-slate-700">{item.dientes.join(', ')}</span></span>
+                              <span className="text-slate-400">({item.unidades} un.)</span>
+                            </p>
+                          ) : (
+                            <p className="text-xs font-medium text-slate-500 mt-0.5">Sin piezas específicas ({item.unidades} un.)</p>
+                          )}
                         </div>
-                        <button type="button" onClick={() => handleRemoveItem(item.id)} className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg shrink-0 self-end sm:self-center transition-colors">
-                           <X size={16} />
-                        </button>
-                     </li>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleEditItem(item)}
+                            className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Editar especificación"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(item.id)}
+                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Eliminar especificación"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    </li>
                    ))}
                  </ul>
               </div>

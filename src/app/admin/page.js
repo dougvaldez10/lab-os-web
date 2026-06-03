@@ -21,6 +21,12 @@ export default function AdminBoard() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
+  
+  // Odontogram state for editing
+  const [selectedTeeth, setSelectedTeeth] = useState([]);
+  const [material, setMaterial] = useState('Zirconia');
+  const [producto, setProducto] = useState('Corona Zirconia');
+  const [subtipo, setSubtipo] = useState('');
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -66,16 +72,29 @@ export default function AdminBoard() {
     setIsLoadingDetails(true);
     setDetalles([]);
     const [res, prods] = await Promise.all([
-      getCaseDetailsForEdit(c.id),
+      getCaseDetailsForEdit(c.internal_id),
       getProducts()
     ]);
     if (res.success) {
       setDetalles(res.detalles ? res.detalles.map(d => {
         const parts = (d.producto || '').split(' - ');
+        const prodBase = parts[0] || '';
+        
+        // Find material category
+        let foundMaterial = 'Zirconia';
+        for (const [cat, items] of Object.entries(prods || {})) {
+          if (items.some(p => p.raw === prodBase)) {
+            foundMaterial = cat;
+            break;
+          }
+        }
+        
         return {
           ...d,
-          producto_base: parts[0] || '',
-          subtipo: parts[1] || ''
+          material: foundMaterial,
+          producto_base: prodBase,
+          subtipo: parts[1] || '',
+          dientes: d.dientes ? d.dientes.split(',').map(s => Number(s.trim())).filter(n => n) : []
         };
       }) : []);
     } else {
@@ -85,55 +104,77 @@ export default function AdminBoard() {
     setIsLoadingDetails(false);
   };
 
-  const handleProductChange = (index, baseName) => {
-    const newDetalles = [...detalles];
-    newDetalles[index].producto_base = baseName;
-    newDetalles[index].producto = newDetalles[index].subtipo ? `${baseName} - ${newDetalles[index].subtipo}` : baseName;
-    // Autocompletar precio unitario para mantener finanzas sanas (aunque aqui no se muestre)
-    let newPrice = 0;
-    for (const cat of Object.values(productosCat)) {
-      const found = cat.find(p => p.raw === baseName);
-      if (found) {
-        newPrice = found.precio;
-        break;
-      }
+  const handleRemoveRow = (id) => {
+    setDetalles(detalles.filter(d => d.id !== id));
+  };
+
+  const toggleTooth = (t) => {
+    if (selectedTeeth.includes(t)) setSelectedTeeth(selectedTeeth.filter(x => x !== t));
+    else setSelectedTeeth([...selectedTeeth, t]);
+  };
+  const clearSelection = () => setSelectedTeeth([]);
+
+  const handleAddItem = () => {
+    if (selectedTeeth.length === 0) {
+       toast.error("Selecciona al menos una pieza dental.");
+       return;
     }
-    newDetalles[index].precio_unit = newPrice;
-    setDetalles(newDetalles);
+    if (!material || !producto) {
+       toast.error("Selecciona el material y producto.");
+       return;
+    }
+    
+    const finalProducto = subtipo ? `${producto} - ${subtipo}` : producto;
+    let newPrice = 0;
+    const catProds = productosCat[material] || [];
+    const found = catProds.find(p => p.raw === producto);
+    if (found) newPrice = found.precio;
+
+    setDetalles([...detalles, { 
+      id: `temp_${Date.now()}`, 
+      dientes: selectedTeeth.sort(),
+      material, 
+      producto: finalProducto,
+      unidades: selectedTeeth.length,
+      precio_unit: newPrice
+    }]);
+    setSelectedTeeth([]);
+    setMaterial('Zirconia');
+    setProducto('Corona Zirconia');
+    setSubtipo('');
   };
 
-  const handleSubtipoChange = (index, sub) => {
-    const newDetalles = [...detalles];
-    newDetalles[index].subtipo = sub;
-    newDetalles[index].producto = sub ? `${newDetalles[index].producto_base || ''} - ${sub}` : newDetalles[index].producto_base || '';
-    setDetalles(newDetalles);
+  const handleEditItem = (itemToEdit) => {
+    let parsedTeeth = [];
+    if (Array.isArray(itemToEdit.dientes)) {
+      parsedTeeth = itemToEdit.dientes.map(n => Number(n));
+    } else if (typeof itemToEdit.dientes === 'string' && itemToEdit.dientes) {
+      parsedTeeth = itemToEdit.dientes.split(',').map(s => Number(s.trim())).filter(n => n);
+    }
+    setSelectedTeeth(parsedTeeth);
+    setMaterial(itemToEdit.material || 'Zirconia');
+    
+    if (itemToEdit.producto) {
+      const parts = itemToEdit.producto.split(' - ');
+      setProducto(parts[0] || '');
+      setSubtipo(parts[1] || '');
+    }
+    
+    handleRemoveRow(itemToEdit.id);
   };
 
-  const handleDetailChange = (index, field, value) => {
-    const newDetalles = [...detalles];
-    newDetalles[index][field] = value;
-    setDetalles(newDetalles);
-  };
+  const upperTeeth = [18,17,16,15,14,13,12,11, 21,22,23,24,25,26,27,28];
+  const lowerTeeth = [48,47,46,45,44,43,42,41, 31,32,33,34,35,36,37,38];
+  const addedTeeth = detalles.flatMap(i => i.dientes || []);
+  const categoriesList = Object.keys(productosCat);
+  const currentProducts = productosCat[material] || [];
 
-  const handleAddRow = () => {
-    setDetalles([
-      ...detalles,
-      {
-        id: `temp_${Date.now()}`,
-        producto: '',
-        producto_base: '',
-        subtipo: '',
-        dientes: '',
-        unidades: 1,
-        precio_unit: 0
-      }
-    ]);
-  };
-
-  const handleRemoveRow = (index) => {
-    const newDetalles = [...detalles];
-    newDetalles.splice(index, 1);
-    setDetalles(newDetalles);
+  const handleMaterialChange = (mat) => {
+    setMaterial(mat);
+    const catProds = productosCat[mat] || [];
+    if (catProds.length > 0) setProducto(catProds[0].raw);
+    else setProducto('');
+    setSubtipo('');
   };
 
   const handleSaveEdit = async (e) => {
@@ -284,19 +325,19 @@ export default function AdminBoard() {
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditingCase(null)}></div>
           <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl relative z-10 flex flex-col max-h-[90vh]">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
-                <h2 className="text-xl font-bold text-slate-800">
-                  Editar Caso #{editingCase?.codigo || editingCase?.id}
-                </h2>
+              <h2 className="text-xl font-bold text-slate-800">
+                Editar Caso #{editingCase?.codigo || editingCase?.id}
+              </h2>
+              <div className="flex items-center gap-4">
                 {editingCase?.status && (
                   <span className={`text-[11px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md ${editingCase.status === 'Terminado' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                     {editingCase.status}
                   </span>
                 )}
+                <button onClick={() => setEditingCase(null)} className="p-1 text-slate-400 hover:bg-slate-100 rounded-full">
+                  <X size={20} />
+                </button>
               </div>
-              <button onClick={() => setEditingCase(null)} className="p-1 text-slate-400 hover:bg-slate-100 rounded-full">
-                <X size={20} />
-              </button>
             </div>
             
             <form onSubmit={handleSaveEdit} className="overflow-y-auto p-6 flex flex-col gap-4">
@@ -401,100 +442,162 @@ export default function AdminBoard() {
                        <option value="Digital">Digital</option>
                     </select>
                  </div>
-              </div>
+               <hr className="border-slate-200" />
 
-              {/* TABLA DE CONCEPTOS DE PRODUCCION */}
-              <div className="mt-4 border-t border-slate-100 pt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Conceptos de Producción (Material y Piezas)</label>
-                  {isLoadingDetails && <RefreshCw size={14} className="animate-spin text-slate-400" />}
+              {/* Seccion 2: Odontograma y Detalle */}
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-wide">Odontograma Interactivo (Conceptos)</h3>
+                  <div className="flex items-center gap-3">
+                    {isLoadingDetails && <RefreshCw size={14} className="animate-spin text-slate-400" />}
+                    {selectedTeeth.length > 0 && (
+                      <button type="button" onClick={clearSelection} className="text-xs font-bold text-slate-400 hover:text-red-500">Limpiar piezas</button>
+                    )}
+                  </div>
                 </div>
-                {!isLoadingDetails && (
-                  <div className="border border-slate-200 rounded-xl overflow-hidden">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
-                        <tr>
-                          <th className="px-3 py-2">Material / Restauración</th>
-                          <th className="px-3 py-2 w-32">Tipo</th>
-                          <th className="px-3 py-2 w-32">Piezas (#)</th>
-                          <th className="px-2 py-2 w-10 text-center"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {detalles.map((det, idx) => (
-                          <tr key={det.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-3 py-2">
-                              <select
-                                value={det.producto_base || ''}
-                                onChange={(e) => handleProductChange(idx, e.target.value)}
-                                className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none bg-white"
-                              >
-                                <option value="" disabled hidden></option>
-                                {det.producto_base && !Object.values(productosCat).flat().some(p => p.raw === det.producto_base) && (
-                                  <option value={det.producto_base}>{det.producto_base}</option>
-                                )}
-                                {Object.entries(productosCat).map(([cat, prods]) => (
-                                  <optgroup key={cat} label={cat}>
-                                    {prods.map(p => (
-                                      <option key={p.raw} value={p.raw}>{p.display}</option>
-                                    ))}
-                                  </optgroup>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="px-3 py-2">
-                              <select
-                                value={det.subtipo || ''}
-                                onChange={(e) => handleSubtipoChange(idx, e.target.value)}
-                                className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none bg-white"
-                              >
-                                <option value="">N/A</option>
-                                {det.producto_base && (det.producto_base.toLowerCase().includes('emax') || det.producto_base.toLowerCase().includes('litio')) && (
-                                  <>
-                                    <option value="HT">HT</option>
-                                    <option value="LT">LT</option>
-                                    <option value="MT">MT</option>
-                                    <option value="MO">MO</option>
-                                  </>
-                                )}
-                                {det.producto_base && (det.producto_base.toLowerCase().includes('zr') || det.producto_base.toLowerCase().includes('zirconia') || det.producto_base.toLowerCase().includes('pmma')) && (
-                                  <>
-                                    <option value="ML">ML</option>
-                                    <option value="Mono">Mono</option>
-                                  </>
-                                )}
-                              </select>
-                            </td>
-                            <td className="px-3 py-2">
-                              <input
-                                type="text"
-                                value={det.dientes || ''}
-                                onChange={(e) => handleDetailChange(idx, 'dientes', e.target.value)}
-                                className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none"
-                                placeholder="Ej. 11, 12"
-                              />
-                            </td>
-                            <td className="px-2 py-2 text-center">
-                              <button type="button" onClick={() => handleRemoveRow(idx)} className="text-slate-300 hover:text-rose-500 transition-colors p-1" title="Eliminar fila">
-                                <Trash2 size={14} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                        {detalles.length === 0 && (
-                          <tr><td colSpan="4" className="px-4 py-4 text-center text-slate-400">Sin piezas asignadas</td></tr>
+
+                {/* Grilla FDI */}
+                <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+                  <div className="min-w-[600px] flex flex-col gap-2 items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-inner">
+                    {/* Superior */}
+                    <div className="flex gap-1 justify-center w-full">
+                      {upperTeeth.map((tooth, idx) => {
+                        const isSelected = selectedTeeth.includes(tooth);
+                        const isAdded = addedTeeth.includes(tooth);
+                        return (
+                          <button type="button" key={tooth} onClick={() => toggleTooth(tooth)}
+                            className={`
+                              w-9 h-11 flex items-center justify-center font-bold text-[13px] rounded-lg border-2 transition-all
+                              ${idx === 7 ? 'mr-4' : ''} 
+                              ${isSelected 
+                                ? 'bg-[#D4AF37]/10 border-[#D4AF37] text-[#B8860B] shadow-sm transform scale-105' 
+                                : isAdded
+                                  ? 'bg-[#D4AF37]/10 border-transparent text-[#B8860B]/70'
+                                  : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'}
+                            `}
+                          >
+                            {tooth}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* Divisor Visual Archos */}
+                    <div className="w-full h-px bg-slate-100 my-1"></div>
+                    {/* Inferior */}
+                    <div className="flex gap-1 justify-center w-full">
+                      {lowerTeeth.map((tooth, idx) => {
+                        const isSelected = selectedTeeth.includes(tooth);
+                        const isAdded = addedTeeth.includes(tooth);
+                        return (
+                          <button type="button" key={tooth} onClick={() => toggleTooth(tooth)}
+                            className={`
+                              w-9 h-11 flex items-center justify-center font-bold text-[13px] rounded-lg border-2 transition-all
+                              ${idx === 7 ? 'mr-4' : ''} 
+                              ${isSelected 
+                                ? 'bg-[#D4AF37]/10 border-[#D4AF37] text-[#B8860B] shadow-sm transform scale-105' 
+                                : isAdded
+                                  ? 'bg-[#D4AF37]/10 border-transparent text-[#B8860B]/70'
+                                  : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'}
+                            `}
+                          >
+                            {tooth}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Selector de Materiales y Agregar */}
+                <div className="bg-slate-100/50 p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row gap-3 items-end">
+                   <div className="flex-1 w-full space-y-1.5 min-w-[150px]">
+                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Material</label>
+                     <select value={material} onChange={(e) => handleMaterialChange(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-medium">
+                        <option value="" disabled hidden></option>
+                        {categoriesList.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                     </select>
+                   </div>
+                   <div className="flex-1 w-full space-y-1.5 min-w-[150px]">
+                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Restauración</label>
+                     <select value={producto} onChange={(e) => setProducto(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-medium" disabled={!material}>
+                        <option value="" disabled hidden></option>
+                        {currentProducts.map(p => <option key={p.raw} value={p.raw}>{p.display}</option>)}
+                     </select>
+                   </div>
+                   <div className="flex-1 w-full space-y-1.5 min-w-[100px]">
+                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo</label>
+                     <select value={subtipo} onChange={(e) => setSubtipo(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] outline-none text-sm font-medium" disabled={!material}>
+                        <option value="">N/A</option>
+                        {(material.toLowerCase().includes('emax') || material.toLowerCase().includes('litio')) && (
+                          <>
+                            <option value="HT">HT</option>
+                            <option value="LT">LT</option>
+                            <option value="MT">MT</option>
+                            <option value="MO">MO</option>
+                          </>
                         )}
-                      </tbody>
-                    </table>
+                        {(material.toLowerCase().includes('zr') || material.toLowerCase().includes('zirconia') || material.toLowerCase().includes('pmma')) && (
+                          <>
+                            <option value="ML">ML</option>
+                            <option value="Mono">Mono</option>
+                          </>
+                        )}
+                     </select>
+                   </div>
+                   <button 
+                     type="button" 
+                     onClick={handleAddItem}
+                     className="w-full sm:w-auto bg-[#D4AF37] hover:bg-[#B8860B] text-white font-bold px-6 py-2.5 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
+                   >
+                     <Plus size={16} /> Añadir Piezas
+                   </button>
+                </div>
+
+                {/* Listado de Items en "Pills" */}
+                {detalles.length > 0 && (
+                  <div className="space-y-3">
+                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Especificaciones Añadidas ({detalles.length})</h4>
+                     <ul className="flex flex-col gap-2">
+                       {detalles.map(item => (
+                         <li key={item.id}>
+                          <div className="bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center shadow-sm relative group overflow-hidden">
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#D4AF37]"></div>
+                            <div className="pl-3">
+                              <p className="font-black text-slate-800 text-sm tracking-tight">{item.producto}</p>
+                              {item.dientes && item.dientes.length > 0 ? (
+                                <p className="text-xs font-medium text-slate-500 mt-0.5 flex items-center gap-1.5">
+                                  <span>Dientes: <span className="font-bold text-slate-700">{Array.isArray(item.dientes) ? item.dientes.join(', ') : item.dientes}</span></span>
+                                  <span className="text-slate-400">({item.unidades} un.)</span>
+                                </p>
+                              ) : (
+                                <p className="text-xs font-medium text-slate-500 mt-0.5">Sin piezas específicas ({item.unidades} un.)</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleEditItem(item)}
+                                className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Editar especificación"
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveRow(item.id)}
+                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Eliminar especificación"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        </li>
+                       ))}
+                     </ul>
                   </div>
                 )}
-                {!isLoadingDetails && (
-                  <div className="mt-2">
-                    <button type="button" onClick={handleAddRow} className="text-xs font-bold text-[#D4AF37] hover:text-[#B8860B] flex items-center gap-1.5 bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 px-3 py-1.5 rounded-lg transition-colors">
-                      <Plus size={14} /> Añadir Pieza
-                    </button>
-                  </div>
-                )}
+              </div>
               </div>
 
               <div className="space-y-1 mt-2 border-t border-slate-100 pt-4">

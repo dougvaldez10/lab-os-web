@@ -488,13 +488,15 @@ export async function updateCaseProductionDetails(caseId, detailsUpdates) {
       const sub = pUnit * cant;
       totalSubtotal += sub;
       
+      const dientesStr = Array.isArray(det.dientes) ? det.dientes.join(',') : (det.dientes || '');
+      
       if (det.id && typeof det.id === 'string' && det.id.startsWith('temp_')) {
         await supabase.from('casos_detalle').insert({
-          caso_id: caseId, producto: det.producto, dientes: det.dientes, unidades: cant, precio_unit: pUnit, subtotal: sub
+          caso_id: caseId, producto: det.producto, dientes: dientesStr, unidades: cant, precio_unit: pUnit, subtotal: sub
         });
       } else {
         await supabase.from('casos_detalle').update({
-          producto: det.producto, dientes: det.dientes, unidades: cant, precio_unit: pUnit, subtotal: sub
+          producto: det.producto, dientes: dientesStr, unidades: cant, precio_unit: pUnit, subtotal: sub
         }).eq('id', det.id);
       }
     }
