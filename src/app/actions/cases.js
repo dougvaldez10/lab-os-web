@@ -377,7 +377,26 @@ export async function updateCaseFinancials(caseId, detailsUpdates, discount, app
   try {
     const supabase = getAdminClient();
     
-    // 1. Update each detail (unidades, precio_unit, subtotal)
+    // 0. Obtener los IDs actuales en la base de datos
+    const { data: currentDetails } = await supabase
+      .from('casos_detalle')
+      .select('id')
+      .eq('caso_id', caseId);
+      
+    const currentIds = currentDetails ? currentDetails.map(d => d.id) : [];
+    const updatedIds = detailsUpdates.filter(d => d.id && !String(d.id).startsWith('temp_')).map(d => d.id);
+    
+    // Encontrar los IDs que fueron eliminados
+    const idsToDelete = currentIds.filter(id => !updatedIds.includes(id));
+    
+    if (idsToDelete.length > 0) {
+      await supabase
+        .from('casos_detalle')
+        .delete()
+        .in('id', idsToDelete);
+    }
+    
+    // 1. Update or insert each detail (unidades, precio_unit, subtotal)
     let totalSubtotal = 0;
     for (const det of detailsUpdates) {
       const pUnit = Number(det.precio_unit) || 0;
@@ -385,16 +404,29 @@ export async function updateCaseFinancials(caseId, detailsUpdates, discount, app
       const sub = pUnit * cant;
       totalSubtotal += sub;
       
-      await supabase
-        .from('casos_detalle')
-        .update({
-          producto: det.producto,
-          dientes: det.dientes,
-          unidades: cant,
-          precio_unit: pUnit,
-          subtotal: sub
-        })
-        .eq('id', det.id);
+      if (det.id && typeof det.id === 'string' && det.id.startsWith('temp_')) {
+        await supabase
+          .from('casos_detalle')
+          .insert({
+            caso_id: caseId,
+            producto: det.producto,
+            dientes: det.dientes,
+            unidades: cant,
+            precio_unit: pUnit,
+            subtotal: sub
+          });
+      } else {
+        await supabase
+          .from('casos_detalle')
+          .update({
+            producto: det.producto,
+            dientes: det.dientes,
+            unidades: cant,
+            precio_unit: pUnit,
+            subtotal: sub
+          })
+          .eq('id', det.id);
+      }
     }
     
     // 2. Calcular nuevo total

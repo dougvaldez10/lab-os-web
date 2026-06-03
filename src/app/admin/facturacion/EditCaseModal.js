@@ -82,6 +82,25 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
     setDetalles(newDetalles);
   };
 
+  const handleAddRow = () => {
+    setDetalles([
+      ...detalles,
+      {
+        id: `temp_${Date.now()}`,
+        producto: '',
+        dientes: '',
+        unidades: 1,
+        precio_unit: 0
+      }
+    ]);
+  };
+
+  const handleRemoveRow = (index) => {
+    const newDetalles = [...detalles];
+    newDetalles.splice(index, 1);
+    setDetalles(newDetalles);
+  };
+
   const calcularSubtotalGeneral = () => {
     return detalles.reduce((acc, det) => {
       const cant = Number(det.unidades) || 0;
@@ -159,6 +178,7 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
                           <th className="px-4 py-3 w-24">Cant.</th>
                           <th className="px-4 py-3 w-32">Precio Unit.</th>
                           <th className="px-4 py-3 w-32 text-right">Subtotal</th>
+                          <th className="px-2 py-3 w-10"></th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -215,6 +235,16 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
                             <td className="px-4 py-3 text-right font-bold text-slate-700">
                               ${((Number(det.unidades) || 0) * (Number(det.precio_unit) || 0)).toFixed(2)}
                             </td>
+                            <td className="px-2 py-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveRow(idx)}
+                                className="text-slate-300 hover:text-rose-500 transition-colors p-1"
+                                title="Eliminar fila"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
                           </tr>
                         ))}
                         {detalles.length === 0 && (
@@ -226,6 +256,18 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
                         )}
                       </tbody>
                     </table>
+                  </div>
+                  
+                  {/* Boton Agregar Linea */}
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={handleAddRow}
+                      className="text-xs font-bold text-[#D4AF37] hover:text-[#B8860B] flex items-center gap-1.5 transition-colors bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 px-3 py-1.5 rounded-lg"
+                    >
+                      <Plus size={14} />
+                      Agregar Concepto
+                    </button>
                   </div>
                 </div>
 
