@@ -181,8 +181,21 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
           {/* Header */}
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
             <div>
-              <h2 className="text-xl font-bold text-slate-800">Editar Caso #{caseData?.codigo}</h2>
-              <p className="text-sm text-slate-500">Paciente: {caseData?.paciente}</p>
+              <h2 className="text-xl font-bold text-slate-800 flex items-baseline gap-2">
+                Editar Caso #{caseData?.codigo}
+                {caseData?.estado && (
+                  <span className={`text-[11px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md ${caseData.estado === 'Terminado' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {caseData.estado}
+                  </span>
+                )}
+              </h2>
+              <p className="text-sm text-slate-500 font-medium flex items-center gap-2 mt-1">
+                <span><span className="font-bold text-slate-700">Paciente:</span> {caseData?.paciente}</span>
+                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                <span><span className="font-bold text-slate-700">Clínica:</span> {caseData?.cliente_nombre || 'General'}</span>
+                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                <span><span className="font-bold text-slate-700">Dentista:</span> {caseData?.doctor || 'No asignado'}</span>
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <button onClick={handleReturnToBoard} disabled={saving} className="px-3 py-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200">

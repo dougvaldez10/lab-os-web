@@ -1303,7 +1303,7 @@ export default function Home() {
                                                   }
                                                   
                                                   if (["HT", "LT", "MT", "MO", "HO", "ML", "Mono"].includes(subtipo)) {
-                                                      extraText += ` "${subtipo}"`;
+                                                      extraText += ` ${subtipo}`;
                                                   }
 
                                                   const groupKey = `${matText}|${matColor}|${extraText}`;
@@ -1345,13 +1345,8 @@ export default function Home() {
                                                   return (
                                                     <div key={idx} className="flex items-baseline gap-1.5 truncate mt-0.5">
                                                       <span className={`text-[16px] font-black tracking-tight ${group.matColor}`}>
-                                                        {group.matText}
+                                                        {group.matText}{group.extraText}
                                                       </span>
-                                                      {group.extraText && (
-                                                        <span className="text-[14px] font-medium text-slate-700 tracking-tight">
-                                                          {group.extraText}
-                                                        </span>
-                                                      )}
                                                       {c.color && (
                                                         <span className="text-[12px] font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.5 rounded-md tracking-tight ml-0.5 shadow-sm border border-amber-200/50">
                                                           {c.color}

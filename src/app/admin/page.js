@@ -284,7 +284,23 @@ export default function AdminBoard() {
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditingCase(null)}></div>
           <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl relative z-10 flex flex-col max-h-[90vh]">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
-              <h2 className="text-lg font-black text-slate-800">Editar Caso #{editingCase.id}</h2>
+              <div>
+                <h2 className="text-xl font-bold text-slate-800 flex items-baseline gap-2">
+                  Editar Caso #{editingCase?.codigo}
+                  {editingCase?.status && (
+                    <span className={`text-[11px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md ${editingCase.status === 'Terminado' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {editingCase.status}
+                    </span>
+                  )}
+                </h2>
+                <p className="text-sm text-slate-500 font-medium flex items-center gap-2 mt-1">
+                  <span><span className="font-bold text-slate-700">Paciente:</span> {editingCase?.patient}</span>
+                  <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                  <span><span className="font-bold text-slate-700">Clínica:</span> {editingCase?.cliente?.nombre || 'General'}</span>
+                  <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                  <span><span className="font-bold text-slate-700">Dentista:</span> {editingCase?.doctor || 'No asignado'}</span>
+                </p>
+              </div>
               <button onClick={() => setEditingCase(null)} className="p-1 text-slate-400 hover:bg-slate-100 rounded-full">
                 <X size={20} />
               </button>
