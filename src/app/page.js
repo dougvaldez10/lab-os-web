@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, ChevronDown, ChevronUp, Plus, Check, RefreshCw, Layers, Smile, Shield, Smartphone, Package, Target, Sun, X, Calculator, DollarSign, Percent, Pause, Download, Upload, Play, AlertTriangle, Settings } from "lucide-react";
+import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, ChevronDown, ChevronUp, Plus, Check, RefreshCw, Layers, Smile, Shield, Smartphone, Package, Target, Sun, X, Calculator, DollarSign, Percent, Pause, Download, Upload, Play, AlertTriangle, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { getAllUsers, loginUser, getCurrentUser, logoutUser } from "@/lib/auth";
 import { generateReceipt } from "@/app/actions/receipts";
@@ -1387,7 +1387,7 @@ export default function Home() {
                                             <StatusBadge status={c.status} />
                                             {c.status === 'En Proceso' && c.operador_actual && (
                                                <span className="text-[10px] text-slate-600 font-medium tracking-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-[80px]">
-                                                  ≡ƒæñ {c.operador_actual.split(' ')[0]}
+                                                  <User size={10} className="inline mr-1" />{c.operador_actual.split(' ')[0]}
                                                </span>
                                              )}
                                           </div>
