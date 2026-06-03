@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, Plus, Check, RefreshCw, X } from "lucide-react";
+import { ChevronDown, Plus, Check, RefreshCw, X, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { getProducts } from "@/app/actions/products";
 import { createNewCase } from "@/app/actions/create-case";
@@ -97,6 +97,33 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
     }
   }, [isOpen]);
 
+  // Sincronizar el producto por defecto cuando cambian productsMap, material, o tipo
+  useEffect(() => {
+    if (Object.keys(productsMap).length === 0) return;
+    
+    const allProductsForMaterial = productsMap[material] || [];
+    const filtered = allProductsForMaterial.filter(p => {
+      const isDigitalInName = p.raw.toLowerCase().includes('digital');
+      return tipo === 'Digital' ? isDigitalInName : !isDigitalInName;
+    });
+    
+    const availableProducts = filtered.length > 0 ? filtered : allProductsForMaterial;
+    
+    if (availableProducts.length > 0) {
+      // Buscar el producto "corona" (ej. "Corona Zr", "Corona Zr (digital)", etc.)
+      const defaultProduct = availableProducts.find(p => 
+        p.display.toLowerCase() === 'corona' || 
+        p.display.toLowerCase().startsWith('corona ') ||
+        p.display.toLowerCase().includes('corona')
+      ) || availableProducts[0];
+      
+      const currentIsValid = availableProducts.some(p => p.raw === producto);
+      if (!currentIsValid || producto === 'Corona Zirconia') {
+        setProducto(defaultProduct.raw);
+      }
+    }
+  }, [productsMap, material, tipo, producto]);
+
   const categoriesList = Object.keys(productsMap).sort();
   
   const getFilteredProducts = () => {
@@ -140,8 +167,8 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
     
     setItems([...items, { id: Date.now(), dientes: selectedTeeth.sort(), material, producto: finalProducto, unidades: selectedTeeth.length }]);
     setSelectedTeeth([]);
-    setMaterial('');
-    setProducto('');
+    setMaterial('Zirconia');
+    setProducto('Corona Zirconia');
     setSubtipo('');
   };
 
@@ -288,9 +315,6 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
                       checked={tipo === 'Análogo'}
                       onChange={(e) => {
                         setTipo(e.target.value);
-                        setMaterial('');
-                        setProducto('');
-                        setSubtipo('');
                       }}
                     />
                     <div className="flex flex-col">
@@ -308,9 +332,6 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
                       checked={tipo === 'Digital'}
                       onChange={(e) => {
                         setTipo(e.target.value);
-                        setMaterial('');
-                        setProducto('');
-                        setSubtipo('');
                       }}
                     />
                     <div className="flex flex-col">
