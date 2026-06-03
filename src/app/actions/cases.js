@@ -137,6 +137,7 @@ async function registrarCargoEnvio(supabase, caseId, codigo, paciente) {
     }
 
     // 4. Insertar CARGO
+    const montoRedondeado = Math.round(total * 100) / 100;
     const { error: insertErr } = await supabase
       .from('cuenta_corriente_clinica')
       .insert({
@@ -144,13 +145,22 @@ async function registrarCargoEnvio(supabase, caseId, codigo, paciente) {
         caso_id:    caseId,
         tipo:       'CARGO',
         descripcion: `Trabajo enviado: ${codigo} - ${paciente}`,
-        monto:      Math.round(total * 100) / 100,
+        monto:      montoRedondeado,
         fecha:      new Date().toISOString()
       });
 
     if (insertErr) {
       console.error('[CARGO] Error insertando CARGO:', insertErr);
     } else {
+      // 5. Actualizar total_caso y saldo_pendiente en casos_master
+      await supabase
+        .from('casos_master')
+        .update({
+           total_caso: montoRedondeado,
+           saldo_pendiente: montoRedondeado
+        })
+        .eq('id', caseId);
+
       console.log(`[CARGO] ✅ CARGO registrado → caso=${codigo} cliente=${clienteId} total=$${total.toFixed(2)}`);
     }
   } catch (err) {
