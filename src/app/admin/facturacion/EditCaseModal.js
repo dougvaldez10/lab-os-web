@@ -10,6 +10,7 @@ import { deleteAdminCase } from '@/app/actions/admin-cases';
 export default function EditCaseModal({ caseData, onClose, onUpdated }) {
   const [detalles, setDetalles] = useState([]);
   const [descuento, setDescuento] = useState(0);
+  const [descuentoTipo, setDescuentoTipo] = useState('fijo'); // 'fijo' or 'porcentaje'
   const [ivaAplicado, setIvaAplicado] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -60,17 +61,25 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
 
   const calcularSubtotalGeneral = () => {
     return detalles.reduce((acc, det) => {
-      const cant = Number(det.cantidad) || 0;
-      const pu = Number(det.precio_unitario) || 0;
+      const cant = Number(det.unidades) || 0;
+      const pu = Number(det.precio_unit) || 0;
       return acc + (cant * pu);
     }, 0);
   };
+
+  const subtotal = calcularSubtotalGeneral();
+  const montoDescuentoReal = descuentoTipo === 'porcentaje' 
+    ? subtotal * (Number(descuento) / 100) 
+    : Number(descuento);
+
+  const subtotalConDescuento = Math.max(0, subtotal - montoDescuentoReal);
+  const total = ivaAplicado ? subtotalConDescuento * 1.08 : subtotalConDescuento;
 
   const handleSave = async () => {
     setSaving(true);
     const toastId = toast.loading("Guardando cambios...");
     try {
-      const res = await updateCaseFinancials(caseData.id, detalles, descuento, ivaAplicado);
+      const res = await updateCaseFinancials(caseData.id, detalles, montoDescuentoReal, ivaAplicado);
       if (res.success) {
         toast.success("Caso actualizado correctamente", { id: toastId });
         onUpdated();
@@ -83,10 +92,6 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
     }
     setSaving(false);
   };
-
-  const subtotal = calcularSubtotalGeneral();
-  const subtotalConDescuento = Math.max(0, subtotal - Number(descuento));
-  const total = ivaAplicado ? subtotalConDescuento * 1.08 : subtotalConDescuento;
 
   return (
     <AnimatePresence>
@@ -136,13 +141,13 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
                         {detalles.map((det, idx) => (
                           <tr key={det.id} className="hover:bg-slate-50 transition-colors">
                             <td className="px-4 py-3 font-medium text-slate-700">
-                              {det.producto_nombre || det.descripcion}
+                              {det.producto || "Sin concepto"}
                             </td>
                             <td className="px-4 py-3">
                               <input
                                 type="number"
-                                value={det.cantidad}
-                                onChange={(e) => handleDetailChange(idx, 'cantidad', e.target.value)}
+                                value={det.unidades}
+                                onChange={(e) => handleDetailChange(idx, 'unidades', e.target.value)}
                                 className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none"
                               />
                             </td>
@@ -151,14 +156,14 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
                                 <DollarSign size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
                                 <input
                                   type="number"
-                                  value={det.precio_unitario}
-                                  onChange={(e) => handleDetailChange(idx, 'precio_unitario', e.target.value)}
+                                  value={det.precio_unit}
+                                  onChange={(e) => handleDetailChange(idx, 'precio_unit', e.target.value)}
                                   className="w-full pl-6 pr-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none"
                                 />
                               </div>
                             </td>
                             <td className="px-4 py-3 text-right font-bold text-slate-700">
-                              ${((Number(det.cantidad) || 0) * (Number(det.precio_unitario) || 0)).toFixed(2)}
+                              ${((Number(det.unidades) || 0) * (Number(det.precio_unit) || 0)).toFixed(2)}
                             </td>
                           </tr>
                         ))}
@@ -183,7 +188,23 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
                     </div>
                     
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-600">Descuento ($):</span>
+                      <div className="flex items-center gap-2 text-slate-600">
+                        <span>Descuento</span>
+                        <div className="flex bg-slate-200 rounded-lg p-0.5">
+                          <button
+                            onClick={() => setDescuentoTipo('fijo')}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${descuentoTipo === 'fijo' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}
+                          >
+                            $
+                          </button>
+                          <button
+                            onClick={() => setDescuentoTipo('porcentaje')}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${descuentoTipo === 'porcentaje' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}
+                          >
+                            %
+                          </button>
+                        </div>
+                      </div>
                       <div className="w-24">
                         <input
                           type="number"

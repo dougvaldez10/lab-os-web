@@ -377,19 +377,19 @@ export async function updateCaseFinancials(caseId, detailsUpdates, discount, app
   try {
     const supabase = getAdminClient();
     
-    // 1. Update each detail (cantidad, precio_unitario, subtotal)
+    // 1. Update each detail (unidades, precio_unit, subtotal)
     let totalSubtotal = 0;
     for (const det of detailsUpdates) {
-      const pUnit = Number(det.precio_unitario) || 0;
-      const cant = Number(det.cantidad) || 0;
+      const pUnit = Number(det.precio_unit) || 0;
+      const cant = Number(det.unidades) || 0;
       const sub = pUnit * cant;
       totalSubtotal += sub;
       
       await supabase
         .from('casos_detalle')
         .update({
-          cantidad: cant,
-          precio_unitario: pUnit,
+          unidades: cant,
+          precio_unit: pUnit,
           subtotal: sub
         })
         .eq('id', det.id);
