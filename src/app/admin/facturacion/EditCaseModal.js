@@ -192,7 +192,7 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
               <p className="text-sm text-slate-500 font-medium flex items-center gap-2 mt-1">
                 <span><span className="font-bold text-slate-700">Paciente:</span> {caseData?.paciente}</span>
                 <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                <span><span className="font-bold text-slate-700">Clínica:</span> {caseData?.cliente_nombre || 'General'}</span>
+                <span><span className="font-bold text-slate-700">Clínica:</span> {caseData?.clientes?.nombre || caseData?.cliente_nombre || 'General'}</span>
                 <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                 <span><span className="font-bold text-slate-700">Dentista:</span> {caseData?.doctor || 'No asignado'}</span>
               </p>
