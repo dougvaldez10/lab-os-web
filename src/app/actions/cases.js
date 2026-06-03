@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 
-// Cliente Admin Ã¢â‚¬â€ bypasses RLS. Seguro porque "use server" nunca llega al navegador.
+// Cliente Admin — bypasses RLS. Seguro porque "use server" nunca llega al navegador.
 function getAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -132,7 +132,7 @@ async function registrarCargoEnvio(supabase, caseId, codigo, paciente) {
     const total = (detalles || []).reduce((acc, r) => acc + (parseFloat(r.subtotal) || 0), 0);
 
     if (total <= 0) {
-      console.warn('[CARGO] Caso', codigo, 'sin importe Ã¢â‚¬â€ CARGO omitido.');
+      console.warn('[CARGO] Caso', codigo, 'sin importe — CARGO omitido.');
       return;
     }
 
@@ -193,7 +193,7 @@ export async function updateCaseState(internalId, action, operatorName = null) {
     } else if (action === 'PAUSE') {
         updateData = { estado: 'En Pausa' };
 
-    } else if (action === 'SHIP' || (action === 'COMPLETE' && deptoLimpio === 'Envío')) {
+    } else if (action === 'SHIP' || (action === 'COMPLETE' && deptoLimpio === 'Inspección')) {
         // ── ENVÍO FINAL: caso sale del laboratorio ──
         // Se chequea ANTES del bloque COMPLETE general para evitar que caiga ahí.
         esEnvioFinal = true;
@@ -242,6 +242,7 @@ export async function updateCaseState(internalId, action, operatorName = null) {
             }
         }
         
+        console.log('[DEBUG CASES.JS] COMPLETE -> deptoLimpio:', deptoLimpio, 'nextDept:', nextDept);
         updateData = { depto_actual: nextDept, estado: 'Pendiente', operador_actual: null, hora_inicio: null };
         _nextDeptForHistorico = nextDept;
     }

@@ -35,7 +35,7 @@ export async function GET(request) {
       .select('*')
       .neq('estado', 'Entregado')
       .neq('estado', 'Finalizado')
-      .neq('depto_actual', 'FacturaciÃƒÂ³n')
+      .neq('depto_actual', 'Facturación')
       .order('fecha_entrega', { ascending: true, nullsFirst: false })
       .limit(5000);
 

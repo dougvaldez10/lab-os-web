@@ -10,7 +10,7 @@ function getAdminClient() {
 }
 
 /**
- * Calcula la Media DinÃƒÂ¡mica de los ÃƒÂºltimos 30 casos completados para un departamento.
+ * Calcula la Media DinÃƒ¡mica de los ÃƒÂºltimos 30 casos completados para un departamento.
  * Implementa la lÃƒÂ³gica definida en la Directiva de Inteligencia Predictiva.
  *
  * @param {string} departamento - ID exacto del departamento (ej. "Digital_Diseno")
