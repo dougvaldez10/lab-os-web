@@ -131,7 +131,8 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
                     <table className="w-full text-left text-sm">
                       <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                         <tr>
-                          <th className="px-4 py-3">Concepto</th>
+                          <th className="px-4 py-3 min-w-[200px]">Concepto / Material (Tipo)</th>
+                          <th className="px-4 py-3 w-32">Piezas</th>
                           <th className="px-4 py-3 w-24">Cant.</th>
                           <th className="px-4 py-3 w-32">Precio Unit.</th>
                           <th className="px-4 py-3 w-32 text-right">Subtotal</th>
@@ -140,8 +141,23 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
                       <tbody className="divide-y divide-slate-100">
                         {detalles.map((det, idx) => (
                           <tr key={det.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-4 py-3 font-medium text-slate-700">
-                              {det.producto || "Sin concepto"}
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={det.producto || ''}
+                                onChange={(e) => handleDetailChange(idx, 'producto', e.target.value)}
+                                className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-slate-700 font-medium"
+                                placeholder="Ej. Corona Zirconia (Digital)"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={det.dientes || ''}
+                                onChange={(e) => handleDetailChange(idx, 'dientes', e.target.value)}
+                                className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-slate-600"
+                                placeholder="Ej. 11, 12"
+                              />
                             </td>
                             <td className="px-4 py-3">
                               <input
@@ -169,7 +185,7 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
                         ))}
                         {detalles.length === 0 && (
                           <tr>
-                            <td colSpan="4" className="px-4 py-6 text-center text-slate-400">
+                            <td colSpan="5" className="px-4 py-6 text-center text-slate-400">
                               No hay conceptos registrados
                             </td>
                           </tr>

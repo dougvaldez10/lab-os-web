@@ -388,6 +388,8 @@ export async function updateCaseFinancials(caseId, detailsUpdates, discount, app
       await supabase
         .from('casos_detalle')
         .update({
+          producto: det.producto,
+          dientes: det.dientes,
           unidades: cant,
           precio_unit: pUnit,
           subtotal: sub
