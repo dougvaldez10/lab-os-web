@@ -105,11 +105,12 @@ export async function getBillingSummary() {
     await checkAdminAccess();
     const supabase = getAdminClient();
 
-    // Consultamos casos en el departamento de 'Facturación' (incluso si tienen saldo 0, para evitar que queden en limbo)
+    // Consultamos casos en el departamento de 'Facturación' con saldo pendiente > 0
     const { data: cases, error } = await supabase
       .from('casos_master')
       .select('id, codigo, paciente, doctor, total_caso, saldo_pendiente, fecha_entrega, cliente_id, clientes(nombre)')
       .eq('depto_actual', 'Facturación')
+      .gt('saldo_pendiente', 0)
       .order('fecha_entrega', { ascending: true });
 
     if (error) throw error;
