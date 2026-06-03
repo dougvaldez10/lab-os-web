@@ -368,19 +368,16 @@ export default function AdminBoard() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-500 uppercase">Doctor (Dentista)</label>
-                  <input 
-                    type="text" 
-                    list="doctor-list"
+                  <select 
                     value={editingCase.doctor || ""} 
                     onChange={e => setEditingCase({...editingCase, doctor: e.target.value})} 
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none" 
-                    placeholder="Seleccione o escriba..."
-                  />
-                  <datalist id="doctor-list">
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none"
+                  >
+                    <option value="" disabled>Seleccione doctor...</option>
                     {clients.filter(c => String(c.cliente_id) === String(editingCase.cliente_id)).map(doc => (
-                      <option key={doc.id} value={doc.nombre_dentista} />
+                      <option key={doc.id} value={doc.nombre_dentista}>{doc.nombre_dentista}</option>
                     ))}
-                  </datalist>
+                  </select>
                 </div>
               </div>
 
