@@ -65,8 +65,8 @@ export async function createNewCase(formData) {
     }
 
     // Auto-enrutamiento inicial
-    let depto_actual = 'RecepciÃƒÂ³n';
-    if (tipo === 'AnÃƒ¡logo') {
+    let depto_actual = 'Recepción';
+    if (tipo === 'Análogo') {
       depto_actual = 'Yesos';
     } else if (tipo === 'Digital') {
       depto_actual = 'Digital_Diseno';

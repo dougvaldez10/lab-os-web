@@ -59,6 +59,11 @@ export default function BillingPanel() {
   const [globalAbonoModal, setGlobalAbonoModal] = useState(false);
   const [editModalCase, setEditModalCase] = useState(null);
 
+  // Form states for Single Payment (Abono)
+  const [montoAbono, setMontoAbono] = useState("");
+  const [metodoPago, setMetodoPago] = useState("Transferencia");
+  const [submittingAbono, setSubmittingAbono] = useState(false);
+
   // Form states for Global Payment
   const [isGlobalPaymentOpen, setIsGlobalPaymentOpen] = useState(false);
   const [globalClienteId, setGlobalClienteId] = useState("");

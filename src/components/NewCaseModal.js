@@ -138,7 +138,23 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
   
   const currentProducts = material ? getFilteredProducts() : [];
 
-  const handleMaterialChange = (val) => { setMaterial(val); setProducto(''); setSubtipo(''); };
+  const handleMaterialChange = (val) => { 
+    setMaterial(val); 
+    setSubtipo('');
+    // Al cambiar material, intentamos preseleccionar el primer producto disponible
+    const allForMat = productsMap[val] || [];
+    const filtered = allForMat.filter(p => {
+      const isDigitalInName = p.raw.toLowerCase().includes('digital');
+      return tipo === 'Digital' ? isDigitalInName : !isDigitalInName;
+    });
+    const avail = filtered.length > 0 ? filtered : allForMat;
+    if (avail.length > 0) {
+      const defaultProd = avail.find(p => p.display.toLowerCase().includes('corona')) || avail[0];
+      setProducto(defaultProd.raw);
+    } else {
+      setProducto('');
+    }
+  };
 
   const upperTeeth = [18,17,16,15,14,13,12,11, 21,22,23,24,25,26,27,28];
   const lowerTeeth = [48,47,46,45,44,43,42,41, 31,32,33,34,35,36,37,38];
@@ -153,10 +169,6 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
   const clearSelection = () => setSelectedTeeth([]);
 
   const handleAddItem = () => {
-    if (selectedTeeth.length === 0) {
-       toast.error("Selecciona al menos una pieza dental.");
-       return;
-    }
     if (!material || !producto) {
        toast.error("Selecciona el material y producto.");
        return;
@@ -164,12 +176,32 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
     
     // El producto final contiene el subtipo en el nombre para conservar compatibilidad financiera.
     const finalProducto = subtipo ? `${producto} - ${subtipo}` : producto;
+    const hasTeeth = selectedTeeth.length > 0;
     
-    setItems([...items, { id: Date.now(), dientes: selectedTeeth.sort(), material, producto: finalProducto, unidades: selectedTeeth.length }]);
+    setItems([...items, { 
+      id: Date.now(), 
+      dientes: hasTeeth ? selectedTeeth.sort() : [], 
+      material, 
+      producto: finalProducto, 
+      unidades: hasTeeth ? selectedTeeth.length : 1 
+    }]);
+    
     setSelectedTeeth([]);
     setMaterial('Zirconia');
-    setProducto('Corona Zirconia');
     setSubtipo('');
+    // Repoblar producto para Zirconia
+    const allForMat = productsMap['Zirconia'] || [];
+    const filtered = allForMat.filter(p => {
+      const isDigitalInName = p.raw.toLowerCase().includes('digital');
+      return tipo === 'Digital' ? isDigitalInName : !isDigitalInName;
+    });
+    const avail = filtered.length > 0 ? filtered : allForMat;
+    if (avail.length > 0) {
+      const defaultProd = avail.find(p => p.display.toLowerCase().includes('corona')) || avail[0];
+      setProducto(defaultProd.raw);
+    } else {
+      setProducto('');
+    }
   };
 
   const handleRemoveItem = (id) => setItems(items.filter(i => i.id !== id));
@@ -196,7 +228,9 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
     let finalItems = [...items];
     
     // Auto-agregar si olvidó pulsar "Añadir Piezas"
-    if (material && producto) {
+    // Solo auto-agrega si NO ha agregado nada a la lista previamente,
+    // o si tiene dientes seleccionados (lo que indica que estaba preparando un item y olvidó darle a añadir)
+    if (material && producto && (items.length === 0 || selectedTeeth.length > 0)) {
        const hasTeeth = selectedTeeth.length > 0;
        const finalProducto = subtipo ? `${producto} - ${subtipo}` : producto;
        finalItems.push({
