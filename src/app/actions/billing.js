@@ -70,7 +70,8 @@ export async function registrarAbono({ id_caso, monto_abono, metodo_pago, admin_
     }
 
     // 3. Calcular el nuevo saldo y determinar el estado
-    const nuevoSaldo = Math.max(0, (parseFloat(saldoActual) || 0) - abono);
+    // Nota: el saldo puede quedar negativo (saldo a favor de la clínica)
+    const nuevoSaldo = (parseFloat(saldoActual) || 0) - abono;
     const estadoPago = nuevoSaldo <= 0 ? 'Pagado' : 'Pendiente';
 
     // 4. Actualizar casos_master
@@ -105,17 +106,20 @@ export async function getBillingSummary() {
     await checkAdminAccess();
     const supabase = getAdminClient();
 
-    // Consultamos casos en el departamento de 'Facturación' con saldo pendiente > 0
+    // Consultamos TODOS los casos en Facturación con saldo != 0
+    // (positivo = deuda, negativo = saldo a favor de la clínica)
     const { data: cases, error } = await supabase
       .from('casos_master')
-      .select('id, codigo, paciente, doctor, total_caso, saldo_pendiente, fecha_entrega, cliente_id, clientes(nombre)')
+      .select('id, codigo, paciente, doctor, total_caso, saldo_pendiente, fecha_entrega, cliente_id, iva_aplicado, clientes(nombre)')
       .eq('depto_actual', 'Facturación')
-      .gt('saldo_pendiente', 0)
+      .neq('saldo_pendiente', 0)
       .order('fecha_entrega', { ascending: true });
 
     if (error) throw error;
 
     // Agrupamos en Javascript por cliente_id para la Vista de Clínicas (Resumen)
+    // total_deuda positivo = nos deben a nosotros
+    // total_deuda negativo = nosotros debemos (saldo a favor de la clínica)
     const clinicsMap = {};
     (cases || []).forEach(c => {
       const cliId = c.cliente_id;
@@ -132,6 +136,7 @@ export async function getBillingSummary() {
       clinicsMap[cliId].casos_count += 1;
     });
 
+    // Ordenar: deudas mayores primero, saldos a favor al final
     const clinics = Object.values(clinicsMap).sort((a, b) => b.total_deuda - a.total_deuda);
 
     return { success: true, cases: cases || [], clinics };

@@ -428,8 +428,8 @@ export default function BillingPanel() {
                             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0">
                               <tr>
                                 <th className="px-6 py-4">Clínica</th>
-                                <th className="px-6 py-4">Casos Pendientes</th>
-                                <th className="px-6 py-4">Deuda Total</th>
+                                <th className="px-6 py-4">Casos</th>
+                                <th className="px-6 py-4">Balance</th>
                                 <th className="px-6 py-4 text-right">Detalle</th>
                               </tr>
                             </thead>
@@ -447,8 +447,16 @@ export default function BillingPanel() {
                                       {cli.casos_count} {cli.casos_count === 1 ? 'caso' : 'casos'}
                                     </span>
                                   </td>
-                                  <td className="px-6 py-4 font-black text-rose-600">
-                                    ${cli.total_deuda.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  <td className="px-6 py-4">
+                                    {cli.total_deuda < 0 ? (
+                                      <span className="inline-flex items-center gap-1.5 font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1 text-sm">
+                                        ↑ Saldo a favor ${Math.abs(cli.total_deuda).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      </span>
+                                    ) : (
+                                      <span className="font-black text-rose-600">
+                                        ${cli.total_deuda.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      </span>
+                                    )}
                                   </td>
                                   <td className="px-6 py-4 text-right">
                                     <button className="p-1.5 bg-slate-50 group-hover:bg-amber-50 text-slate-400 group-hover:text-[#D4AF37] rounded-lg transition-colors inline-flex">
@@ -546,10 +554,16 @@ export default function BillingPanel() {
                                     : "0.00"}
                                 </td>
                                 <td className="px-6 py-4">
-                                  <span className="inline-flex items-center gap-1 font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-2.5 py-1 text-xs">
-                                    <DollarSign size={12} className="text-rose-500" />
-                                    {Number(c.saldo_pendiente).toFixed(2)}
-                                  </span>
+                                  {Number(c.saldo_pendiente) < 0 ? (
+                                    <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1 text-xs">
+                                      ↑ Saldo a favor ${Math.abs(Number(c.saldo_pendiente)).toFixed(2)}
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-2.5 py-1 text-xs">
+                                      <DollarSign size={12} className="text-rose-500" />
+                                      {Number(c.saldo_pendiente).toFixed(2)}
+                                    </span>
+                                  )}
                                 </td>
                                 <td className="px-6 py-4 text-right flex justify-end gap-2">
                                   {currentUser?.username?.toLowerCase() === 'coloraturacorp' && (
@@ -578,9 +592,12 @@ export default function BillingPanel() {
 
                     {/* Resumen final en pie de tabla */}
                     <div className="bg-slate-50/80 px-6 py-4 border-t border-slate-200 flex justify-between items-center shrink-0">
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Acumulado Clínica:</span>
-                      <span className="text-lg font-black text-rose-600">
-                        ${selectedClinic.total_deuda.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        {selectedClinic.total_deuda < 0 ? 'Saldo a Favor Clínica:' : 'Total Acumulado Clínica:'}
+                      </span>
+                      <span className={`text-lg font-black ${selectedClinic.total_deuda < 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {selectedClinic.total_deuda < 0 ? '↑ ' : ''}
+                        ${Math.abs(selectedClinic.total_deuda).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                   </div>
