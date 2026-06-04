@@ -13,22 +13,27 @@ function getAdminClient() {
 export async function GET(request) {
   try {
     const supabase = getAdminClient();
-
-    // Find the client Super Dental
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('q') || 'super';
+    
+    // Find the client
     const { data: clients, error: errClient } = await supabase
       .from('clientes')
       .select('id, nombre')
-      .ilike('nombre', '%super dental%');
+      .ilike('nombre', \`%\${search}%\`);
 
     if (errClient || !clients || clients.length === 0) {
-      return NextResponse.json({ success: false, message: "No se encontro la clinica Super Dental" });
+      // If we still can't find it, return a list of all clients so the user can see the exact name
+      const { data: allClients } = await supabase.from('clientes').select('id, nombre');
+      return NextResponse.json({ 
+        success: false, 
+        message: \`No se encontro ninguna clinica con el texto: \${search}\`,
+        todas_las_clinicas: allClients
+      });
     }
 
     const clienteId = clients[0].id;
 
-    // We want to find cases for Super Dental that are recently paid to set their balance to -80
-    // Actually, maybe we can just create a dummy "pago global" logic or just find ANY case for them
-    // Let's just find the most recent case for Super Dental in "Facturación"
     const { data: cases, error: errCases } = await supabase
       .from('casos_master')
       .select('id, codigo, saldo_pendiente')
@@ -38,7 +43,6 @@ export async function GET(request) {
       .limit(1);
 
     if (errCases || !cases || cases.length === 0) {
-       // If no case in Facturacion, just get the most recent case overall
        const { data: anyCases } = await supabase
           .from('casos_master')
           .select('id, codigo, saldo_pendiente')
@@ -47,12 +51,12 @@ export async function GET(request) {
           .limit(1);
           
        if (!anyCases || anyCases.length === 0) {
-          return NextResponse.json({ success: false, message: "No se encontro ningun caso para Super Dental" });
+          return NextResponse.json({ success: false, message: \`No se encontro ningun caso para la clinica \${clients[0].nombre}\` });
        }
        
        const c = anyCases[0];
        await supabase.from('casos_master').update({ saldo_pendiente: -80, depto_actual: 'Facturación', estado_pago: 'Pagado' }).eq('id', c.id);
-       return NextResponse.json({ success: true, message: `Saldo ajustado a -80 en caso histórico #${c.codigo}` });
+       return NextResponse.json({ success: true, message: \`Saldo ajustado a -80 en caso histórico #\${c.codigo} para \${clients[0].nombre}\` });
     }
 
     const c = cases[0];
@@ -60,7 +64,7 @@ export async function GET(request) {
 
     return NextResponse.json({ 
       success: true, 
-      message: `Se aplicó el saldo a favor de -$80 al caso #${c.codigo} de Super Dental.` 
+      message: \`Se aplicó el saldo a favor de -$80 al caso #\${c.codigo} de \${clients[0].nombre}.\` 
     });
 
   } catch (err) {
