@@ -449,8 +449,8 @@ export default function BillingPanel() {
                                   </td>
                                   <td className="px-6 py-4">
                                     {cli.total_deuda < 0 ? (
-                                      <span className="inline-flex items-center gap-1.5 font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1 text-sm">
-                                        ↑ Saldo a favor ${Math.abs(cli.total_deuda).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      <span className="font-black text-emerald-600">
+                                        ${Math.abs(cli.total_deuda).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                       </span>
                                     ) : (
                                       <span className="font-black text-rose-600">
@@ -556,7 +556,8 @@ export default function BillingPanel() {
                                 <td className="px-6 py-4">
                                   {Number(c.saldo_pendiente) < 0 ? (
                                     <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1 text-xs">
-                                      ↑ Saldo a favor ${Math.abs(Number(c.saldo_pendiente)).toFixed(2)}
+                                      <DollarSign size={12} className="text-emerald-500" />
+                                      {Math.abs(Number(c.saldo_pendiente)).toFixed(2)}
                                     </span>
                                   ) : (
                                     <span className="inline-flex items-center gap-1 font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-2.5 py-1 text-xs">
@@ -596,7 +597,6 @@ export default function BillingPanel() {
                         {selectedClinic.total_deuda < 0 ? 'Saldo a Favor Clínica:' : 'Total Acumulado Clínica:'}
                       </span>
                       <span className={`text-lg font-black ${selectedClinic.total_deuda < 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        {selectedClinic.total_deuda < 0 ? '↑ ' : ''}
                         ${Math.abs(selectedClinic.total_deuda).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
