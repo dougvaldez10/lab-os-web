@@ -1343,17 +1343,17 @@ export default function Home() {
                                                   }
 
                                                   return (
-                                                    <div key={idx} className="flex items-baseline gap-1.5 truncate mt-0.5">
+                                                    <div key={idx} className="flex items-center gap-1.5 truncate mt-0.5">
                                                       <span className={`text-[16px] font-black tracking-tight ${group.matColor}`}>
                                                         {group.matText}
                                                       </span>
                                                       {group.extraText && (
-                                                        <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50/80 border border-indigo-100/50 px-1.5 py-0.5 rounded-md tracking-tight shadow-sm self-center">
+                                                        <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50/80 border border-indigo-100/50 px-1.5 py-0.5 rounded-md tracking-tight shadow-sm">
                                                           {group.extraText}
                                                         </span>
                                                       )}
                                                       {c.color && (
-                                                        <span className="text-[12px] font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.5 rounded-md tracking-tight ml-0.5 shadow-sm border border-amber-200/50">
+                                                        <span className="text-[11px] font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.5 rounded-md tracking-tight ml-0.5 shadow-sm border border-amber-200/50">
                                                           {c.color}
                                                         </span>
                                                       )}
