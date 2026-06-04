@@ -539,7 +539,11 @@ export default function BillingPanel() {
                                   />
                                 </td>
                                 <td className="px-6 py-4 font-medium text-slate-600">
-                                  ${c.total_caso ? Number(c.total_caso).toFixed(2) : "0.00"}
+                                  ${c.total_caso
+                                    ? (c.iva_aplicado
+                                        ? (Number(c.total_caso) / 1.08).toFixed(2)
+                                        : Number(c.total_caso).toFixed(2))
+                                    : "0.00"}
                                 </td>
                                 <td className="px-6 py-4">
                                   <span className="inline-flex items-center gap-1 font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-2.5 py-1 text-xs">
@@ -894,8 +898,18 @@ export default function BillingPanel() {
                   <strong className="text-slate-800 text-sm font-black">${Number(abonoModal.saldo_pendiente).toFixed(2)}</strong>
                 </div>
                 <div className="text-right">
-                  <span className="text-slate-500 block font-medium">Total del Caso</span>
-                  <strong className="text-slate-700 font-bold">${Number(abonoModal.total_caso || 0).toFixed(2)}</strong>
+                  <span className="text-slate-500 block font-medium">
+                    Total del Caso
+                    {abonoModal.iva_aplicado && (
+                      <span className="ml-1 text-[9px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full">+IVA 8%</span>
+                    )}
+                  </span>
+                  <strong className="text-slate-700 font-bold">
+                    ${(abonoModal.iva_aplicado
+                      ? (Number(abonoModal.total_caso || 0) / 1.08)
+                      : Number(abonoModal.total_caso || 0)
+                    ).toFixed(2)}
+                  </strong>
                 </div>
               </div>
 
