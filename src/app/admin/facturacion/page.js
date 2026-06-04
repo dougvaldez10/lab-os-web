@@ -293,6 +293,15 @@ export default function BillingPanel() {
     cl.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Calcular total pendiente sin IVA para las clínicas filtradas
+  const filteredClinicIds = new Set(filteredClinics.map(cl => cl.id));
+  const filteredCases = cases.filter(c => filteredClinicIds.has(c.cliente_id));
+  const totalGeneralSinIva = filteredCases.reduce((acc, c) => {
+    const pending = Number(c.saldo_pendiente) || 0;
+    const pendingSinIva = (pending > 0 && c.iva_aplicado) ? (pending / 1.08) : pending;
+    return acc + pendingSinIva;
+  }, 0);
+
   // Casos de la clínica seleccionada (CxC Nivel 2)
   const selectedClinicCases = cases.filter(c => c.cliente_id === selectedClinic?.id);
 
@@ -467,6 +476,16 @@ export default function BillingPanel() {
                               ))}
                             </tbody>
                           </table>
+                        </div>
+                        
+                        {/* Resumen General de Cuentas por Cobrar */}
+                        <div className="bg-slate-50/80 px-6 py-4 border-t border-slate-200 flex justify-between items-center shrink-0">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            Total General Pendiente (Sin IVA):
+                          </span>
+                          <span className={`text-lg font-black ${totalGeneralSinIva < 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            ${totalGeneralSinIva.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
                         </div>
                       </div>
                     )}
