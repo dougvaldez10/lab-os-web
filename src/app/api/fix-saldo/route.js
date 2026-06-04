@@ -20,14 +20,14 @@ export async function GET(request) {
     const { data: clients, error: errClient } = await supabase
       .from('clientes')
       .select('id, nombre')
-      .ilike('nombre', \`%\${search}%\`);
+      .ilike('nombre', `%${search}%`);
 
     if (errClient || !clients || clients.length === 0) {
       // If we still can't find it, return a list of all clients so the user can see the exact name
       const { data: allClients } = await supabase.from('clientes').select('id, nombre');
       return NextResponse.json({ 
         success: false, 
-        message: \`No se encontro ninguna clinica con el texto: \${search}\`,
+        message: `No se encontro ninguna clinica con el texto: ${search}`,
         todas_las_clinicas: allClients
       });
     }
@@ -51,12 +51,12 @@ export async function GET(request) {
           .limit(1);
           
        if (!anyCases || anyCases.length === 0) {
-          return NextResponse.json({ success: false, message: \`No se encontro ningun caso para la clinica \${clients[0].nombre}\` });
+          return NextResponse.json({ success: false, message: `No se encontro ningun caso para la clinica ${clients[0].nombre}` });
        }
        
        const c = anyCases[0];
        await supabase.from('casos_master').update({ saldo_pendiente: -80, depto_actual: 'Facturación', estado_pago: 'Pagado' }).eq('id', c.id);
-       return NextResponse.json({ success: true, message: \`Saldo ajustado a -80 en caso histórico #\${c.codigo} para \${clients[0].nombre}\` });
+       return NextResponse.json({ success: true, message: `Saldo ajustado a -80 en caso histórico #${c.codigo} para ${clients[0].nombre}` });
     }
 
     const c = cases[0];
@@ -64,7 +64,7 @@ export async function GET(request) {
 
     return NextResponse.json({ 
       success: true, 
-      message: \`Se aplicó el saldo a favor de -$80 al caso #\${c.codigo} de \${clients[0].nombre}.\` 
+      message: `Se aplicó el saldo a favor de -$80 al caso #${c.codigo} de ${clients[0].nombre}.` 
     });
 
   } catch (err) {
