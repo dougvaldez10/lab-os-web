@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Edit, Trash2, Search, RefreshCw, AlertCircle, X, Save, Plus } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Edit, Trash2, Search, RefreshCw, AlertCircle, X, Save, Plus, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { updateAdminCase, deleteAdminCase } from "@/app/actions/admin-cases";
 import { getClients, getAllClinics } from "@/app/actions/clients";
@@ -21,6 +21,7 @@ export default function AdminBoard() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'desc' });
   
   // Odontogram state for editing
   const [selectedTeeth, setSelectedTeeth] = useState([]);
@@ -225,6 +226,73 @@ export default function AdminBoard() {
     );
   });
 
+  const handleSort = (key) => {
+    setSortConfig(prev =>
+      prev.key === key
+        ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+        : { key, direction: 'asc' }
+    );
+  };
+
+  const sortedCases = useMemo(() => {
+    const arr = [...filteredCases];
+    const { key, direction } = sortConfig;
+    arr.sort((a, b) => {
+      let aVal = a[key] ?? '';
+      let bVal = b[key] ?? '';
+      // Numeric sort for orden (codigo)
+      if (key === 'id') {
+        aVal = parseInt(aVal, 10) || 0;
+        bVal = parseInt(bVal, 10) || 0;
+        return direction === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      // Date sort for fecha_entrega
+      if (key === 'fecha_entrega') {
+        aVal = aVal ? new Date(aVal).getTime() : 0;
+        bVal = bVal ? new Date(bVal).getTime() : 0;
+        return direction === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      // Default alphabetic sort
+      aVal = String(aVal).toLowerCase();
+      bVal = String(bVal).toLowerCase();
+      if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }, [filteredCases, sortConfig]);
+
+  const formatFecha = (fecha, hora) => {
+    if (!fecha) return '—';
+    const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    // fecha viene como 'YYYY-MM-DD', split para evitar timezone issues
+    const [y, m, d] = fecha.split('-');
+    const mes = meses[parseInt(m, 10) - 1] || m;
+    const horaStr = hora ? ` ${hora.slice(0,5)}` : '';
+    return `${d}/${mes}/${y}${horaStr}`;
+  };
+
+  const SortableHeader = ({ label, sortKey, className = '' }) => {
+    const isActive = sortConfig.key === sortKey;
+    return (
+      <th
+        className={`px-4 py-3 cursor-pointer select-none group ${className}`}
+        onClick={() => handleSort(sortKey)}
+      >
+        <span className="inline-flex items-center gap-1 hover:text-[#D4AF37] transition-colors">
+          {label}
+          <span className={`transition-colors ${isActive ? 'text-[#D4AF37]' : 'text-slate-300 group-hover:text-slate-400'}`}>
+            {isActive
+              ? sortConfig.direction === 'asc'
+                ? <ChevronUp size={13} />
+                : <ChevronDown size={13} />
+              : <ChevronsUpDown size={13} />}
+          </span>
+        </span>
+      </th>
+    );
+  };
+
   return (
     <div className="p-6 h-full flex flex-col bg-slate-50">
       <Toaster position="bottom-right" />
@@ -266,12 +334,12 @@ export default function AdminBoard() {
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3">Orden</th>
-                <th className="px-4 py-3">Paciente</th>
-                <th className="px-4 py-3">Doctor</th>
-                <th className="px-4 py-3">Depto Actual</th>
-                <th className="px-4 py-3">Estado</th>
-                <th className="px-4 py-3">F. Entrega</th>
+                <SortableHeader label="Orden" sortKey="id" />
+                <SortableHeader label="Paciente" sortKey="patient" />
+                <SortableHeader label="Doctor" sortKey="doctor" />
+                <SortableHeader label="Depto Actual" sortKey="dept" />
+                <SortableHeader label="Estado" sortKey="status" />
+                <SortableHeader label="F. Entrega" sortKey="fecha_entrega" />
                 <th className="px-4 py-3 text-right">Acciones</th>
               </tr>
             </thead>
@@ -285,7 +353,7 @@ export default function AdminBoard() {
                   <td colSpan="7" className="px-4 py-8 text-center text-slate-400">No se encontraron casos.</td>
                 </tr>
               ) : (
-                filteredCases.map(c => (
+                sortedCases.map(c => (
                   <tr key={c.internal_id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 font-medium text-slate-900">#{c.id}</td>
                     <td className="px-4 py-3 text-slate-700 font-bold truncate max-w-[200px]">{c.patient}</td>
@@ -300,7 +368,7 @@ export default function AdminBoard() {
                         {c.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{c.fecha_entrega} {c.hora_entrega}</td>
+                    <td className="px-4 py-3 text-slate-600">{formatFecha(c.fecha_entrega, c.hora_entrega)}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
                         <button onClick={() => handleEdit(c)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">
