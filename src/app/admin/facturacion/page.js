@@ -20,7 +20,9 @@ import {
   AlertCircle,
   X,
   UploadCloud,
-  Edit
+  Edit,
+  Calculator,
+  Percent
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast, Toaster } from "sonner";
@@ -29,10 +31,13 @@ import {
   getBillingSummary, 
   getBillingHistory, 
   registrarAbono,
-  registerGlobalPayment
+  registerGlobalPayment,
+  getPendingFacturacionCases,
+  markCaseAsSent
 } from "@/app/actions/billing";
 import { getAllClinics } from "@/app/actions/clients";
 import { toggleCaseIVA } from "@/app/actions/cases";
+import { generateReceipt } from "@/app/actions/receipts";
 import EditCaseModal from "./EditCaseModal";
 
 export default function BillingPanel() {
@@ -49,6 +54,10 @@ export default function BillingPanel() {
   const [selectedClinic, setSelectedClinic] = useState(null); // Level 2 selection
   const [searchTerm, setSearchTerm] = useState("");
 
+  // States for Pendientes de Pago (Facturación)
+  const [pendingCases, setPendingCases] = useState([]);
+  const [sendingCaseId, setSendingCaseId] = useState(null);
+
   // States for History
   const [historyCases, setHistoryCases] = useState([]);
   const [historySearchTerm, setHistorySearchTerm] = useState("");
@@ -58,6 +67,11 @@ export default function BillingPanel() {
   const [abonoModal, setAbonoModal] = useState(null);
   const [globalAbonoModal, setGlobalAbonoModal] = useState(false);
   const [editModalCase, setEditModalCase] = useState(null);
+  const [receiptCase, setReceiptCase] = useState(null);
+  const [receiptSaving, setReceiptSaving] = useState(false);
+  const [discountType, setDiscountType] = useState("$");
+  const [discountValue, setDiscountValue] = useState("");
+  const [applyIva, setApplyIva] = useState(false);
 
   // Form states for Single Payment (Abono)
   const [montoAbono, setMontoAbono] = useState("");
@@ -119,7 +133,14 @@ export default function BillingPanel() {
       const allRes = await getAllClinics();
       if (allRes) setAllClinics(allRes);
 
-      if (activeTab === "cxc") {
+      if (activeTab === "pendientes") {
+        const res = await getPendingFacturacionCases();
+        if (res.success) {
+          setPendingCases(res.cases || []);
+        } else {
+          toast.error("Error al cargar casos pendientes: " + res.error);
+        }
+      } else if (activeTab === "cxc") {
         const res = await getBillingSummary();
         if (res.success) {
           setClinics(res.clinics || []);
@@ -283,6 +304,106 @@ export default function BillingPanel() {
     }
   };
 
+  const handleMarkAsSent = async (caso) => {
+    if (!window.confirm("¿Estás seguro de marcar este caso como ENVIADO? Se asignará la fecha de hoy para el cobro.")) return;
+    
+    setSendingCaseId(caso.id);
+    const toastId = toast.loading("Marcando como enviado...");
+    try {
+      const res = await markCaseAsSent(caso.id);
+      if (res.success) {
+        toast.success(`Caso enviado. Fecha asignada: ${res.dateSent}`, { id: toastId });
+        fetchData();
+      } else {
+        toast.error("Error al marcar envío: " + res.error, { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Error de servidor.", { id: toastId });
+    } finally {
+      setSendingCaseId(null);
+    }
+  };
+
+  const openReceiptModal = (caso) => {
+    // Adapter para formatear como espera el modal
+    const items = caso.casos_detalle?.map(d => ({
+      unidades: d.cantidad,
+      producto: d.producto,
+      precio_unitario: 0, // El modal asume calcular o simplemente no muestra precio individual real si no viene en detalle, pero LabOS guarda el total_caso
+      dientes: d.dientes
+    })) || [];
+    
+    setReceiptCase({
+      id: caso.codigo,
+      internal_id: caso.id,
+      patient: caso.paciente,
+      doctor: caso.doctor || caso.clientes?.nombre,
+      items: items,
+      total_caso: caso.total_caso || 0,
+      iva_aplicado: caso.iva_aplicado
+    });
+    setDiscountType("$");
+    setDiscountValue("");
+    setApplyIva(caso.iva_aplicado || false);
+  };
+
+  const closeReceiptModal = () => {
+    setReceiptCase(null);
+  };
+
+  const calculateReceipt = () => {
+    if (!receiptCase) return { subtotal: 0, discountAmount: 0, ivaAmount: 0, total: 0 };
+    let subtotal = Number(receiptCase.total_caso) || 0;
+    
+    // Si ya tiene IVA aplicado en la BD, el total_caso de la BD YA incluye IVA o lo trataremos como base.
+    // Depende de la lógica actual, asumiremos que total_caso es el subtotal si no tiene IVA,
+    // o hay que desglosarlo si ya lo tenía. Mejor asumimos total_caso base para el modal
+    if (receiptCase.iva_aplicado && !applyIva) {
+      // Si venía con IVA y se lo quitan
+      subtotal = subtotal / 1.08; 
+    } else if (!receiptCase.iva_aplicado && applyIva) {
+      // no hacer nada al subtotal, el IVA se suma abajo
+    } else if (receiptCase.iva_aplicado && applyIva) {
+      subtotal = subtotal / 1.08; // extraer base para recalcular
+    }
+
+    let discountAmount = 0;
+    const val = parseFloat(discountValue);
+    if (!isNaN(val) && val > 0) {
+      if (discountType === "$") {
+        discountAmount = val;
+      } else {
+        discountAmount = subtotal * (val / 100);
+      }
+    }
+    
+    let afterDiscount = Math.max(0, subtotal - discountAmount);
+    let ivaAmount = applyIva ? (afterDiscount * 0.08) : 0;
+    let total = afterDiscount + ivaAmount;
+    
+    return { subtotal, discountAmount, ivaAmount, total };
+  };
+
+  const handleGenerateReceipt = async () => {
+      setReceiptSaving(true);
+      const payload = {
+         discountType,
+         discountValue: parseFloat(discountValue) || 0,
+         applyIva
+      };
+      
+      const res = await generateReceipt(receiptCase.internal_id, payload);
+      setReceiptSaving(false);
+      
+      if (res.success) {
+         toast.success("Recibo generado correctamente.");
+         closeReceiptModal();
+         fetchData();
+      } else {
+         toast.error(res.error || "Error al generar recibo.");
+      }
+  };
+
   // Global picker searches through ALL clinics
   const filteredPickerClinics = allClinics.filter(cl => 
     cl.nombre.toLowerCase().includes(globalPickerSearch.toLowerCase())
@@ -340,6 +461,7 @@ export default function BillingPanel() {
       {/* Tabs Navigation (Framer Motion) */}
       <div className="flex border-b border-slate-200 mb-6 shrink-0 relative p-1 bg-slate-200/50 rounded-xl max-w-md">
         {[
+          { id: "pendientes", label: "Casos Pendientes", icon: FileText },
           { id: "cxc", label: "Cuentas por Cobrar", icon: Wallet },
           { id: "history", label: "Historial de Pagos", icon: History }
         ].map((tab) => {
@@ -381,6 +503,104 @@ export default function BillingPanel() {
 
         {!loading && (
           <AnimatePresence mode="wait">
+            {/* PESTAÑA PENDIENTES DE PAGO */}
+            {activeTab === "pendientes" && (
+              <motion.div
+                key="pendientes-tab"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.2 }}
+                className="h-full flex flex-col"
+              >
+                <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                  <div className="overflow-x-auto flex-1">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-10">
+                        <tr>
+                          <th className="px-6 py-4">Folio</th>
+                          <th className="px-6 py-4">Clínica / Paciente</th>
+                          <th className="px-6 py-4">Descripción</th>
+                          <th className="px-6 py-4">Llegada a Facturación</th>
+                          <th className="px-6 py-4">Saldo Pendiente</th>
+                          <th className="px-6 py-4 text-center">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {pendingCases.length === 0 ? (
+                          <tr>
+                            <td colSpan="6" className="px-6 py-8 text-center text-slate-400">
+                              No hay casos pendientes sin enviar.
+                            </td>
+                          </tr>
+                        ) : (
+                          pendingCases.map((c) => {
+                            // Filter cases where we cleared fecha_entrega to show they are waiting, 
+                            // or show whatever date it has if we are using that logic
+                            return (
+                              <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="px-6 py-4 font-bold text-slate-800">
+                                  #{c.codigo}
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="font-semibold text-slate-800">{c.clientes?.nombre || "N/A"}</div>
+                                  <div className="text-xs text-slate-500 mt-0.5">{c.paciente}</div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  {c.casos_detalle?.map((d, i) => (
+                                    <div key={i} className="text-xs font-medium text-slate-600">
+                                      <span className="font-bold text-slate-800">{d.cantidad}x</span> {d.producto} {d.material && `(${d.material})`}
+                                    </div>
+                                  ))}
+                                  {(!c.casos_detalle || c.casos_detalle.length === 0) && <span className="text-slate-400 text-xs">Sin detalles</span>}
+                                </td>
+                                <td className="px-6 py-4 text-slate-600 text-xs font-medium">
+                                  {c.fecha_entrega ? (
+                                    <span className="flex items-center gap-1">
+                                      <Calendar size={12} className="text-slate-400" />
+                                      {c.fecha_entrega}
+                                    </span>
+                                  ) : (
+                                    <span className="flex items-center gap-1 text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100">
+                                      <AlertCircle size={12} /> Esperando Envío
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className="inline-flex items-center gap-1 font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-2.5 py-1 text-xs">
+                                    <DollarSign size={12} className="text-rose-500" />
+                                    {Number(c.saldo_pendiente).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      onClick={() => openReceiptModal(c)}
+                                      className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5"
+                                    >
+                                      <FileText size={14} /> Recibo
+                                    </button>
+                                    <button
+                                      onClick={() => handleMarkAsSent(c)}
+                                      disabled={sendingCaseId === c.id}
+                                      className="px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                                    >
+                                      {sendingCaseId === c.id ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                                      Envío
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {/* PESTAÑA 1: CUENTAS POR COBRAR (CxC) */}
             {activeTab === "cxc" && (
               <motion.div
@@ -1262,6 +1482,138 @@ export default function BillingPanel() {
             fetchData();
           }}
         />
+      )}
+
+      {/* MODAL DE RECIBO / BORRADOR */}
+      {receiptCase && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#0f172a]/40 backdrop-blur-sm transition-opacity" onClick={closeReceiptModal}></div>
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 max-h-[90vh]">
+             <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white relative z-20 shrink-0">
+                <div>
+                   <h2 className="text-xl font-black text-slate-800 tracking-tight">Borrador de Recibo</h2>
+                   <p className="text-sm font-medium text-slate-500 mt-0.5">Orden #{receiptCase.id}</p>
+                </div>
+                <button onClick={closeReceiptModal} className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-full transition-colors">
+                   <X size={20} strokeWidth={2.5}/>
+                </button>
+             </div>
+             
+             <div className="p-6 bg-[#f8fafc] flex-1 overflow-y-auto">
+                <div className="mb-6 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                   <div className="text-sm">
+                      <span className="text-slate-400 block mb-1">Paciente</span>
+                      <span className="font-bold text-slate-800">{receiptCase.patient}</span>
+                   </div>
+                   <div className="w-full h-px bg-slate-50 my-3"></div>
+                   <div className="text-sm">
+                      <span className="text-slate-400 block mb-1">Doctor/Clínica</span>
+                      <span className="font-semibold text-slate-700">{receiptCase.doctor}</span>
+                   </div>
+                </div>
+
+                <div className="mb-6">
+                   <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 px-1">Desglose de Conceptos</h3>
+                   <div className="bg-white border border-slate-100 rounded-xl overflow-hidden shadow-sm">
+                      {receiptCase.items && receiptCase.items.length > 0 ? receiptCase.items.map((it, idx) => (
+                         <div key={idx} className="px-4 py-3 flex justify-between items-center border-b border-slate-50 last:border-0">
+                            <div>
+                               <div className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                                 <span className="text-blue-500">{it.unidades}x</span>
+                                 {it.producto}
+                               </div>
+                               {it.dientes && <div className="text-xs text-slate-400 font-medium mt-0.5">Piezas: #{Array.isArray(it.dientes) ? it.dientes.join(', ') : it.dientes}</div>}
+                            </div>
+                         </div>
+                      )) : (
+                         <div className="p-4 text-center text-sm text-slate-500">Sin materiales detallados.</div>
+                      )}
+                   </div>
+                </div>
+
+                <div className="mb-2">
+                   <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 px-1">Ajustes de Cobro</h3>
+                   <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                         <div className="flex bg-slate-200/60 rounded-lg p-1 shrink-0">
+                            <button 
+                               onClick={() => { setDiscountType("$"); setDiscountValue(""); }}
+                               className={`px-3 py-1.5 rounded-md text-sm font-bold transition-all ${discountType === "$" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                            >
+                               <DollarSign size={14} className="inline-block -mt-0.5"/>
+                            </button>
+                            <button 
+                               onClick={() => { setDiscountType("%"); setDiscountValue(""); }}
+                               className={`px-3 py-1.5 rounded-md text-sm font-bold transition-all ${discountType === "%" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                            >
+                               <Percent size={14} strokeWidth={2.5} className="inline-block -mt-0.5"/>
+                            </button>
+                         </div>
+                         <div className="relative flex-1">
+                            <input
+                               type="number"
+                               placeholder={discountType === "$" ? "Monto a descontar..." : "Porcentaje (ej. 10)"}
+                               value={discountValue}
+                               onChange={(e) => setDiscountValue(e.target.value)}
+                               className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] outline-none transition-all placeholder:font-medium placeholder:text-slate-400"
+                            />
+                         </div>
+                      </div>
+
+                      <div 
+                         onClick={() => setApplyIva(!applyIva)}
+                         className="flex items-center justify-between bg-white px-4 py-3 rounded-lg border border-slate-200 cursor-pointer hover:border-[#D4AF37]/50 shadow-sm transition-colors"
+                      >
+                         <span className="text-sm font-bold text-slate-700 select-none">Aplicar 16% IVA</span>
+                         <div className={`w-11 h-6 rounded-full transition-colors relative flex items-center ${applyIva ? "bg-[#0062cc]" : "bg-slate-200"}`}>
+                            <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-all absolute ${applyIva ? "left-[22px]" : "left-[4px]"}`}></div>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+             </div>
+
+             {(() => {
+                const calc = calculateReceipt();
+                return (
+                   <div className="bg-white border-t border-slate-100 px-6 py-5 shrink-0">
+                      <div className="space-y-2 mb-5">
+                         <div className="flex justify-between text-sm text-slate-500 font-medium">
+                            <span>Subtotal Base</span>
+                            <span>${calc.subtotal.toFixed(2)}</span>
+                         </div>
+                         {calc.discountAmount > 0 && (
+                            <div className="flex justify-between text-sm text-red-500 font-semibold">
+                               <span>Descuento</span>
+                               <span>-${calc.discountAmount.toFixed(2)}</span>
+                            </div>
+                         )}
+                         {calc.ivaAmount > 0 && (
+                            <div className="flex justify-between text-sm text-slate-500 font-medium">
+                               <span>IVA (16%)</span>
+                               <span>+${calc.ivaAmount.toFixed(2)}</span>
+                            </div>
+                         )}
+                         <div className="w-full h-px bg-slate-100 my-1"></div>
+                         <div className="flex justify-between items-center mt-2">
+                            <span className="font-bold text-slate-800">Total a Cobrar</span>
+                            <span className="text-2xl font-black text-[#0062cc] tracking-tight">${calc.total.toFixed(2)}</span>
+                         </div>
+                      </div>
+                      
+                      <button
+                         disabled={receiptSaving}
+                         onClick={handleGenerateReceipt}
+                         className="w-full bg-[#1e293b] hover:bg-[#0f172a] disabled:opacity-70 text-white rounded-xl py-3.5 font-bold text-[15px] flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"
+                      >
+                         {receiptSaving ? <RefreshCw size={18} className="animate-spin" /> : <Calculator size={18} />}
+                         {receiptSaving ? "Procesando..." : "Generar Recibo (PDF)"}
+                      </button>
+                   </div>
+                );
+             })()}
+          </div>
+        </div>
       )}
     </div>
   );

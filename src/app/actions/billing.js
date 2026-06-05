@@ -148,6 +148,63 @@ export async function getBillingSummary() {
 }
 
 /**
+ * Obtiene los casos pendientes en Facturación con detalles completos (para la pestaña "Pendientes de Pago").
+ */
+export async function getPendingFacturacionCases() {
+  try {
+    await checkAdminAccess();
+    const supabase = getAdminClient();
+
+    const { data: cases, error } = await supabase
+      .from('casos_master')
+      .select(`
+        id, codigo, paciente, doctor, total_caso, saldo_pendiente, fecha_entrega, cliente_id, iva_aplicado, depto_actual,
+        clientes(nombre),
+        casos_detalle(cantidad, producto, material, color, dientes)
+      `)
+      .eq('depto_actual', 'Facturación')
+      .neq('saldo_pendiente', 0)
+      .order('id', { ascending: true }); // id ascending orders by oldest arrival roughly
+
+    if (error) throw error;
+
+    return { success: true, cases: cases || [] };
+
+  } catch (err) {
+    console.error("getPendingFacturacionCases error:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Marca un caso como "Enviado", actualizando su fecha de envío (usando fecha_entrega temporalmente o limpiándola).
+ */
+export async function markCaseAsSent(id_caso) {
+  try {
+    await checkAdminAccess();
+    const supabase = getAdminClient();
+
+    // Set the current date as the send date (we use fecha_entrega so it flows nicely into the billing calculations)
+    // The user explicitly requested: "si se marca esto, el programa va a guardar esa fecha y la va a asignar como fecha de envio para que se calcule cuando se tendria que cobrar"
+    const today = new Date().toISOString().split('T')[0];
+
+    const { error: errUpdate } = await supabase
+      .from('casos_master')
+      .update({ fecha_entrega: today })
+      .eq('id', id_caso);
+
+    if (errUpdate) throw errUpdate;
+
+    revalidatePath('/admin/facturacion');
+    return { success: true, dateSent: today };
+
+  } catch (err) {
+    console.error("markCaseAsSent error:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
  * Obtiene el histórico de casos pagados.
  */
 export async function getBillingHistory() {
