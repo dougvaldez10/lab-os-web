@@ -476,6 +476,7 @@ function LoginScreen({ onLoginSuccess }) {
         }
       } catch (e) {
         console.error("Failed to load users:", e);
+        toast.error(`Error loading users: ${e.message}`, { duration: 10000 });
       } finally {
         setLoadingUsers(false);
       }

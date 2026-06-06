@@ -112,11 +112,11 @@ export async function getAllUsers() {
     
     if (error) {
        console.error("Error fetching users:", error);
-       return [];
+       throw new Error(`Supabase error: ${error.message}`);
     }
     return users || [];
   } catch (err) {
     console.error("Server Action getAllUsers Error:", err);
-    return [];
+    throw new Error(`Exception in getAllUsers: ${err.message}`);
   }
 }
