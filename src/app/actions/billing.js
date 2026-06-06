@@ -160,7 +160,7 @@ export async function getPendingFacturacionCases() {
       .select(`
         id, codigo, paciente, doctor, total_caso, saldo_pendiente, fecha_entrega, cliente_id, iva_aplicado, depto_actual,
         clientes(nombre),
-        casos_detalle(cantidad, producto, material, color, dientes)
+        casos_detalle(unidades, producto, dientes)
       `)
       .eq('depto_actual', 'Facturación')
       .neq('saldo_pendiente', 0)

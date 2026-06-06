@@ -327,7 +327,7 @@ export default function BillingPanel() {
   const openReceiptModal = (caso) => {
     // Adapter para formatear como espera el modal
     const items = caso.casos_detalle?.map(d => ({
-      unidades: d.cantidad,
+      unidades: d.unidades,
       producto: d.producto,
       precio_unitario: 0, // El modal asume calcular o simplemente no muestra precio individual real si no viene en detalle, pero LabOS guarda el total_caso
       dientes: d.dientes
@@ -549,7 +549,7 @@ export default function BillingPanel() {
                                 <td className="px-6 py-4">
                                   {c.casos_detalle?.map((d, i) => (
                                     <div key={i} className="text-xs font-medium text-slate-600">
-                                      <span className="font-bold text-slate-800">{d.cantidad}x</span> {d.producto} {d.material && `(${d.material})`}
+                                      <span className="font-bold text-slate-800">{d.unidades}x</span> {d.producto} {d.material && `(${d.material})`}
                                     </div>
                                   ))}
                                   {(!c.casos_detalle || c.casos_detalle.length === 0) && <span className="text-slate-400 text-xs">Sin detalles</span>}
