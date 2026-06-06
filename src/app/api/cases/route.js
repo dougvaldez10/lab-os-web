@@ -25,8 +25,8 @@ export async function GET(request) {
     // Usar service role key para bypasear RLS y ver TODOS los casos del laboratorio.
     // La autenticaciÃƒÂ³n ya se validÃƒÂ³ arriba con la cookie del ghost user.
     const secureClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://etnfvmpywgbeqvbyieze.supabase.co',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy-key-for-build-only" 
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY 
     );
 
     // 1. Traer los casos
@@ -88,7 +88,7 @@ export async function GET(request) {
     if (ids.length > 0) {
       const adminClient = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy-key-for-build-only"
+        process.env.SUPABASE_SERVICE_ROLE_KEY
       );
       const { data: tiempos } = await adminClient
         .from('casos_tiempos_historicos')

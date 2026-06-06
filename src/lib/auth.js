@@ -6,13 +6,11 @@ import { cookies } from 'next/headers';
 import crypto from 'crypto';
 
 const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://etnfvmpywgbeqvbyieze.supabase.co",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy-key-for-build-only"
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 export async function loginUser(username, password) {
   try {
-    const salt = "legion_lab_";
-    const pwd_hash = crypto.createHash('sha256').update(salt + password).digest('hex');
 
     // 1. Fetch user by username only using Admin Client (RLS Bypass)
     const { data: user, error } = await supabaseAdmin
@@ -30,21 +28,17 @@ export async function loginUser(username, password) {
        return { success: false, error: 'Usuario no existe' };
     }
 
-    // 2. Compara el Hash (IdÃ©ntico a Python)
-    if (user.password_hash !== pwd_hash) {
-       console.log(`Hash Mismatch para ${username}. InputHash: ${pwd_hash} | DBHash: ${user.password_hash}`);
-       return { success: false, error: 'ContraseÃ±a incorrecta' };
-    }
-
-    // 3. Estrategia de Usuario Fantasma para cumplir con RLS estricto
+    // 2. Realizamos Login nativo en Supabase Auth usando el correo generado en la migración
+    // Importante: Hasta que no cambien su contraseña, la temporal es 'LabLegion2026!'
+    const email = `${username.toLowerCase()}@lablegion.com`;
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-       email: process.env.GHOST_USER_EMAIL || 'autenticador@legion.com',
-       password: process.env.GHOST_USER_PASSWORD
+       email: email,
+       password: password
     });
 
     if (authError || !authData.session) {
-       console.error("Ghost login error:", authError);
-       return { success: false, error: 'Error interno de autenticaciÃ³n RLS' };
+       console.log(`Error Supabase Auth para ${username}:`, authError?.message);
+       return { success: false, error: 'Contraseña incorrecta. Recuerda que hemos actualizado el sistema.' };
     }
 
     // Set cookie persistence (30 days) para nuestro auth nativo
@@ -87,18 +81,23 @@ export async function logoutUser() {
 export async function getCurrentUser() {
   try {
     const cookieStore = await cookies();
-    const username = cookieStore.get('lab_os_user')?.value;
+    const token = cookieStore.get('lab_os_ghost')?.value; // We named the cookie 'lab_os_ghost' historically
 
-    if (!username) return null;
+    if (!token) return null;
 
-    const { data: user, error } = await supabaseAdmin
-      .from('usuarios')
-      .select('*')
-      .eq('username', username)
-      .single();
+    const { data: { user }, error } = await supabase.auth.getUser(token);
     
-    if (error) return null;
-    return user || null;
+    if (error || !user) return null;
+
+    // Attach app_metadata cleanly for the rest of the app to use
+    return {
+      id: user.id,
+      email: user.email,
+      laboratorio_id: user.app_metadata?.laboratorio_id,
+      rol: user.app_metadata?.role,
+      is_superadmin: user.app_metadata?.is_superadmin || false,
+      username: user.email.split('@')[0]
+    };
   } catch (error) {
     console.error("Auth error:", error);
     return null;

@@ -1,2 +1,8 @@
 node_modules/  
 .next/  
+
+.env.local
+Respaldo_Antes_SaaS/
+check_db.js
+estructura_proyecto.md
+replace_secrets.js
