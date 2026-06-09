@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }) {
     redirect('/');
   }
 
-  const hasAdminAccess = user.username?.toLowerCase() === 'admin' || user.username?.toLowerCase() === 'coloraturacorp';
+  const hasAdminAccess = user.username?.toLowerCase() === 'admin' || user.username?.toLowerCase() === 'coloraturacorp' || user.username?.toLowerCase() === 'legion' || user.rol === 'lab_owner';
 
   if (!hasAdminAccess) {
     redirect('/');
