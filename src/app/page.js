@@ -907,6 +907,12 @@ export default function Home() {
     return <LoginScreen onLoginSuccess={(u) => { setCurrentUser(u); loadInitialData(); fetchCases(); }} />;
   }
 
+  // Si el usuario es administrador o dueño y accidentalmente entra a producción (/), lo redirigimos a su panel
+  if (currentUser.rol === 'lab_owner' || currentUser.username?.toLowerCase() === 'admin' || currentUser.username?.toLowerCase() === 'legion' || currentUser.username?.toLowerCase() === 'coloraturacorp') {
+    window.location.href = '/admin';
+    return <div className="min-h-screen bg-white flex items-center justify-center"><RefreshCw className="animate-spin text-slate-300 w-8 h-8" /></div>;
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     await logoutUser();
