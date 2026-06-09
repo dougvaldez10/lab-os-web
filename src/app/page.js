@@ -460,10 +460,13 @@ function LoginScreen({ onLoginSuccess }) {
       try {
         const allUsers = await getAllUsers();
         
+        // Excluimos al SuperAdmin (coloraturacorp) del carrusel operativo
+        const opsUsers = allUsers.filter(u => u.username.toLowerCase() !== 'coloraturacorp');
+        
         const usageStr = localStorage.getItem("lab_os_user_freq");
         const usage = usageStr ? JSON.parse(usageStr) : {};
 
-        const sortedUsers = [...allUsers].sort((a, b) => {
+        const sortedUsers = [...opsUsers].sort((a, b) => {
            const freqA = usage[a.username] || 0;
            const freqB = usage[b.username] || 0;
            return freqB - freqA;

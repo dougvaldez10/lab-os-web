@@ -230,3 +230,86 @@ export async function deleteUserInSystem(id, username) {
     return { success: false, error: error.message };
   }
 }
+
+export async function loginSaaSUser(email, password) {
+  try {
+    // Uses the standard Supabase Auth flow with real email
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (authError || !authData.session) {
+      return { success: false, error: 'Credenciales incorrectas' };
+    }
+
+    const user = authData.user;
+    const isSuperAdmin = user.app_metadata?.is_superadmin === true;
+    
+    // We also set the ghost cookie or equivalent so standard lab fetching works
+    const cookieStore = await cookies();
+    cookieStore.set('lab_os_ghost', authData.session.access_token, {
+       httpOnly: true, 
+       secure: process.env.NODE_ENV === 'production',
+       maxAge: 60 * 60 * 24 * 30,
+       path: '/'
+    });
+    // Set user identifier as email or username extracted from email
+    const username = email.split('@')[0];
+    cookieStore.set('lab_os_user', username, { 
+       httpOnly: true, 
+       secure: process.env.NODE_ENV === 'production',
+       maxAge: 60 * 60 * 24 * 30,
+       path: '/'
+    });
+
+    return { 
+      success: true, 
+      is_superadmin: isSuperAdmin,
+      user: {
+         id: user.id,
+         email: user.email,
+         username: username,
+         laboratorio_id: user.app_metadata?.laboratorio_id
+      }
+    };
+  } catch (err) {
+    console.error("Server Action SaaS Login Error:", err);
+    return { success: false, error: 'Error del servidor: ' + err.message };
+  }
+}
+
+export async function registerSaaSUser(nombre, laboratorio, email, password) {
+  try {
+    // 1. Generate a new Laboratorio ID
+    const labId = `lab_${crypto.randomBytes(4).toString('hex')}`;
+
+    // 2. Create the user in Supabase Auth
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      app_metadata: {
+        role: 'lab_owner',
+        laboratorio_id: labId,
+        is_superadmin: false
+      },
+      user_metadata: {
+        nombre_completo: nombre,
+        nombre_laboratorio: laboratorio
+      }
+    });
+
+    if (authError) {
+      return { success: false, error: authError.message };
+    }
+
+    // Note: We would ideally also create the 'laboratorio' record in a global `laboratorios` table here.
+    // For now, the user exists in auth with their app_metadata linked to their lab ID.
+
+    return { success: true, user: authUser.user };
+  } catch (err) {
+    console.error("Server Action SaaS Register Error:", err);
+    return { success: false, error: 'Error del servidor: ' + err.message };
+  }
+}
