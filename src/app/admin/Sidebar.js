@@ -103,6 +103,8 @@ export default function Sidebar() {
       <div className="p-4 border-t border-slate-800 flex flex-col gap-2">
         <button
           onClick={async () => {
+            const { supabase } = await import('@/lib/supabase');
+            await supabase.auth.signOut();
             await logoutUser();
             window.location.href = "/";
           }}

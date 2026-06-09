@@ -460,8 +460,8 @@ function LoginScreen({ onLoginSuccess }) {
       try {
         const allUsers = await getAllUsers();
         
-        // Excluimos al SuperAdmin (coloraturacorp) del carrusel operativo
-        const opsUsers = allUsers.filter(u => u.username.toLowerCase() !== 'coloraturacorp');
+        // No ocultamos a nadie por ahora para que el usuario pueda ver a 'legion'
+        const opsUsers = allUsers;
         
         const usageStr = localStorage.getItem("lab_os_user_freq");
         const usage = usageStr ? JSON.parse(usageStr) : {};
@@ -487,7 +487,7 @@ function LoginScreen({ onLoginSuccess }) {
     load();
   }, []);
 
-  const isAdmin = selectedUser?.username?.toLowerCase() === 'admin' || selectedUser?.username?.toLowerCase() === 'coloraturacorp';
+  const isAdmin = selectedUser?.username?.toLowerCase() === 'admin' || selectedUser?.username?.toLowerCase() === 'legion';
 
   // Handle PIN input
   const handlePinChange = async (e) => {
@@ -908,6 +908,7 @@ export default function Home() {
   }
 
   const handleLogout = async () => {
+    await supabase.auth.signOut();
     await logoutUser();
     setCurrentUser(null);
     setAuthChecked(false);

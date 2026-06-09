@@ -76,6 +76,8 @@ export async function loginUser(username, password) {
 export async function logoutUser() {
   const cookieStore = await cookies();
   cookieStore.delete('lab_os_user');
+  cookieStore.delete('lab_os_ghost');
+  await supabase.auth.signOut();
   return { success: true };
 }
 
