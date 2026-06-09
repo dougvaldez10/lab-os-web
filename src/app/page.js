@@ -531,7 +531,7 @@ function LoginScreen({ onLoginSuccess }) {
        
        setTimeout(() => {
           const uname = res.user.username?.toLowerCase();
-          if (uname === 'admin' || uname === 'coloraturacorp') {
+          if (uname === 'admin' || uname === 'coloraturacorp' || uname === 'legion' || res.user.rol === 'lab_owner') {
             window.location.href = '/admin';
           } else {
             onLoginSuccess(res.user);
