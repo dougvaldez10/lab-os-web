@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Users, Wallet, BarChart3, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { ClipboardList, Users, Wallet, BarChart3, ChevronLeft, ChevronRight, LogOut, UserCog } from "lucide-react";
 import { logoutUser } from "@/lib/auth";
 
 export default function Sidebar() {
@@ -31,6 +31,7 @@ export default function Sidebar() {
     { href: "/admin/facturacion", label: "Finanzas", icon: Wallet, iconColor: "text-amber-400" },
     { href: "/admin/analisis", label: "Métricas", icon: BarChart3, iconColor: "text-purple-400" },
     { href: "/admin/crm", label: "Directorio", icon: Users, iconColor: "text-green-400" },
+    { href: "/admin/usuarios", label: "Usuarios", icon: UserCog, iconColor: "text-rose-400" },
   ];
 
   // During SSR or before hydration, use expanded state to prevent layout shift

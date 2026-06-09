@@ -484,45 +484,61 @@ function LoginScreen({ onLoginSuccess }) {
     load();
   }, []);
 
+  const isAdmin = selectedUser?.username?.toLowerCase() === 'admin' || selectedUser?.username?.toLowerCase() === 'coloraturacorp';
+
   // Handle PIN input
   const handlePinChange = async (e) => {
-    const val = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
-    if (val.length <= 4) {
-       setPin(val);
-       if (val.length === 4) {
-          setLoading(true);
-          const res = await loginUser(selectedUser.username, val);
-          if (res.success) {
-             if (res.session) {
-                await supabase.auth.setSession({
-                   access_token: res.session.access_token,
-                   refresh_token: res.session.refresh_token
-                });
-             }
-             
-           const usageStr = localStorage.getItem("lab_os_user_freq");
-             const usage = usageStr ? JSON.parse(usageStr) : {};
-             usage[selectedUser.username] = (usage[selectedUser.username] || 0) + 1;
-             localStorage.setItem("lab_os_user_freq", JSON.stringify(usage));
-             
-             setWelcomeName(res.user.nombre_completo || res.user.username);
-             setShowWelcome(true);
-             
-             setTimeout(() => {
-                const uname = res.user.username?.toLowerCase();
-                if (uname === 'admin' || uname === 'coloraturacorp') {
-                  window.location.href = '/admin';
-                } else {
-                  onLoginSuccess(res.user);
-                }
-             }, 1500);
-          } else {
-             toast.error(res.error);
-             setPin("");
-             setLoading(false);
-             if (pinInputRef.current) pinInputRef.current.focus();
-          }
+    if (isAdmin) {
+      setPin(e.target.value);
+    } else {
+      const val = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
+      if (val.length <= 4) {
+         setPin(val);
+         if (val.length === 4) {
+            submitLogin(val);
+         }
+      }
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (isAdmin && e.key === 'Enter') {
+      submitLogin(pin);
+    }
+  };
+
+  const submitLogin = async (passwordOrPin) => {
+    setLoading(true);
+    const res = await loginUser(selectedUser.username, passwordOrPin);
+    if (res.success) {
+       if (res.session) {
+          await supabase.auth.setSession({
+             access_token: res.session.access_token,
+             refresh_token: res.session.refresh_token
+          });
        }
+       
+       const usageStr = localStorage.getItem("lab_os_user_freq");
+       const usage = usageStr ? JSON.parse(usageStr) : {};
+       usage[selectedUser.username] = (usage[selectedUser.username] || 0) + 1;
+       localStorage.setItem("lab_os_user_freq", JSON.stringify(usage));
+       
+       setWelcomeName(res.user.nombre_completo || res.user.username);
+       setShowWelcome(true);
+       
+       setTimeout(() => {
+          const uname = res.user.username?.toLowerCase();
+          if (uname === 'admin' || uname === 'coloraturacorp') {
+            window.location.href = '/admin';
+          } else {
+            onLoginSuccess(res.user);
+          }
+       }, 1500);
+    } else {
+       toast.error(res.error);
+       setPin("");
+       setLoading(false);
+       if (pinInputRef.current) pinInputRef.current.focus();
     }
   };
 
@@ -611,36 +627,61 @@ function LoginScreen({ onLoginSuccess }) {
 
             {/* PIN Input Area */}
             <div className={`transition-all duration-500 transform ${selectedUser && !loading ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
-               <div className="flex flex-col items-center relative">
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">Ingresa tu PIN</p>
+               <div className="flex flex-col items-center relative w-full">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+                     {isAdmin ? "Ingresa tu Contraseña" : "Ingresa tu PIN"}
+                  </p>
                   
-                  <div className="relative w-full flex justify-center">
-                     <input 
-                        ref={pinInputRef}
-                        type="password" 
-                        value={pin}
-                        onChange={handlePinChange}
-                        className="absolute inset-0 opacity-0 cursor-text z-20 w-full h-full"
-                        autoFocus
-                        disabled={loading}
-                        inputMode="numeric"
-                        autoComplete="off"
-                     />
-                     
-                     <div className="flex gap-4 relative z-10 pointer-events-none">
-                        {[0, 1, 2, 3].map(i => {
-                           const isFilled = pin.length > i;
-                           const isCurrent = pin.length === i;
-                           return (
-                              <div key={i} className={`w-14 h-16 rounded-xl border-2 flex items-center justify-center transition-all bg-white shadow-sm ${isFilled ? 'border-[#D4AF37] scale-105' : isCurrent ? 'border-slate-300 ring-4 ring-slate-100 scale-110 shadow-md' : 'border-slate-200 text-transparent'}`}>
-                                 {isFilled && <div className="w-3 h-3 bg-slate-800 rounded-full" />}
-                              </div>
-                           );
-                        })}
+                  {isAdmin ? (
+                     <div className="w-full max-w-sm flex flex-col gap-4">
+                        <input
+                           ref={pinInputRef}
+                           type="password"
+                           value={pin}
+                           onChange={handlePinChange}
+                           onKeyDown={handleKeyDown}
+                           disabled={loading}
+                           className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 outline-none text-center text-lg tracking-widest shadow-sm transition-all"
+                           placeholder="••••••••"
+                           autoFocus
+                        />
+                        <button
+                           onClick={() => submitLogin(pin)}
+                           disabled={loading || !pin}
+                           className="w-full bg-slate-900 text-[#D4AF37] font-bold py-3 rounded-xl hover:bg-black transition-colors disabled:opacity-50 shadow-md"
+                        >
+                           {loading ? "Iniciando..." : "Iniciar Sesión"}
+                        </button>
                      </div>
-                  </div>
+                  ) : (
+                     <div className="relative w-full flex justify-center">
+                        <input 
+                           ref={pinInputRef}
+                           type="password" 
+                           value={pin}
+                           onChange={handlePinChange}
+                           className="absolute inset-0 opacity-0 cursor-text z-20 w-full h-full"
+                           autoFocus
+                           disabled={loading}
+                           inputMode="numeric"
+                           autoComplete="off"
+                        />
+                        
+                        <div className="flex gap-4 relative z-10 pointer-events-none">
+                           {[0, 1, 2, 3].map(i => {
+                              const isFilled = pin.length > i;
+                              const isCurrent = pin.length === i;
+                              return (
+                                 <div key={i} className={`w-14 h-16 rounded-xl border-2 flex items-center justify-center transition-all bg-white shadow-sm ${isFilled ? 'border-[#D4AF37] scale-105' : isCurrent ? 'border-slate-300 ring-4 ring-slate-100 scale-110 shadow-md' : 'border-slate-200 text-transparent'}`}>
+                                    {isFilled && <div className="w-3 h-3 bg-slate-800 rounded-full" />}
+                                 </div>
+                              );
+                           })}
+                        </div>
+                     </div>
+                  )}
                   
-                  {loading && (
+                  {loading && !isAdmin && (
                      <div className="absolute inset-0 flex items-end justify-center z-30 mb-[-2rem]">
                         <RefreshCw className="animate-spin text-[#D4AF37] w-5 h-5" />
                      </div>

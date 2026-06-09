@@ -121,3 +121,112 @@ export async function getAllUsers() {
     throw new Error(`Exception in getAllUsers: ${err.message}`);
   }
 }
+
+export async function createUserInSystem(username, passwordOrPin, rol, avatarBase64) {
+  try {
+    const email = `${username.toLowerCase()}@lablegion.com`;
+    // Create in Supabase Auth
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password: passwordOrPin,
+      email_confirm: true
+    });
+
+    if (authError) {
+      return { success: false, error: authError.message };
+    }
+
+    // Insert into usuarios table
+    const { data: user, error: dbError } = await supabaseAdmin
+      .from('usuarios')
+      .insert([
+        {
+          username: username,
+          rol: rol,
+          avatar_base64: avatarBase64
+        }
+      ])
+      .select()
+      .single();
+
+    if (dbError) {
+      // Rollback auth creation if db insert fails
+      await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
+      return { success: false, error: dbError.message };
+    }
+
+    return { success: true, user };
+  } catch (error) {
+    console.error("Error in createUserInSystem:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateUserInSystem(id, username, passwordOrPin, rol, avatarBase64) {
+  try {
+    // 1. Check if we need to update password
+    if (passwordOrPin && passwordOrPin.trim() !== '') {
+      // Find the user email to get auth_id (using supabase pattern of username@lablegion.com)
+      const email = `${username.toLowerCase()}@lablegion.com`;
+      const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      if (!listError && users.users) {
+        const authUser = users.users.find(u => u.email === email);
+        if (authUser) {
+           await supabaseAdmin.auth.admin.updateUserById(authUser.id, {
+             password: passwordOrPin
+           });
+        }
+      }
+    }
+
+    // 2. Update DB
+    const { data: user, error: dbError } = await supabaseAdmin
+      .from('usuarios')
+      .update({
+        username: username,
+        rol: rol,
+        avatar_base64: avatarBase64
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (dbError) {
+      return { success: false, error: dbError.message };
+    }
+
+    return { success: true, user };
+  } catch (error) {
+    console.error("Error in updateUserInSystem:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteUserInSystem(id, username) {
+  try {
+    // 1. Delete from DB first
+    const { error: dbError } = await supabaseAdmin
+      .from('usuarios')
+      .delete()
+      .eq('id', id);
+
+    if (dbError) {
+      return { success: false, error: dbError.message };
+    }
+
+    // 2. Delete from Auth
+    const email = `${username.toLowerCase()}@lablegion.com`;
+    const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    if (!listError && users.users) {
+      const authUser = users.users.find(u => u.email === email);
+      if (authUser) {
+         await supabaseAdmin.auth.admin.deleteUser(authUser.id);
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error in deleteUserInSystem:", error);
+    return { success: false, error: error.message };
+  }
+}

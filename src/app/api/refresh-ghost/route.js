@@ -13,7 +13,7 @@ export async function POST() {
 
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: process.env.GHOST_USER_EMAIL || 'autenticador@legion.com',
-      password: process.env.GHOST_USER_PASSWORD || 'P4ssw0rd*LabOS',
+      password: process.env.GHOST_USER_PASSWORD || '5*E9uU7!4tkUN/H',
     });
 
     if (authError || !authData?.session) {
