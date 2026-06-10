@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 
 // Provide fallback values so Next.js static generation doesn't crash during build if env vars are missing
 const supabaseAdmin = createClient(
@@ -12,25 +13,36 @@ const supabaseAdmin = createClient(
 );
 export async function loginUser(username, password) {
   try {
-
-    // 1. Fetch user by username only using Admin Client (RLS Bypass)
     const { data: user, error } = await supabaseAdmin
       .from('usuarios')
       .select('*')
       .eq('username', username)
       .single();
 
-    if (error) {
-       console.log("Supabase error fetching user:", error);
+    if (error || !user) {
        return { success: false, error: 'Usuario no encontrado' };
     }
-    
-    if (!user) {
-       return { success: false, error: 'Usuario no existe' };
+
+    const cookieStore = await cookies();
+
+    // Si tiene password_hash, es un usuario local (Producción/Admin)
+    if (user.password_hash) {
+      const match = await bcrypt.compare(password, user.password_hash);
+      if (!match) {
+         return { success: false, error: 'Contraseña incorrecta' };
+      }
+      
+      cookieStore.set('lab_os_user', username, { 
+         httpOnly: true, 
+         secure: process.env.NODE_ENV === 'production',
+         maxAge: 60 * 60 * 24 * 30,
+         path: '/'
+      });
+      
+      return { success: true, user, session: null };
     }
 
-    // 2. Realizamos Login nativo en Supabase Auth usando el correo generado en la migración
-    // Importante: Hasta que no cambien su contraseña, la temporal es 'LabLegion2026!'
+    // Si NO tiene password_hash, es el Lab Owner (Supabase Auth)
     const email = `${username.toLowerCase()}@lablegion.com`;
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
        email: email,
@@ -38,19 +50,15 @@ export async function loginUser(username, password) {
     });
 
     if (authError || !authData.session) {
-       console.log(`Error Supabase Auth para ${username}:`, authError?.message);
-       return { success: false, error: 'Contraseña incorrecta. Recuerda que hemos actualizado el sistema.' };
+       return { success: false, error: 'Contraseña incorrecta.' };
     }
 
-    // Set cookie persistence (30 days) para nuestro auth nativo
-    const cookieStore = await cookies();
     cookieStore.set('lab_os_user', username, { 
        httpOnly: true, 
        secure: process.env.NODE_ENV === 'production',
        maxAge: 60 * 60 * 24 * 30,
        path: '/'
     });
-    // Inyectamos el JWT de Supabase Ghost User directamente en las Cookies!
     cookieStore.set('lab_os_ghost', authData.session.access_token, {
        httpOnly: true, 
        secure: process.env.NODE_ENV === 'production',
@@ -58,7 +66,6 @@ export async function loginUser(username, password) {
        path: '/'
     });
 
-    // Retorna la sesiÃ³n de Supabase al cliente parseada (solo strings para Next.js RSC)
     return { 
       success: true, 
       user, 
@@ -84,7 +91,21 @@ export async function logoutUser() {
 export async function getCurrentUser() {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get('lab_os_ghost')?.value; // We named the cookie 'lab_os_ghost' historically
+    const localUser = cookieStore.get('lab_os_user')?.value;
+    const token = cookieStore.get('lab_os_ghost')?.value;
+
+    if (localUser) {
+      const { data: user } = await supabaseAdmin.from('usuarios').select('*').eq('username', localUser).single();
+      if (user && user.password_hash) {
+        return {
+          id: user.id,
+          email: null,
+          username: user.username,
+          rol: user.rol,
+          is_superadmin: false
+        };
+      }
+    }
 
     if (!token) return null;
 
@@ -92,7 +113,6 @@ export async function getCurrentUser() {
     
     if (error || !user) return null;
 
-    // Attach app_metadata cleanly for the rest of the app to use
     return {
       id: user.id,
       email: user.email,
@@ -126,24 +146,15 @@ export async function getAllUsers() {
 
 export async function createUserInSystem(username, passwordOrPin, rol, avatarBase64) {
   try {
-    const email = `${username.toLowerCase()}@lablegion.com`;
-    // Create in Supabase Auth
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password: passwordOrPin,
-      email_confirm: true
-    });
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(passwordOrPin, salt);
 
-    if (authError) {
-      return { success: false, error: authError.message };
-    }
-
-    // Insert into usuarios table
     const { data: user, error: dbError } = await supabaseAdmin
       .from('usuarios')
       .insert([
         {
           username: username,
+          password_hash: hash,
           rol: rol,
           avatar_base64: avatarBase64
         }
@@ -152,8 +163,6 @@ export async function createUserInSystem(username, passwordOrPin, rol, avatarBas
       .single();
 
     if (dbError) {
-      // Rollback auth creation if db insert fails
-      await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
       return { success: false, error: dbError.message };
     }
 
@@ -166,52 +175,20 @@ export async function createUserInSystem(username, passwordOrPin, rol, avatarBas
 
 export async function updateUserInSystem(id, username, passwordOrPin, rol, avatarBase64) {
   try {
-    // 1. Get old username to find auth record
-    const { data: oldUser, error: oldUserError } = await supabaseAdmin
-      .from('usuarios')
-      .select('username')
-      .eq('id', id)
-      .single();
+    let updates = {
+      username: username,
+      rol: rol,
+      avatar_base64: avatarBase64
+    };
 
-    if (oldUserError) {
-      return { success: false, error: "Error obteniendo usuario actual: " + oldUserError.message };
+    if (passwordOrPin && passwordOrPin.trim() !== '') {
+      const salt = await bcrypt.genSalt(10);
+      updates.password_hash = await bcrypt.hash(passwordOrPin, salt);
     }
 
-    const oldEmail = `${oldUser.username.toLowerCase()}@lablegion.com`;
-    const newEmail = `${username.toLowerCase()}@lablegion.com`;
-
-    // 2. Find and update Auth user
-    const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    if (!listError && users.users) {
-      const authUser = users.users.find(u => u.email === oldEmail || u.email === newEmail);
-      if (authUser) {
-        let authUpdates = {};
-        if (oldEmail !== newEmail) {
-          authUpdates.email = newEmail;
-          authUpdates.email_confirm = true; // ensure confirmed
-        }
-        if (passwordOrPin && passwordOrPin.trim() !== '') {
-          authUpdates.password = passwordOrPin;
-        }
-
-        if (Object.keys(authUpdates).length > 0) {
-          const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(authUser.id, authUpdates);
-          if (authUpdateError) {
-             console.error("Auth update error:", authUpdateError);
-             return { success: false, error: "Error actualizando seguridad: " + authUpdateError.message };
-          }
-        }
-      }
-    }
-
-    // 3. Update DB
     const { data: user, error: dbError } = await supabaseAdmin
       .from('usuarios')
-      .update({
-        username: username,
-        rol: rol,
-        avatar_base64: avatarBase64
-      })
+      .update(updates)
       .eq('id', id)
       .select()
       .single();
@@ -229,7 +206,6 @@ export async function updateUserInSystem(id, username, passwordOrPin, rol, avata
 
 export async function deleteUserInSystem(id, username) {
   try {
-    // 1. Delete from DB first
     const { error: dbError } = await supabaseAdmin
       .from('usuarios')
       .delete()
@@ -237,16 +213,6 @@ export async function deleteUserInSystem(id, username) {
 
     if (dbError) {
       return { success: false, error: dbError.message };
-    }
-
-    // 2. Delete from Auth
-    const email = `${username.toLowerCase()}@lablegion.com`;
-    const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    if (!listError && users.users) {
-      const authUser = users.users.find(u => u.email === email);
-      if (authUser) {
-         await supabaseAdmin.auth.admin.deleteUser(authUser.id);
-      }
     }
 
     return { success: true };
