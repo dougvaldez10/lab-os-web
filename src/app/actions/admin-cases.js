@@ -14,7 +14,11 @@ function getAdminClient() {
 // Verifica si el usuario actual es admin
 async function checkAdminAccess() {
   const user = await getCurrentUser();
-  if (!user || (user.username?.toLowerCase() !== 'admin' && user.username?.toLowerCase() !== 'coloraturacorp')) {
+  const isSuperAdmin = user?.is_superadmin || user?.rol === 'lab_owner';
+  const isAdminRole = user?.rol?.toLowerCase().includes('admin') || user?.rol?.toLowerCase().includes('administrativo');
+  const isExplicitAdmin = user?.username?.toLowerCase() === 'admin' || user?.username?.toLowerCase() === 'coloraturacorp' || user?.username?.toLowerCase() === 'legion';
+  
+  if (!user || (!isSuperAdmin && !isAdminRole && !isExplicitAdmin)) {
     throw new Error('No autorizado');
   }
 }
