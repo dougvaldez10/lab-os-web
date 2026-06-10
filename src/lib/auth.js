@@ -166,22 +166,45 @@ export async function createUserInSystem(username, passwordOrPin, rol, avatarBas
 
 export async function updateUserInSystem(id, username, passwordOrPin, rol, avatarBase64) {
   try {
-    // 1. Check if we need to update password
-    if (passwordOrPin && passwordOrPin.trim() !== '') {
-      // Find the user email to get auth_id (using supabase pattern of username@lablegion.com)
-      const email = `${username.toLowerCase()}@lablegion.com`;
-      const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-      if (!listError && users.users) {
-        const authUser = users.users.find(u => u.email === email);
-        if (authUser) {
-           await supabaseAdmin.auth.admin.updateUserById(authUser.id, {
-             password: passwordOrPin
-           });
+    // 1. Get old username to find auth record
+    const { data: oldUser, error: oldUserError } = await supabaseAdmin
+      .from('usuarios')
+      .select('username')
+      .eq('id', id)
+      .single();
+
+    if (oldUserError) {
+      return { success: false, error: "Error obteniendo usuario actual: " + oldUserError.message };
+    }
+
+    const oldEmail = `${oldUser.username.toLowerCase()}@lablegion.com`;
+    const newEmail = `${username.toLowerCase()}@lablegion.com`;
+
+    // 2. Find and update Auth user
+    const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    if (!listError && users.users) {
+      const authUser = users.users.find(u => u.email === oldEmail || u.email === newEmail);
+      if (authUser) {
+        let authUpdates = {};
+        if (oldEmail !== newEmail) {
+          authUpdates.email = newEmail;
+          authUpdates.email_confirm = true; // ensure confirmed
+        }
+        if (passwordOrPin && passwordOrPin.trim() !== '') {
+          authUpdates.password = passwordOrPin;
+        }
+
+        if (Object.keys(authUpdates).length > 0) {
+          const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(authUser.id, authUpdates);
+          if (authUpdateError) {
+             console.error("Auth update error:", authUpdateError);
+             return { success: false, error: "Error actualizando seguridad: " + authUpdateError.message };
+          }
         }
       }
     }
 
-    // 2. Update DB
+    // 3. Update DB
     const { data: user, error: dbError } = await supabaseAdmin
       .from('usuarios')
       .update({
