@@ -38,6 +38,7 @@ import {
 import { getAllClinics } from "@/app/actions/clients";
 import { toggleCaseIVA } from "@/app/actions/cases";
 import { generateReceipt } from "@/app/actions/receipts";
+import { logShadowAudit } from "@/app/actions/audit";
 import EditCaseModal from "./EditCaseModal";
 
 export default function BillingPanel() {
@@ -384,6 +385,33 @@ export default function BillingPanel() {
     return { subtotal, discountAmount, ivaAmount, total };
   };
 
+  // Shadow Audit Sombra for Receipt Modal
+  useEffect(() => {
+    if (!receiptCase) return;
+    
+    const calc = calculateReceipt();
+    const snapshot = {
+      descuentoTipo: discountType,
+      descuentoValor: discountValue,
+      aplicaIva: applyIva,
+      subtotal: calc.subtotal,
+      descuentoMonto: calc.discountAmount,
+      ivaMonto: calc.ivaAmount,
+      total: calc.total
+    };
+
+    const timer = setTimeout(() => {
+      logShadowAudit({
+        caso_id: receiptCase.internal_id,
+        codigo_caso: receiptCase.id,
+        snapshot_data: snapshot,
+        guardado_oficial: false
+      }).catch(() => {});
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [discountValue, discountType, applyIva, receiptCase]);
+
   const handleGenerateReceipt = async () => {
       setReceiptSaving(true);
       const payload = {
@@ -396,6 +424,13 @@ export default function BillingPanel() {
       setReceiptSaving(false);
       
       if (res.success) {
+         logShadowAudit({
+           caso_id: receiptCase.internal_id,
+           codigo_caso: receiptCase.id,
+           snapshot_data: { discountType, discountValue, applyIva },
+           guardado_oficial: true
+         }).catch(() => {});
+         
          toast.success("Recibo generado correctamente.");
          closeReceiptModal();
          fetchData();

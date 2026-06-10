@@ -3,13 +3,16 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Users, Wallet, BarChart3, ChevronLeft, ChevronRight, LogOut, UserCog } from "lucide-react";
-import { logoutUser } from "@/lib/auth";
+import { ClipboardList, Users, Wallet, BarChart3, ChevronLeft, ChevronRight, LogOut, UserCog, ShieldAlert } from "lucide-react";
+import { logoutUser, getCurrentUser } from "@/lib/auth";
+import { getAuditAlerts } from "@/app/actions/audit";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [auditCount, setAuditCount] = useState(0);
 
   // Sync with localStorage on client mount
   useEffect(() => {
@@ -18,6 +21,19 @@ export default function Sidebar() {
       setCollapsed(stored === "true");
     }
     setMounted(true);
+
+    // Fetch user role and audit counts
+    getCurrentUser().then(user => {
+      const superAdmin = user?.is_superadmin || user?.rol === 'lab_owner' || user?.username?.toLowerCase() === 'legion';
+      if (superAdmin) {
+        setIsAdmin(true);
+        getAuditAlerts().then(res => {
+          if (res.success && res.alerts) {
+            setAuditCount(res.alerts.length);
+          }
+        });
+      }
+    });
   }, []);
 
   const toggleCollapse = () => {
@@ -33,6 +49,10 @@ export default function Sidebar() {
     { href: "/admin/crm", label: "Directorio", icon: Users, iconColor: "text-green-400" },
     { href: "/admin/usuarios", label: "Usuarios", icon: UserCog, iconColor: "text-rose-400" },
   ];
+
+  if (isAdmin) {
+    menuItems.push({ href: "/admin/auditoria", label: "Auditoría", icon: ShieldAlert, iconColor: "text-red-500", badge: auditCount });
+  }
 
   // During SSR or before hydration, use expanded state to prevent layout shift
   const isCollapsed = mounted ? collapsed : false;
@@ -92,7 +112,15 @@ export default function Sidebar() {
             >
               <Icon size={20} className={`${item.iconColor} shrink-0 transition-transform duration-200 hover:scale-110`} />
               {!isCollapsed && (
-                <span className="font-medium text-sm whitespace-nowrap">{item.label}</span>
+                <span className="font-medium text-sm whitespace-nowrap flex-1">{item.label}</span>
+              )}
+              {item.badge > 0 && !isCollapsed && (
+                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {item.badge}
+                </span>
+              )}
+              {item.badge > 0 && isCollapsed && (
+                <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
               )}
             </Link>
           );

@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { getCaseDetailsForEdit, updateCaseFinancials, returnCaseToBoard } from '@/app/actions/cases';
 import { deleteAdminCase } from '@/app/actions/admin-cases';
 import { getProducts } from '@/app/actions/products';
+import { logShadowAudit } from '@/app/actions/audit';
 
 export default function EditCaseModal({ caseData, onClose, onUpdated }) {
   const [detalles, setDetalles] = useState([]);
@@ -169,12 +170,46 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
     setSaving(false);
   };
 
+  // Shadow Audit Sombra
+  useEffect(() => {
+    if (loading || !caseData) return;
+    
+    // Evita el primer render donde los datos apenas cargan
+    const snapshot = {
+      detalles,
+      descuento,
+      descuentoTipo,
+      ivaAplicado,
+      subtotal,
+      total,
+      montoDescuentoReal
+    };
+
+    const timer = setTimeout(() => {
+      logShadowAudit({
+        caso_id: caseData.id,
+        codigo_caso: caseData.codigo,
+        snapshot_data: snapshot,
+        guardado_oficial: false
+      }).catch(() => {});
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [detalles, descuento, descuentoTipo, ivaAplicado]);
+
   const handleSave = async () => {
     setSaving(true);
     const toastId = toast.loading("Guardando cambios...");
     try {
       const res = await updateCaseFinancials(caseData.id, detalles, montoDescuentoReal, ivaAplicado);
       if (res.success) {
+        logShadowAudit({
+          caso_id: caseData.id,
+          codigo_caso: caseData.codigo,
+          snapshot_data: { detalles, descuento, descuentoTipo, ivaAplicado, subtotal, total },
+          guardado_oficial: true
+        }).catch(() => {});
+        
         toast.success("Caso actualizado correctamente", { id: toastId });
         onUpdated();
         onClose();

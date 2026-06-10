@@ -5,6 +5,7 @@ import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, C
 import Link from "next/link";
 import { getAllUsers, loginUser, getCurrentUser, logoutUser } from "@/lib/auth";
 import { generateReceipt } from "@/app/actions/receipts";
+import { logShadowAudit } from "@/app/actions/audit";
 import { getClients } from "@/app/actions/clients";
 import { getProducts } from "@/app/actions/products";
 import { updateCaseState } from "@/app/actions/cases";
@@ -976,6 +977,33 @@ export default function Home() {
       return { subtotal: initialSubtotal, discountAmount, ivaAmount, total };
   };
 
+  // Shadow Audit Sombra for Receipt Modal (Production)
+  useEffect(() => {
+    if (!receiptCase) return;
+    
+    const calc = calculateReceipt();
+    const snapshot = {
+      descuentoTipo: discountType,
+      descuentoValor: discountValue,
+      aplicaIva: applyIva,
+      subtotal: calc.subtotal,
+      descuentoMonto: calc.discountAmount,
+      ivaMonto: calc.ivaAmount,
+      total: calc.total
+    };
+
+    const timer = setTimeout(() => {
+      logShadowAudit({
+        caso_id: receiptCase.internal_id,
+        codigo_caso: receiptCase.id,
+        snapshot_data: snapshot,
+        guardado_oficial: false
+      }).catch(() => {});
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [discountValue, discountType, applyIva, receiptCase]);
+
   const handleGenerateReceipt = async () => {
       setReceiptSaving(true);
       const payload = {
@@ -989,6 +1017,13 @@ export default function Home() {
       setReceiptSaving(false);
       
       if (res.success) {
+         logShadowAudit({
+           caso_id: receiptCase.internal_id,
+           codigo_caso: receiptCase.id,
+           snapshot_data: { discountType, discountValue, applyIva },
+           guardado_oficial: true
+         }).catch(() => {});
+         
          toast.success("Recibo generado y caso avanzado a Empaquetado.");
          closeReceiptModal();
          fetchCases();
