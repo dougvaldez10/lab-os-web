@@ -841,15 +841,13 @@ export default function BillingPanel() {
                                   )}
                                 </td>
                                 <td className="px-6 py-4 text-right flex justify-end gap-2">
-                                  {currentUser?.username?.toLowerCase() === 'coloraturacorp' && (
-                                    <button
-                                      title="Editar Caso"
-                                      onClick={() => handleOpenEdit(c)}
-                                      className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-800 rounded-lg transition-all"
-                                    >
-                                      <Edit size={18} />
-                                    </button>
-                                  )}
+                                  <button
+                                    title="Editar Caso"
+                                    onClick={() => handleOpenEdit(c)}
+                                    className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-800 rounded-lg transition-all"
+                                  >
+                                    <Edit size={18} />
+                                  </button>
                                   <button
                                     title="Registrar Abono"
                                     onClick={() => handleOpenAbono(c)}
