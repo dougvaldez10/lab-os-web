@@ -1154,7 +1154,7 @@ export default function Home() {
             Lab OS
           </h1>
           <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
-            {hasAdminAccess && (
+            {isAdmin && (
               <Link href="/admin" className="text-slate-500 hover:text-[#D4AF37] transition-colors" title="Administración">
                 <Settings size={20} />
               </Link>
