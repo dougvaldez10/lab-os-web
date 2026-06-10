@@ -59,9 +59,9 @@ export default function Sidebar() {
 
   return (
     <aside 
-      className={`w-full bg-slate-900 text-slate-300 flex flex-col shrink-0 transition-all duration-300 relative border-r border-slate-800/80 md:h-screen md:sticky md:top-0 ${
+      className={`w-full bg-slate-900 text-slate-300 flex flex-row md:flex-col shrink-0 transition-all duration-300 relative border-b md:border-b-0 md:border-r border-slate-800/80 md:h-screen md:sticky md:top-0 z-50 ${
         isCollapsed ? "md:w-20" : "md:w-64"
-      }`}
+      } items-center md:items-stretch`}
     >
       {/* Toggle Button for Desktop */}
       <button
@@ -74,8 +74,8 @@ export default function Sidebar() {
 
       {/* Header / Brand */}
       <div 
-        className={`p-4 flex items-center border-b border-slate-800 h-[73px] overflow-hidden ${
-          isCollapsed ? "justify-center" : "justify-between"
+        className={`p-2 md:p-4 flex items-center md:border-b border-slate-800 h-14 md:h-[73px] overflow-hidden shrink-0 ${
+          isCollapsed ? "md:justify-center" : "md:justify-between"
         }`}
       >
         <div className="flex items-center gap-3 overflow-hidden">
@@ -84,16 +84,18 @@ export default function Sidebar() {
             alt="Lab OS Logo" 
             className="w-8 h-8 rounded-lg shrink-0 object-contain bg-slate-850 p-0.5 border border-slate-700/50" 
           />
-          {!isCollapsed && (
-            <h2 className="text-xl font-black text-white tracking-tight whitespace-nowrap animate-fade-in">
-              <span className="text-[#D4AF37]">Lab</span> OS
-            </h2>
-          )}
+          <h2 className={`text-xl font-black text-white tracking-tight whitespace-nowrap animate-fade-in hidden md:block ${isCollapsed ? 'md:hidden' : ''}`}>
+            <span className="text-[#D4AF37]">Lab</span> OS
+          </h2>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 px-3 flex flex-col gap-2">
+      <nav 
+        className="flex-1 py-1 px-1 md:py-4 md:px-3 flex flex-row md:flex-col gap-1 md:gap-2 overflow-x-auto overflow-y-hidden md:overflow-y-auto"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        <style dangerouslySetInnerHTML={{__html: `nav::-webkit-scrollbar { display: none; }`}} />
         {menuItems.map((item) => {
           const Icon = item.icon;
           // Determine if the item is active
@@ -104,23 +106,28 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               title={isCollapsed ? item.label : undefined}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-250 ${
+              className={`relative flex items-center gap-3 px-3 py-2.5 md:px-4 md:py-3 rounded-xl transition-all duration-250 ${
                 isActive
-                  ? "bg-slate-800 text-white font-semibold border-l-2 border-[#D4AF37] shadow-inner"
+                  ? "bg-slate-800 text-white font-semibold md:border-l-2 md:border-b-0 border-b-2 border-[#D4AF37] shadow-inner"
                   : "hover:bg-slate-800/60 hover:text-white text-slate-400"
-              } ${isCollapsed ? "justify-center px-0" : ""}`}
+              } justify-center md:justify-start ${isCollapsed ? "md:justify-center md:px-0" : ""}`}
             >
               <Icon size={20} className={`${item.iconColor} shrink-0 transition-transform duration-200 hover:scale-110`} />
-              {!isCollapsed && (
-                <span className="font-medium text-sm whitespace-nowrap flex-1">{item.label}</span>
-              )}
-              {item.badge > 0 && !isCollapsed && (
-                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              
+              <span className={`font-medium text-sm whitespace-nowrap flex-1 hidden md:block ${isCollapsed ? 'md:hidden' : ''}`}>
+                {item.label}
+              </span>
+              
+              {/* Badge for Desktop Expanded */}
+              {item.badge > 0 && (
+                <span className={`bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full hidden md:block ${isCollapsed ? 'md:hidden' : ''}`}>
                   {item.badge}
                 </span>
               )}
-              {item.badge > 0 && isCollapsed && (
-                <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              
+              {/* Badge for Mobile and Desktop Collapsed */}
+              {item.badge > 0 && (
+                <div className={`absolute bottom-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse block md:hidden ${isCollapsed ? 'md:block' : ''}`}></div>
               )}
             </Link>
           );
@@ -128,7 +135,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Logout Footer */}
-      <div className="p-4 border-t border-slate-800 flex flex-col gap-2">
+      <div className="p-1 md:p-4 md:border-t border-slate-800 flex flex-col gap-2 shrink-0">
         <button
           onClick={async () => {
             const { supabase } = await import('@/lib/supabase');
@@ -136,13 +143,13 @@ export default function Sidebar() {
             await logoutUser();
             window.location.href = "/";
           }}
-          title={isCollapsed ? "Cerrar Sesión" : undefined}
-          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-slate-800/70 text-slate-300 hover:bg-red-500 hover:text-white transition-all duration-200 font-medium ${
-            isCollapsed ? "justify-center px-0" : "w-full"
+          title="Cerrar Sesión"
+          className={`flex items-center gap-2.5 px-3 py-2.5 md:px-4 rounded-xl bg-slate-800/70 text-slate-300 hover:bg-red-500 hover:text-white transition-all duration-200 font-medium justify-center ${
+            isCollapsed ? "md:px-0" : "md:w-full"
           }`}
         >
           <LogOut size={18} className="shrink-0" />
-          {!isCollapsed && <span className="text-sm whitespace-nowrap">Cerrar Sesión</span>}
+          <span className={`text-sm whitespace-nowrap hidden md:block ${isCollapsed ? 'md:hidden' : ''}`}>Cerrar Sesión</span>
         </button>
       </div>
     </aside>
