@@ -884,62 +884,6 @@ export default function Home() {
     return 'red';
   };
 
-  if (!authChecked) {
-    return <div className="min-h-screen bg-white flex items-center justify-center"><RefreshCw className="animate-spin text-slate-300 w-8 h-8" /></div>;
-  }
-  if (!currentUser) {
-    return <LoginScreen onLoginSuccess={(u) => { setCurrentUser(u); loadInitialData(); fetchCases(); }} />;
-  }
-
-  // Si el usuario es administrador o dueño y accidentalmente entra a producción (/), lo redirigimos a su panel
-  if (currentUser.rol === 'lab_owner' || currentUser.username?.toLowerCase() === 'admin' || currentUser.username?.toLowerCase() === 'legion' || currentUser.username?.toLowerCase() === 'coloraturacorp' || (currentUser.rol && currentUser.rol.includes('Administrativo'))) {
-    window.location.href = '/admin';
-    return <div className="min-h-screen bg-white flex items-center justify-center"><RefreshCw className="animate-spin text-slate-300 w-8 h-8" /></div>;
-  }
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    await logoutUser();
-    setCurrentUser(null);
-    setAuthChecked(false);
-    window.location.reload();
-  };
-
-  // Filtrado de roles para los grupos visuales
-  const userRolesStr = currentUser.rol || "";
-  const rawRoles = userRolesStr.split(',').map(r => r.trim());
-  const isAdmin = rawRoles.some(r => !!r.match(/admin/i));
-
-  // Variable global: casos de Yesos En Proceso/Pausa para mostrar como stack
-  const casosYesosEnProceso = cases.filter(c =>
-    c.dept === 'Yesos' &&
-    (c.status === 'En Proceso' || c.status === 'En Pausa')
-  );
-
-  let groupsToRender = [];
-  if (activeDept === "all") {
-    // Si estamos en TODAS (Monitor Global), renderizar TODOS los departamentos operativos
-    groupsToRender = departments;
-  } else {
-    // Si estamos en Departamentos Operativos, renderizar solo las íreas asignadas al usuario
-    if (isAdmin) {
-      groupsToRender = departments;
-    } else {
-      groupsToRender = departments.filter(d => {
-         const hasExactId = rawRoles.includes(d.id);
-         const hasName = rawRoles.includes(d.name);
-         const hasStrippedId = rawRoles.includes(d.id.replace("Digital_", ""));
-         return hasExactId || hasName || hasStrippedId || d.id === "Sinterizado";
-      });
-    }
-  }
-
-  // Pre-abrir todos los acordeones en la carga inicial (hacemos un set 1 vez)
-  // Como Set no funciona fícil, lo inicializamos solo la primera vez en useEffect si fuera util,
-  // pero podemos basarnos predeterminadamente en que false/undefined = "Abierto", true = "Cerrado"
-  // para simplificar el estado.
-  const isDeptHidden = (deptId) => !!expandedDepts[deptId];
-
   // --- RECEIPTS LOGIC ---
   const openReceiptModal = (c) => {
       setReceiptCase(c);
@@ -1032,6 +976,64 @@ export default function Home() {
          toast.error(res.error || "Error al generar recibo.");
       }
   };
+
+  if (!authChecked) {
+    return <div className="min-h-screen bg-white flex items-center justify-center"><RefreshCw className="animate-spin text-slate-300 w-8 h-8" /></div>;
+  }
+  if (!currentUser) {
+    return <LoginScreen onLoginSuccess={(u) => { setCurrentUser(u); loadInitialData(); fetchCases(); }} />;
+  }
+
+  // Si el usuario es administrador o dueño y accidentalmente entra a producción (/), lo redirigimos a su panel
+  if (currentUser.rol === 'lab_owner' || currentUser.username?.toLowerCase() === 'admin' || currentUser.username?.toLowerCase() === 'legion' || currentUser.username?.toLowerCase() === 'coloraturacorp' || (currentUser.rol && currentUser.rol.includes('Administrativo'))) {
+    window.location.href = '/admin';
+    return <div className="min-h-screen bg-white flex items-center justify-center"><RefreshCw className="animate-spin text-slate-300 w-8 h-8" /></div>;
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    await logoutUser();
+    setCurrentUser(null);
+    setAuthChecked(false);
+    window.location.reload();
+  };
+
+  // Filtrado de roles para los grupos visuales
+  const userRolesStr = currentUser.rol || "";
+  const rawRoles = userRolesStr.split(',').map(r => r.trim());
+  const isAdmin = rawRoles.some(r => !!r.match(/admin/i));
+
+  // Variable global: casos de Yesos En Proceso/Pausa para mostrar como stack
+  const casosYesosEnProceso = cases.filter(c =>
+    c.dept === 'Yesos' &&
+    (c.status === 'En Proceso' || c.status === 'En Pausa')
+  );
+
+  let groupsToRender = [];
+  if (activeDept === "all") {
+    // Si estamos en TODAS (Monitor Global), renderizar TODOS los departamentos operativos
+    groupsToRender = departments;
+  } else {
+    // Si estamos en Departamentos Operativos, renderizar solo las íreas asignadas al usuario
+    if (isAdmin) {
+      groupsToRender = departments;
+    } else {
+      groupsToRender = departments.filter(d => {
+         const hasExactId = rawRoles.includes(d.id);
+         const hasName = rawRoles.includes(d.name);
+         const hasStrippedId = rawRoles.includes(d.id.replace("Digital_", ""));
+         return hasExactId || hasName || hasStrippedId || d.id === "Sinterizado";
+      });
+    }
+  }
+
+  // Pre-abrir todos los acordeones en la carga inicial (hacemos un set 1 vez)
+  // Como Set no funciona fícil, lo inicializamos solo la primera vez en useEffect si fuera util,
+  // pero podemos basarnos predeterminadamente en que false/undefined = "Abierto", true = "Cerrado"
+  // para simplificar el estado.
+  const isDeptHidden = (deptId) => !!expandedDepts[deptId];
+
+
 
   return (
     <div className="min-h-screen bg-white sm:bg-slate-50 lg:bg-slate-100 flex flex-col font-sans transition-colors duration-300">
