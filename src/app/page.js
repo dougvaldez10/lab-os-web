@@ -5,7 +5,7 @@ import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, C
 import Link from "next/link";
 import { getAllUsers, loginUser, getCurrentUser, logoutUser } from "@/lib/auth";
 import { generateReceipt } from "@/app/actions/receipts";
-import { logShadowAudit } from "@/app/actions/audit";
+import { logShadowAudit, markShadowAuditAsSaved } from "@/app/actions/audit";
 import { getClients } from "@/app/actions/clients";
 import { getProducts } from "@/app/actions/products";
 import { updateCaseState } from "@/app/actions/cases";
@@ -1023,6 +1023,7 @@ export default function Home() {
            snapshot_data: { discountType, discountValue, applyIva },
            guardado_oficial: true
          }).catch(() => {});
+         markShadowAuditAsSaved(receiptCase.internal_id).catch(() => {});
          
          toast.success("Recibo generado y caso avanzado a Empaquetado.");
          closeReceiptModal();

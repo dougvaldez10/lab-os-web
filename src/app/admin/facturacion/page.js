@@ -38,7 +38,7 @@ import {
 import { getAllClinics } from "@/app/actions/clients";
 import { toggleCaseIVA } from "@/app/actions/cases";
 import { generateReceipt } from "@/app/actions/receipts";
-import { logShadowAudit } from "@/app/actions/audit";
+import { getAuditAlerts, logShadowAudit, markShadowAuditAsSaved } from "@/app/actions/audit";
 import EditCaseModal from "./EditCaseModal";
 
 export default function BillingPanel() {
@@ -430,6 +430,7 @@ export default function BillingPanel() {
            snapshot_data: { discountType, discountValue, applyIva },
            guardado_oficial: true
          }).catch(() => {});
+         markShadowAuditAsSaved(receiptCase.internal_id).catch(() => {});
          
          toast.success("Recibo generado correctamente.");
          closeReceiptModal();

@@ -1,13 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ShieldAlert, CheckCircle2, Clock, Eye, AlertTriangle } from "lucide-react";
+import { ShieldAlert, CheckCircle2, Clock, Eye, AlertTriangle, ChevronDown, ChevronUp, DollarSign } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { getAuditAlerts, markAuditReviewed } from "@/app/actions/audit";
+
+function formatCurrency(amount) {
+  if (!amount && amount !== 0) return '$0.00';
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN'
+  }).format(amount);
+}
 
 export default function AuditPanel() {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedIds, setExpandedIds] = useState({});
 
   const fetchAlerts = async () => {
     setLoading(true);
@@ -24,15 +33,20 @@ export default function AuditPanel() {
     fetchAlerts();
   }, []);
 
-  const handleMarkReviewed = async (id) => {
-    const toastId = toast.loading("Marcando como revisado...");
+  const handleMarkReviewed = async (id, e) => {
+    if (e) e.stopPropagation();
+    const toastId = toast.loading("Archivando...");
     const res = await markAuditReviewed(id);
     if (res.success) {
       toast.success("Alerta archivada", { id: toastId });
-      fetchAlerts();
+      setAlerts(alerts.filter(a => a.id !== id));
     } else {
       toast.error(res.error || "Error", { id: toastId });
     }
+  };
+
+  const toggleExpand = (id) => {
+    setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   return (
@@ -44,10 +58,10 @@ export default function AuditPanel() {
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
             <ShieldAlert className="text-rose-500" size={28} />
-            Centro de Auditoría (Sombra)
+            Centro de Auditoría
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Monitoreo de intentos de edición o cambios de precios no guardados oficialmente.
+            Monitoreo silencioso de cambios no guardados en facturación.
           </p>
         </div>
         <button 
@@ -70,49 +84,136 @@ export default function AuditPanel() {
             <CheckCircle2 className="mx-auto text-emerald-500 w-12 h-12 mb-3" />
             <h3 className="text-lg font-bold text-slate-800">Todo en orden</h3>
             <p className="text-slate-500 text-sm mt-1 max-w-sm mx-auto">
-              No hay alertas de edición sospechosa sin revisar.
+              No hay alertas de edición sospechosa pendientes.
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {alerts.map((alert) => (
-              <div key={alert.id} className="bg-white rounded-xl border border-rose-200 shadow-sm overflow-hidden">
-                <div className="bg-rose-50 px-4 py-3 border-b border-rose-100 flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle size={18} className="text-rose-500" />
-                    <span className="font-bold text-rose-700">
-                      Caso #{alert.codigo_caso}
-                    </span>
-                    <span className="text-xs text-rose-600 bg-rose-100 px-2 py-0.5 rounded-md font-semibold ml-2">
-                      Usuario: {alert.admin_name}
-                    </span>
+          <div className="space-y-3">
+            {alerts.map((alert) => {
+              const snap = alert.snapshot_data || {};
+              const isExpanded = expandedIds[alert.id];
+              const displayTotal = snap.total || 0;
+
+              return (
+                <div key={alert.id} className="bg-white rounded-xl border border-rose-200 shadow-sm overflow-hidden transition-all duration-200">
+                  {/* Tarjeta Colapsada (Clickable) */}
+                  <div 
+                    onClick={() => toggleExpand(alert.id)}
+                    className="px-4 py-3 cursor-pointer hover:bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="bg-rose-100 p-2 rounded-lg">
+                        <AlertTriangle size={18} className="text-rose-600" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-800 text-lg">
+                            Caso #{alert.codigo_caso}
+                          </span>
+                          <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-semibold">
+                            Admin: {alert.admin_name}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                          <Clock size={12} />
+                          {new Date(alert.creado_en).toLocaleString('es-MX')}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs text-slate-500 font-medium">Total intentado</span>
+                        <span className="font-bold text-rose-600">{formatCurrency(displayTotal)}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {isExpanded ? <ChevronUp size={20} className="text-slate-400" /> : <ChevronDown size={20} className="text-slate-400" />}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-xs text-rose-500 font-medium flex items-center gap-1">
-                    <Clock size={14} />
-                    {new Date(alert.creado_en).toLocaleString('es-MX')}
-                  </div>
-                </div>
-                
-                <div className="p-4">
-                  <p className="text-sm text-slate-600 mb-3">
-                    <strong>Evidencia capturada en pantalla (No guardada):</strong>
-                  </p>
-                  <pre className="bg-slate-900 text-emerald-400 p-4 rounded-lg text-xs overflow-x-auto">
-                    {JSON.stringify(alert.snapshot_data, null, 2)}
-                  </pre>
                   
-                  <div className="mt-4 flex justify-end">
-                    <button 
-                      onClick={() => handleMarkReviewed(alert.id)}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-lg text-sm font-bold transition-colors border border-emerald-200"
-                    >
-                      <Eye size={16} />
-                      Marcar como revisado
-                    </button>
-                  </div>
+                  {/* Vista Expandida */}
+                  {isExpanded && (
+                    <div className="p-4 bg-slate-50 border-t border-slate-100 animate-in slide-in-from-top-2">
+                      <div className="mb-4">
+                        <h4 className="text-sm font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Resumen Financiero</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                          <div className="bg-white p-3 rounded-lg border border-slate-200">
+                            <div className="text-xs text-slate-500 font-medium">Subtotal</div>
+                            <div className="font-bold text-slate-700">{formatCurrency(snap.subtotal || 0)}</div>
+                          </div>
+                          <div className="bg-white p-3 rounded-lg border border-slate-200">
+                            <div className="text-xs text-slate-500 font-medium">Descuento</div>
+                            <div className="font-bold text-rose-500">
+                              {snap.descuentoTipo === 'porcentaje' ? `${snap.descuento || snap.descuentoValor || 0}%` : formatCurrency(snap.descuento || snap.descuentoValor || snap.descuentoMonto || 0)}
+                            </div>
+                          </div>
+                          <div className="bg-white p-3 rounded-lg border border-slate-200">
+                            <div className="text-xs text-slate-500 font-medium">IVA Aplicado</div>
+                            <div className="font-bold text-slate-700">{snap.ivaAplicado || snap.aplicaIva ? 'SÍ' : 'NO'}</div>
+                          </div>
+                          <div className="bg-white p-3 rounded-lg border border-rose-200 bg-rose-50/50">
+                            <div className="text-xs text-rose-600 font-bold">Total Final</div>
+                            <div className="font-black text-rose-700 text-lg">{formatCurrency(displayTotal)}</div>
+                          </div>
+                        </div>
+                        
+                        {snap.detalles && snap.detalles.length > 0 && (
+                          <div className="mt-4">
+                            <h4 className="text-sm font-bold text-slate-700 mb-2">Detalle de Productos Editados</h4>
+                            <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                              <table className="w-full text-left text-sm">
+                                <thead className="bg-slate-100 text-slate-600 text-xs">
+                                  <tr>
+                                    <th className="px-3 py-2 font-medium">Cant.</th>
+                                    <th className="px-3 py-2 font-medium">Producto</th>
+                                    <th className="px-3 py-2 font-medium">Precio Unit.</th>
+                                    <th className="px-3 py-2 font-medium">Subtotal</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                  {snap.detalles.map((d, i) => (
+                                    <tr key={i} className="hover:bg-slate-50">
+                                      <td className="px-3 py-2 text-slate-600">{d.unidades}</td>
+                                      <td className="px-3 py-2 text-slate-800 font-medium">
+                                        {d.producto}
+                                        {d.dientes && <div className="text-[10px] text-slate-400 mt-0.5">Dientes: {d.dientes}</div>}
+                                      </td>
+                                      <td className="px-3 py-2 text-slate-600">{formatCurrency(d.precio_unit)}</td>
+                                      <td className="px-3 py-2 text-slate-800 font-bold">{formatCurrency((Number(d.unidades)||0) * (Number(d.precio_unit)||0))}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="mt-4 flex justify-end gap-3 pt-3 border-t border-slate-200">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleExpand(alert.id);
+                          }}
+                          className="px-4 py-2 text-slate-500 hover:text-slate-700 text-sm font-semibold transition-colors"
+                        >
+                          Cerrar detalles
+                        </button>
+                        <button 
+                          onClick={(e) => handleMarkReviewed(alert.id, e)}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 text-white hover:bg-emerald-600 rounded-lg text-sm font-bold transition-colors shadow-sm"
+                        >
+                          <CheckCircle2 size={16} />
+                          Marcar como revisado
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

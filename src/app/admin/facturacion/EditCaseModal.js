@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { getCaseDetailsForEdit, updateCaseFinancials, returnCaseToBoard } from '@/app/actions/cases';
 import { deleteAdminCase } from '@/app/actions/admin-cases';
 import { getProducts } from '@/app/actions/products';
-import { logShadowAudit } from '@/app/actions/audit';
+import { logShadowAudit, markShadowAuditAsSaved } from '@/app/actions/audit';
 
 export default function EditCaseModal({ caseData, onClose, onUpdated }) {
   const [detalles, setDetalles] = useState([]);
@@ -209,6 +209,7 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
           snapshot_data: { detalles, descuento, descuentoTipo, ivaAplicado, subtotal, total },
           guardado_oficial: true
         }).catch(() => {});
+        markShadowAuditAsSaved(caseData.id).catch(() => {});
         
         toast.success("Caso actualizado correctamente", { id: toastId });
         onUpdated();

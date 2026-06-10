@@ -60,6 +60,29 @@ export async function logShadowAudit(payload) {
 }
 
 /**
+ * Cuando se guarda oficialmente un caso o recibo, marcamos todas las alertas sombra 
+ * no revisadas de ese caso como "guardado_oficial = true" y "revisado = true" 
+ * para que desaparezcan del radar.
+ */
+export async function markShadowAuditAsSaved(casoId) {
+  try {
+    const supabase = getAdminClient();
+    const { error } = await supabase
+      .from('auditoria_sombra')
+      .update({ guardado_oficial: true, revisado: true })
+      .eq('caso_id', casoId)
+      .eq('guardado_oficial', false)
+      .eq('revisado', false);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (err) {
+    console.error("markShadowAuditAsSaved error:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
  * Obtiene las alertas de auditoría para el dashboard del SuperAdmin
  */
 export async function getAuditAlerts() {
@@ -77,6 +100,7 @@ export async function getAuditAlerts() {
       .from('auditoria_sombra')
       .select('*')
       .eq('guardado_oficial', false)
+      .eq('revisado', false)
       .order('creado_en', { ascending: false });
 
     if (error) throw error;
