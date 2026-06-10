@@ -18,7 +18,7 @@ export default async function AdminLayout({ children }) {
     );
   }
 
-  const hasAdminAccess = user.username?.toLowerCase() === 'admin' || user.username?.toLowerCase() === 'coloraturacorp' || user.username?.toLowerCase() === 'legion' || user.rol === 'lab_owner';
+  const hasAdminAccess = user.username?.toLowerCase() === 'admin' || user.username?.toLowerCase() === 'coloraturacorp' || user.username?.toLowerCase() === 'legion' || user.rol === 'lab_owner' || (user.rol && user.rol.includes('Administrativo'));
 
   if (!hasAdminAccess) {
     return (

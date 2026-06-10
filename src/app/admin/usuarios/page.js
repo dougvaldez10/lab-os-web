@@ -9,7 +9,7 @@ import {
 
 const allDepartments = [
   "Recepción", "Yesos", "Digital_Escaneo", "Digital_Diseno", "Digital_Fresado", 
-  "Sinterizado", "Ajuste", "Terminado", "Inspección", "Facturación", "Admin"
+  "Sinterizado", "Ajuste", "Terminado", "Inspección", "Facturación", "Administrativo"
 ];
 
 export default function AdminUsuarios() {
@@ -247,9 +247,27 @@ export default function AdminUsuarios() {
 
               {/* Roles */}
               <div className="border-t border-slate-100 pt-4">
-                 <label className="text-xs font-bold text-slate-500 uppercase mb-3 block">Etapas de Producción Permitidas</label>
+                 <label className="text-xs font-bold text-slate-500 uppercase mb-3 block">Tipo de Perfil del Usuario</label>
+                 <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
+                    <button 
+                      type="button"
+                      onClick={() => !editingItem.selectedRoles.includes("Administrativo") && handleRoleToggle("Administrativo")}
+                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${editingItem.selectedRoles.includes("Administrativo") ? "bg-white shadow-sm text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
+                    >
+                      🛡️ Administrativo
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => editingItem.selectedRoles.includes("Administrativo") && handleRoleToggle("Administrativo")}
+                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${!editingItem.selectedRoles.includes("Administrativo") ? "bg-white shadow-sm text-emerald-600" : "text-slate-500 hover:text-slate-700"}`}
+                    >
+                      ⚙️ Producción
+                    </button>
+                 </div>
+
+                 <label className="text-xs font-bold text-slate-500 uppercase mb-3 block">Etapas Permitidas (Opcional para Administrativos)</label>
                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {allDepartments.map(dept => {
+                    {allDepartments.filter(d => d !== 'Admin' && d !== 'Administrativo').map(dept => {
                        const isSelected = editingItem.selectedRoles.includes(dept);
                        return (
                           <div 
