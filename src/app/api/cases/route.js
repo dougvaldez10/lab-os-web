@@ -8,13 +8,15 @@ export const revalidate = 0;
 
 export async function GET(request) {
   try {
-    // Verificar autenticaciÃƒÂ³n vÃƒÂ­a cookie antes de servir datos
     let authHeader = request.headers.get('authorization');
     if (!authHeader || authHeader === 'Bearer ') {
        const cookieStore = await cookies();
        const ghostCookie = cookieStore.get('lab_os_ghost')?.value;
+       const localUser = cookieStore.get('lab_os_user')?.value;
        if (ghostCookie) {
          authHeader = `Bearer ${ghostCookie}`;
+       } else if (localUser) {
+         authHeader = `LocalUser ${localUser}`;
        }
     }
 
