@@ -883,23 +883,6 @@ export default function Home() {
     return 'red';
   };
 
-  const hasAdminAccess = currentUser?.username?.toLowerCase() === 'admin' || currentUser?.username?.toLowerCase() === 'coloraturacorp';
-
-  useEffect(() => {
-    if (hasAdminAccess) {
-      window.location.replace('/admin');
-    }
-  }, [hasAdminAccess]);
-
-  if (hasAdminAccess) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-        <RefreshCw className="animate-spin text-slate-400 mb-4" size={32} />
-        <p className="text-slate-500 font-medium">Redirigiendo a Administración...</p>
-      </div>
-    );
-  }
-
   if (!authChecked) {
     return <div className="min-h-screen bg-white flex items-center justify-center"><RefreshCw className="animate-spin text-slate-300 w-8 h-8" /></div>;
   }

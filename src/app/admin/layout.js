@@ -10,25 +10,21 @@ export default async function AdminLayout({ children }) {
   const user = await getCurrentUser();
 
   if (!user) {
-    return (
-      <div className="p-8 text-black">
-        <h1>No estás autenticado (user es null)</h1>
-        <a href="/" className="text-blue-500 underline">Volver</a>
-      </div>
-    );
+    redirect('/');
   }
 
-  const hasAdminAccess = user.username?.toLowerCase() === 'admin' || user.username?.toLowerCase() === 'coloraturacorp' || user.username?.toLowerCase() === 'legion' || user.rol === 'lab_owner' || (user.rol && user.rol.includes('Administrativo'));
+  // Acceso administrativo: usuarios con rol Administrativo, lab_owner, o nombres conocidos
+  const uname = user.username?.toLowerCase();
+  const rolStr = user.rol || '';
+  const hasAdminAccess = 
+    uname === 'admin' || 
+    uname === 'legion' || 
+    uname === 'coloraturacorp' || 
+    rolStr === 'lab_owner' || 
+    rolStr.includes('Administrativo');
 
   if (!hasAdminAccess) {
-    return (
-      <div className="p-8 text-black">
-        <h1>Acceso Denegado</h1>
-        <p>No tienes permiso para ver esta página.</p>
-        <pre>{JSON.stringify(user, null, 2)}</pre>
-        <a href="/" className="text-blue-500 underline">Volver</a>
-      </div>
-    );
+    redirect('/');
   }
 
   return (
