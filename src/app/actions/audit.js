@@ -38,17 +38,37 @@ export async function logShadowAudit(payload) {
       return { success: true };
     }
 
-    // Insertar captura fantasma (no guardada oficialmente)
-    const { error } = await supabase.from('auditoria_sombra').insert({
-      caso_id: payload.caso_id,
-      codigo_caso: payload.codigo_caso,
-      admin_name: user.username || user.email || 'Desconocido',
-      snapshot_data: payload.snapshot_data,
-      guardado_oficial: false,
-      revisado: false
-    });
+    // Buscar si ya existe una alerta fantasma sin revisar para este usuario y caso
+    const adminName = user.username || user.email || 'Desconocido';
+    const { data: existing } = await supabase
+      .from('auditoria_sombra')
+      .select('id')
+      .eq('caso_id', payload.caso_id)
+      .eq('admin_name', adminName)
+      .eq('guardado_oficial', false)
+      .eq('revisado', false)
+      .order('creado_en', { ascending: false })
+      .limit(1);
 
-    if (error) throw error;
+    if (existing && existing.length > 0) {
+      // Actualizar la captura fantasma existente
+      const { error } = await supabase.from('auditoria_sombra').update({
+        snapshot_data: payload.snapshot_data,
+        creado_en: new Date().toISOString()
+      }).eq('id', existing[0].id);
+      if (error) throw error;
+    } else {
+      // Insertar captura fantasma nueva
+      const { error } = await supabase.from('auditoria_sombra').insert({
+        caso_id: payload.caso_id,
+        codigo_caso: payload.codigo_caso,
+        admin_name: adminName,
+        snapshot_data: payload.snapshot_data,
+        guardado_oficial: false,
+        revisado: false
+      });
+      if (error) throw error;
+    }
     
     // No hacemos revalidatePath para no interrumpir nada, es silencioso
     return { success: true };

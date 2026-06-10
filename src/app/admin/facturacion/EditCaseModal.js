@@ -71,7 +71,8 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
           ...d,
           producto_base: prodBase,
           subtipo: parts[1] || '',
-          precio_unit: resolvedPrice
+          precio_unit: resolvedPrice,
+          precio_original: resolvedPrice
         };
       }) : []);
       setDescuento(Number(res.master?.descuento) || 0);
@@ -103,6 +104,7 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
       }
     }
     newDetalles[index].precio_unit = newPrice;
+    newDetalles[index].precio_original = newPrice;
     setDetalles(newDetalles);
   };
 
@@ -123,7 +125,8 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
         subtipo: '',
         dientes: '',
         unidades: 1,
-        precio_unit: 0
+        precio_unit: 0,
+        precio_original: 0
       }
     ]);
   };

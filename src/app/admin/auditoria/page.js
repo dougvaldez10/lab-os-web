@@ -173,17 +173,31 @@ export default function AuditPanel() {
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                  {snap.detalles.map((d, i) => (
-                                    <tr key={i} className="hover:bg-slate-50">
-                                      <td className="px-3 py-2 text-slate-600">{d.unidades}</td>
-                                      <td className="px-3 py-2 text-slate-800 font-medium">
-                                        {d.producto}
-                                        {d.dientes && <div className="text-[10px] text-slate-400 mt-0.5">Dientes: {d.dientes}</div>}
-                                      </td>
-                                      <td className="px-3 py-2 text-slate-600">{formatCurrency(d.precio_unit)}</td>
-                                      <td className="px-3 py-2 text-slate-800 font-bold">{formatCurrency((Number(d.unidades)||0) * (Number(d.precio_unit)||0))}</td>
-                                    </tr>
-                                  ))}
+                                  {snap.detalles.map((d, i) => {
+                                    const hasOriginal = d.precio_original !== undefined && d.precio_original !== null;
+                                    const isPriceChanged = hasOriginal && Number(d.precio_original) !== Number(d.precio_unit);
+
+                                    return (
+                                      <tr key={i} className="hover:bg-slate-50">
+                                        <td className="px-3 py-2 text-slate-600">{d.unidades}</td>
+                                        <td className="px-3 py-2 text-slate-800 font-medium">
+                                          {d.producto}
+                                          {d.dientes && <div className="text-[10px] text-slate-400 mt-0.5">Dientes: {d.dientes}</div>}
+                                        </td>
+                                        <td className="px-3 py-2 text-slate-600">
+                                          {isPriceChanged ? (
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-slate-400 line-through text-xs">{formatCurrency(d.precio_original)}</span>
+                                              <span className="text-rose-600 font-bold">{formatCurrency(d.precio_unit)}</span>
+                                            </div>
+                                          ) : (
+                                            <span>{formatCurrency(d.precio_unit)}</span>
+                                          )}
+                                        </td>
+                                        <td className="px-3 py-2 text-slate-800 font-bold">{formatCurrency((Number(d.unidades)||0) * (Number(d.precio_unit)||0))}</td>
+                                      </tr>
+                                    );
+                                  })}
                                 </tbody>
                               </table>
                             </div>
