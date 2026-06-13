@@ -432,10 +432,14 @@ export default function BillingPanel() {
 
   const handleGenerateReceipt = async () => {
       setReceiptSaving(true);
+      const calc = calculateReceipt();
       const payload = {
          discountType,
          discountValue: parseFloat(discountValue) || 0,
-         applyIva
+         applyIva,
+         subtotal: calc.subtotal,
+         ivaAmount: calc.ivaAmount,
+         total: calc.total
       };
       
       const res = await generateReceipt(receiptCase.internal_id, payload);
@@ -1721,7 +1725,7 @@ export default function BillingPanel() {
                          onClick={() => setApplyIva(!applyIva)}
                          className="flex items-center justify-between bg-white px-4 py-3 rounded-lg border border-slate-200 cursor-pointer hover:border-[#D4AF37]/50 shadow-sm transition-colors"
                       >
-                         <span className="text-sm font-bold text-slate-700 select-none">Aplicar 16% IVA</span>
+                         <span className="text-sm font-bold text-slate-700 select-none">Aplicar 8% IVA</span>
                          <div className={`w-11 h-6 rounded-full transition-colors relative flex items-center ${applyIva ? "bg-[#0062cc]" : "bg-slate-200"}`}>
                             <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-all absolute ${applyIva ? "left-[22px]" : "left-[4px]"}`}></div>
                          </div>
@@ -1747,7 +1751,7 @@ export default function BillingPanel() {
                          )}
                          {calc.ivaAmount > 0 && (
                             <div className="flex justify-between text-sm text-slate-500 font-medium">
-                               <span>IVA (16%)</span>
+                               <span>IVA (8%)</span>
                                <span>+${calc.ivaAmount.toFixed(2)}</span>
                             </div>
                          )}
