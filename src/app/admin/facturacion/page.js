@@ -450,6 +450,24 @@ export default function BillingPanel() {
       `).join('')
       : '<div style="padding: 10px; text-align: center; color: #64748b; font-size: 14px;">Sin materiales detallados.</div>';
 
+    const discountHtml = calc.discountAmount > 0 
+      ? `
+      <div class="total-row" style="color: #ef4444; font-weight: 600;">
+        <span>Descuento</span>
+        <span>-$${calc.discountAmount.toFixed(2)}</span>
+      </div>
+      `
+      : '';
+
+    const ivaHtml = calc.ivaAmount > 0 
+      ? `
+      <div class="total-row" style="color: #64748b; font-weight: 500;">
+        <span>IVA (8%)</span>
+        <span>+$${calc.ivaAmount.toFixed(2)}</span>
+      </div>
+      `
+      : '';
+
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -509,18 +527,8 @@ export default function BillingPanel() {
                 <span style="color: #64748b; font-weight: 500;">Subtotal Base</span>
                 <span>$${calc.subtotal.toFixed(2)}</span>
               </div>
-              ${calc.discountAmount > 0 ? \`
-              <div class="total-row" style="color: #ef4444; font-weight: 600;">
-                <span>Descuento</span>
-                <span>-$\${calc.discountAmount.toFixed(2)}</span>
-              </div>
-              \` : ''}
-              ${calc.ivaAmount > 0 ? \`
-              <div class="total-row" style="color: #64748b; font-weight: 500;">
-                <span>IVA (8%)</span>
-                <span>+\$\${calc.ivaAmount.toFixed(2)}</span>
-              </div>
-              \` : ''}
+              ${discountHtml}
+              ${ivaHtml}
               <div class="total-row final">
                 <span>Total a Cobrar</span>
                 <span>$${calc.total.toFixed(2)}</span>
