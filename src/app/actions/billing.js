@@ -121,11 +121,14 @@ export async function getBillingSummary() {
 
     if (error) throw error;
 
+    // Solo mostrar en CxC los casos que YA FUERON ENVIADOS (tienen fecha_entrega)
+    const sentCases = (cases || []).filter(c => c.fecha_entrega && c.fecha_entrega.trim() !== "");
+
     // Agrupamos en Javascript por cliente_id para la Vista de Clínicas (Resumen)
     // total_deuda positivo = nos deben a nosotros
     // total_deuda negativo = nosotros debemos (saldo a favor de la clínica)
     const clinicsMap = {};
-    (cases || []).forEach(c => {
+    sentCases.forEach(c => {
       const cliId = c.cliente_id;
       const cliName = c.clientes?.nombre || 'Clínica Sin Nombre';
       if (!clinicsMap[cliId]) {
@@ -143,7 +146,7 @@ export async function getBillingSummary() {
     // Ordenar: deudas mayores primero, saldos a favor al final
     const clinics = Object.values(clinicsMap).sort((a, b) => b.total_deuda - a.total_deuda);
 
-    return { success: true, cases: cases || [], clinics };
+    return { success: true, cases: sentCases, clinics };
 
   } catch (err) {
     console.error("getBillingSummary error:", err);
@@ -172,7 +175,10 @@ export async function getPendingFacturacionCases() {
 
     if (error) throw error;
 
-    return { success: true, cases: cases || [] };
+    // Mostrar en Pendientes SOLO los casos que NO han sido enviados (no tienen fecha_entrega)
+    const unsentCases = (cases || []).filter(c => !c.fecha_entrega || c.fecha_entrega.trim() === "");
+
+    return { success: true, cases: unsentCases };
 
   } catch (err) {
     console.error("getPendingFacturacionCases error:", err);
