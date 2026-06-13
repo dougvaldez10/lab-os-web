@@ -617,6 +617,9 @@ export default function BillingPanel() {
     c.clientes?.nombre.toLowerCase().includes(historySearchTerm.toLowerCase())
   );
 
+  // Calcular total de casos pendientes
+  const totalPendientes = pendingCases.reduce((acc, c) => acc + (Number(c.saldo_pendiente) || 0), 0);
+
   return (
     <div className="p-4 md:p-6 h-full flex flex-col bg-slate-50 overflow-y-auto">
       <Toaster position="bottom-right" />
@@ -801,6 +804,22 @@ export default function BillingPanel() {
                           })
                         )}
                       </tbody>
+                      {pendingCases.length > 0 && (
+                        <tfoot className="bg-slate-50 border-t-2 border-slate-200">
+                          <tr>
+                            <td colSpan="4" className="px-6 py-5 text-right font-black text-slate-600 uppercase tracking-wider text-xs">
+                              Total Acumulado (Sin Enviar):
+                            </td>
+                            <td className="px-6 py-5">
+                              <span className="inline-flex items-center gap-1 font-black text-rose-700 bg-rose-100 border border-rose-200 rounded-xl px-3 py-1.5 text-sm shadow-sm">
+                                <DollarSign size={14} className="text-rose-600" />
+                                {totalPendientes.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                              </span>
+                            </td>
+                            <td></td>
+                          </tr>
+                        </tfoot>
+                      )}
                     </table>
                   </div>
                 </div>
