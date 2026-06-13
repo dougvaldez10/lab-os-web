@@ -22,7 +22,8 @@ import {
   UploadCloud,
   Edit,
   Calculator,
-  Percent
+  Percent,
+  Send
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast, Toaster } from "sonner";
@@ -58,6 +59,8 @@ export default function BillingPanel() {
   // States for Pendientes de Pago (Facturación)
   const [pendingCases, setPendingCases] = useState([]);
   const [sendingCaseId, setSendingCaseId] = useState(null);
+  const [confirmSendModal, setConfirmSendModal] = useState(null); // caso a confirmar envío
+  const [sentCaseId, setSentCaseId] = useState(null); // fila con animación de enviado
 
   // States for History
   const [historyCases, setHistoryCases] = useState([]);
@@ -306,15 +309,30 @@ export default function BillingPanel() {
   };
 
   const handleMarkAsSent = async (caso) => {
-    if (!window.confirm("¿Estás seguro de marcar este caso como ENVIADO? Se asignará la fecha de hoy para el cobro.")) return;
-    
+    // Abrir modal de confirmación en lugar de window.confirm
+    setConfirmSendModal(caso);
+  };
+
+  const handleConfirmSend = async () => {
+    const caso = confirmSendModal;
+    if (!caso) return;
+    setConfirmSendModal(null);
     setSendingCaseId(caso.id);
     const toastId = toast.loading("Marcando como enviado...");
     try {
       const res = await markCaseAsSent(caso.id);
       if (res.success) {
-        toast.success(`Caso enviado. Fecha asignada: ${res.dateSent}`, { id: toastId });
-        fetchData();
+        // Primero mostrar animación de éxito en la fila
+        setSentCaseId(caso.id);
+        toast.success(
+          `✅ Caso #${caso.codigo} enviado correctamente. Fecha de cobro: ${res.dateSent}`,
+          { id: toastId, duration: 5000 }
+        );
+        // Esperar animación antes de refrescar
+        setTimeout(() => {
+          setSentCaseId(null);
+          fetchData();
+        }, 1200);
       } else {
         toast.error("Error al marcar envío: " + res.error, { id: toastId });
       }
@@ -571,10 +589,17 @@ export default function BillingPanel() {
                           </tr>
                         ) : (
                           pendingCases.map((c) => {
-                            // Filter cases where we cleared fecha_entrega to show they are waiting, 
-                            // or show whatever date it has if we are using that logic
+                            const isSent = sentCaseId === c.id;
+                            const isSending = sendingCaseId === c.id;
                             return (
-                              <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
+                              <tr
+                                key={c.id}
+                                className={`transition-all duration-500 ${
+                                  isSent
+                                    ? "bg-emerald-50 scale-[0.99] opacity-60"
+                                    : "hover:bg-slate-50/50"
+                                }`}
+                              >
                                 <td className="px-6 py-4 font-bold text-slate-800">
                                   #{c.codigo}
                                 </td>
@@ -591,7 +616,11 @@ export default function BillingPanel() {
                                   {(!c.casos_detalle || c.casos_detalle.length === 0) && <span className="text-slate-400 text-xs">Sin detalles</span>}
                                 </td>
                                 <td className="px-6 py-4 text-slate-600 text-xs font-medium">
-                                  {c.fecha_entrega ? (
+                                  {isSent ? (
+                                    <span className="flex items-center gap-1.5 text-emerald-600 font-bold">
+                                      <CheckCircle2 size={14} className="text-emerald-500" /> Enviado
+                                    </span>
+                                  ) : c.fecha_entrega ? (
                                     <span className="flex items-center gap-1">
                                       <Calendar size={12} className="text-slate-400" />
                                       {c.fecha_entrega}
@@ -612,17 +641,28 @@ export default function BillingPanel() {
                                   <div className="flex items-center justify-center gap-2">
                                     <button
                                       onClick={() => openReceiptModal(c)}
-                                      className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5"
+                                      disabled={isSent}
+                                      className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-30"
                                     >
                                       <FileText size={14} /> Recibo
                                     </button>
                                     <button
                                       onClick={() => handleMarkAsSent(c)}
-                                      disabled={sendingCaseId === c.id}
-                                      className="px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                                      disabled={isSending || isSent}
+                                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 ${
+                                        isSent
+                                          ? "bg-emerald-500 text-white cursor-default"
+                                          : "bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white disabled:opacity-50"
+                                      }`}
                                     >
-                                      {sendingCaseId === c.id ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                                      Envío
+                                      {isSending ? (
+                                        <RefreshCw size={14} className="animate-spin" />
+                                      ) : isSent ? (
+                                        <CheckCircle2 size={14} />
+                                      ) : (
+                                        <Send size={14} />
+                                      )}
+                                      {isSent ? "Enviado" : "Enviar"}
                                     </button>
                                   </div>
                                 </td>
@@ -1517,6 +1557,89 @@ export default function BillingPanel() {
           }}
         />
       )}
+
+      {/* MODAL DE CONFIRMACIÓN DE ENVÍO */}
+      <AnimatePresence>
+        {confirmSendModal && (
+          <motion.div
+            key="confirm-send-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+          >
+            <div
+              className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+              onClick={() => setConfirmSendModal(null)}
+            />
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="bg-white rounded-2xl w-full max-w-sm shadow-2xl relative z-10 overflow-hidden"
+            >
+              {/* Header verde */}
+              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 py-5 flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Send size={20} className="text-white" />
+                </div>
+                <div>
+                  <h2 className="text-white font-black text-lg leading-tight">Confirmar Envío</h2>
+                  <p className="text-emerald-100 text-xs mt-0.5">Se registrará la fecha de hoy para cobro</p>
+                </div>
+              </div>
+
+              {/* Info del caso */}
+              <div className="px-6 py-5">
+                <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3 mb-5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Folio</span>
+                    <span className="font-black text-slate-800">#{confirmSendModal.codigo}</span>
+                  </div>
+                  <div className="h-px bg-slate-100" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Clínica</span>
+                    <span className="font-semibold text-slate-700 text-sm max-w-[160px] text-right truncate">{confirmSendModal.clientes?.nombre || "N/A"}</span>
+                  </div>
+                  <div className="h-px bg-slate-100" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Paciente</span>
+                    <span className="font-semibold text-slate-700 text-sm">{confirmSendModal.paciente}</span>
+                  </div>
+                  <div className="h-px bg-slate-100" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Saldo</span>
+                    <span className="font-black text-rose-600 text-base">
+                      ${Number(confirmSendModal.saldo_pendiente).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-500 text-center mb-5">
+                  Al confirmar, este caso pasará al módulo de <strong>Cuentas por Cobrar</strong> y se le asignará la fecha de hoy como fecha de cobro.
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setConfirmSendModal(null)}
+                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-bold transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleConfirmSend}
+                    className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25"
+                  >
+                    <Send size={15} />
+                    Enviar
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* MODAL DE RECIBO / BORRADOR */}
       {receiptCase && (
