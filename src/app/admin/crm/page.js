@@ -56,7 +56,7 @@ export default function AdminCRM() {
       setEditingItem({ ...item, isNew: false });
     } else {
       if (activeTab === "clinicas") {
-        setEditingItem({ isNew: true, nombre: "", telefono: "", email: "", direccion: "" });
+        setEditingItem({ isNew: true, nombre: "", tel_fijo: "", email: "", direccion: "" });
       } else {
         setEditingItem({ isNew: true, trato: "Dr.", nombre: "", apellido: "", cliente_id: "", telefono: "", email: "" });
       }
@@ -72,7 +72,7 @@ export default function AdminCRM() {
     if (activeTab === "clinicas") {
       const payload = { 
         nombre: editingItem.nombre, 
-        telefono: editingItem.telefono, 
+        tel_fijo: editingItem.tel_fijo, 
         email: editingItem.email, 
         direccion: editingItem.direccion 
       };
@@ -155,7 +155,7 @@ export default function AdminCRM() {
                 ) : clientes.map(c => (
                   <tr key={c.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 font-bold text-slate-800">{c.nombre}</td>
-                    <td className="px-4 py-3 text-slate-600">{c.telefono}</td>
+                    <td className="px-4 py-3 text-slate-600">{c.tel_fijo}</td>
                     <td className="px-4 py-3 text-slate-600">{c.email}</td>
                     <td className="px-4 py-3 text-slate-600 truncate max-w-[200px]">{c.direccion}</td>
                     <td className="px-4 py-3 text-right">
@@ -222,7 +222,7 @@ export default function AdminCRM() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-500 uppercase">Teléfono</label>
-                      <input type="text" value={editingItem.telefono || ""} onChange={e => setEditingItem({...editingItem, telefono: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none" />
+                      <input type="text" value={editingItem.tel_fijo || ""} onChange={e => setEditingItem({...editingItem, tel_fijo: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-500 uppercase">Email</label>
