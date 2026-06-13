@@ -262,15 +262,16 @@ export async function getBillingStats() {
     await checkAdminAccess();
     const supabase = getAdminClient();
 
-    // 1. Cuentas por cobrar activas (suma de saldo_pendiente)
+    // 1. Cuentas por cobrar activas (suma de saldo_pendiente, SOLO de casos enviados)
     const { data: pendingCases, error: errPending } = await supabase
       .from('casos_master')
-      .select('saldo_pendiente')
+      .select('saldo_pendiente, fecha_entrega')
       .eq('depto_actual', 'Facturación')
       .gt('saldo_pendiente', 0);
 
     if (errPending) throw errPending;
-    const totalCxC = (pendingCases || []).reduce((acc, c) => acc + (Number(c.saldo_pendiente) || 0), 0);
+    const sentPendingCases = (pendingCases || []).filter(c => c.fecha_entrega && c.fecha_entrega.trim() !== "");
+    const totalCxC = sentPendingCases.reduce((acc, c) => acc + (Number(c.saldo_pendiente) || 0), 0);
 
     // 2. Historial de pagos para total recaudado y desglose de métodos
     const { data: allPayments, error: errPayments } = await supabase
