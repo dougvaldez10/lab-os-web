@@ -121,8 +121,8 @@ export async function getBillingSummary() {
 
     if (error) throw error;
 
-    // Solo mostrar en CxC los casos que YA FUERON ENVIADOS (tienen fecha_entrega)
-    const sentCases = (cases || []).filter(c => c.fecha_entrega && c.fecha_entrega.trim() !== "");
+    // Solo mostrar en CxC los casos que YA FUERON ENVIADOS (estado === 'Enviado')
+    const sentCases = (cases || []).filter(c => c.estado === 'Enviado');
 
     // Agrupamos en Javascript por cliente_id para la Vista de Clínicas (Resumen)
     // total_deuda positivo = nos deben a nosotros
@@ -165,7 +165,7 @@ export async function getPendingFacturacionCases() {
     const { data: cases, error } = await supabase
       .from('casos_master')
       .select(`
-        id, codigo, paciente, doctor, total_caso, saldo_pendiente, fecha_entrega, cliente_id, iva_aplicado, depto_actual,
+        id, codigo, paciente, doctor, total_caso, saldo_pendiente, fecha_entrega, cliente_id, iva_aplicado, depto_actual, estado,
         clientes(nombre),
         casos_detalle(unidades, producto, dientes)
       `)
@@ -175,8 +175,8 @@ export async function getPendingFacturacionCases() {
 
     if (error) throw error;
 
-    // Mostrar en Pendientes SOLO los casos que NO han sido enviados (no tienen fecha_entrega)
-    const unsentCases = (cases || []).filter(c => !c.fecha_entrega || c.fecha_entrega.trim() === "");
+    // Mostrar en Pendientes SOLO los casos que NO han sido enviados (estado !== 'Enviado')
+    const unsentCases = (cases || []).filter(c => c.estado !== 'Enviado');
 
     return { success: true, cases: unsentCases };
 
@@ -200,7 +200,7 @@ export async function markCaseAsSent(id_caso) {
 
     const { error: errUpdate } = await supabase
       .from('casos_master')
-      .update({ fecha_entrega: today })
+      .update({ fecha_entrega: today, estado: 'Enviado' })
       .eq('id', id_caso);
 
     if (errUpdate) throw errUpdate;
@@ -262,15 +262,15 @@ export async function getBillingStats() {
     await checkAdminAccess();
     const supabase = getAdminClient();
 
-    // 1. Cuentas por cobrar activas (suma de saldo_pendiente, SOLO de casos enviados)
+    // 1. Cuentas por cobrar activas (suma de saldo_pendiente, SOLO de casos con estado Enviado)
     const { data: pendingCases, error: errPending } = await supabase
       .from('casos_master')
-      .select('saldo_pendiente, fecha_entrega')
+      .select('saldo_pendiente, estado')
       .eq('depto_actual', 'Facturación')
       .gt('saldo_pendiente', 0);
 
     if (errPending) throw errPending;
-    const sentPendingCases = (pendingCases || []).filter(c => c.fecha_entrega && c.fecha_entrega.trim() !== "");
+    const sentPendingCases = (pendingCases || []).filter(c => c.estado === 'Enviado');
     const totalCxC = sentPendingCases.reduce((acc, c) => acc + (Number(c.saldo_pendiente) || 0), 0);
 
     // 2. Historial de pagos para total recaudado y desglose de métodos
