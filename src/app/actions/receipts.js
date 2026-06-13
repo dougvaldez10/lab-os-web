@@ -1,14 +1,23 @@
 "use server";
 
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { updateCaseState } from './cases';
+
+function getAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
 
 export async function generateReceipt(casoId, payload) {
   try {
     if (!casoId || !payload) {
       return { success: false, error: "Datos incompletos para el recibo." };
     }
+
+    const supabase = getAdminClient();
 
     // 1. Insertar el recibo (Borrador) en la tabla 'recibos'
     const { error: insertError } = await supabase
@@ -25,7 +34,7 @@ export async function generateReceipt(casoId, payload) {
 
     if (insertError) {
       console.error("Error insertando recibo:", insertError);
-      return { success: false, error: "Error en la Base de Datos al guardar recibo." };
+      return { success: false, error: `Error DB Recibo: ${insertError.message || insertError.details || JSON.stringify(insertError)}` };
     }
 
     // 2. Avanzar el caso al siguiente departamento (Empaquetado)

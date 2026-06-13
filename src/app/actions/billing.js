@@ -114,7 +114,7 @@ export async function getBillingSummary() {
     // (positivo = deuda, negativo = saldo a favor de la clínica)
     const { data: cases, error } = await supabase
       .from('casos_master')
-      .select('id, codigo, paciente, doctor, total_caso, saldo_pendiente, fecha_entrega, cliente_id, iva_aplicado, clientes(nombre)')
+      .select('id, codigo, paciente, doctor, total_caso, saldo_pendiente, fecha_entrega, cliente_id, iva_aplicado, estado, clientes(nombre)')
       .eq('depto_actual', 'Facturación')
       .neq('saldo_pendiente', 0)
       .order('fecha_entrega', { ascending: true });
