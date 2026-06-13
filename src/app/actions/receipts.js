@@ -19,31 +19,23 @@ export async function generateReceipt(casoId, payload) {
 
     const supabase = getAdminClient();
 
-    // 1. Insertar el recibo (Borrador) en la tabla 'recibos'
-    const { error: insertError } = await supabase
-      .from('recibos')
-      .insert([{
-        caso_id: casoId,
-        subtotal: payload.subtotal,
-        descuento_tipo: payload.discountType,
-        descuento_valor: payload.discountValue || 0,
+    // Update the case directly in 'casos_master' with the calculated totals and IVA setting
+    const { error: updateError } = await supabase
+      .from('casos_master')
+      .update({
         iva_aplicado: payload.applyIva,
-        monto_iva: payload.ivaAmount,
-        total: payload.total
-      }]);
+        total_caso: payload.total,
+        saldo_pendiente: payload.total
+      })
+      .eq('id', casoId);
 
-    if (insertError) {
-      console.error("Error insertando recibo:", insertError);
-      return { success: false, error: `Error DB Recibo: ${insertError.message || insertError.details || JSON.stringify(insertError)}` };
+    if (updateError) {
+      console.error("Error al actualizar totales del caso:", updateError);
+      return { success: false, error: `Error DB Caso: ${updateError.message || JSON.stringify(updateError)}` };
     }
 
-    // 2. Avanzar el caso al siguiente departamento (Empaquetado)
-    // Asumimos que "updateCaseState" maneja la transición de Recibo/Factura -> Empaquetado
-    const advanceResult = await updateCaseState(casoId, 'COMPLETE');
-    
-    if (!advanceResult.success) {
-        return { success: false, error: advanceResult.error };
-    }
+    // Removed case advancement so it stays in "Casos Pendientes"
+    // until explicitly marked as Sent
 
     revalidatePath('/'); // refrescar la UI principal
     return { success: true };

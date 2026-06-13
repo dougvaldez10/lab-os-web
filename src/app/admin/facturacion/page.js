@@ -430,6 +430,123 @@ export default function BillingPanel() {
     return () => clearTimeout(timer);
   }, [discountValue, discountType, applyIva, receiptCase]);
 
+  const printReceipt = (calc) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error("Por favor permite las ventanas emergentes (pop-ups) para imprimir el recibo.");
+      return;
+    }
+
+    const itemsHtml = receiptCase.items && receiptCase.items.length > 0 
+      ? receiptCase.items.map(it => `
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+          <div>
+            <div style="font-weight: bold; font-size: 14px;">
+              <span style="color: #3b82f6;">${it.unidades}x</span> ${it.producto}
+            </div>
+            ${it.dientes ? `<div style="font-size: 12px; color: #64748b; margin-top: 4px;">Piezas: #${Array.isArray(it.dientes) ? it.dientes.join(', ') : it.dientes}</div>` : ''}
+          </div>
+        </div>
+      `).join('')
+      : '<div style="padding: 10px; text-align: center; color: #64748b; font-size: 14px;">Sin materiales detallados.</div>';
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Recibo - Orden #${receiptCase.id}</title>
+          <style>
+            body { font-family: 'Inter', system-ui, sans-serif; color: #0f172a; margin: 0; padding: 40px; }
+            .container { max-width: 800px; margin: 0 auto; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px; margin-bottom: 30px; }
+            .title { font-size: 24px; font-weight: 900; margin: 0; }
+            .subtitle { font-size: 14px; color: #64748b; margin-top: 4px; }
+            .info-box { background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 30px; display: flex; gap: 40px;}
+            .info-item { display: flex; flex-direction: column; gap: 4px;}
+            .info-label { font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: bold; letter-spacing: 0.05em; }
+            .info-value { font-size: 16px; font-weight: 700; }
+            .section-title { font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 15px; }
+            .totals { margin-top: 40px; border-top: 2px solid #f1f5f9; padding-top: 20px; width: 300px; margin-left: auto; }
+            .total-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+            .total-row.final { font-size: 20px; font-weight: 900; color: #0062cc; margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+            @media print {
+              body { padding: 0; }
+              @page { margin: 2cm; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div>
+                <h1 class="title">RECIBO</h1>
+                <p class="subtitle">Laboratorio Dental Lab OS</p>
+              </div>
+              <div style="text-align: right;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: bold;">Orden #${receiptCase.id}</h2>
+                <p class="subtitle">Fecha: ${new Date().toLocaleDateString()}</p>
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-item">
+                <span class="info-label">Paciente</span>
+                <span class="info-value">${receiptCase.patient}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Doctor/Clínica</span>
+                <span class="info-value">${receiptCase.doctor}</span>
+              </div>
+            </div>
+
+            <h3 class="section-title">Desglose de Conceptos</h3>
+            <div>
+              ${itemsHtml}
+            </div>
+
+            <div class="totals">
+              <div class="total-row">
+                <span style="color: #64748b; font-weight: 500;">Subtotal Base</span>
+                <span>$${calc.subtotal.toFixed(2)}</span>
+              </div>
+              ${calc.discountAmount > 0 ? \`
+              <div class="total-row" style="color: #ef4444; font-weight: 600;">
+                <span>Descuento</span>
+                <span>-$\${calc.discountAmount.toFixed(2)}</span>
+              </div>
+              \` : ''}
+              ${calc.ivaAmount > 0 ? \`
+              <div class="total-row" style="color: #64748b; font-weight: 500;">
+                <span>IVA (8%)</span>
+                <span>+\$\${calc.ivaAmount.toFixed(2)}</span>
+              </div>
+              \` : ''}
+              <div class="total-row final">
+                <span>Total a Cobrar</span>
+                <span>$${calc.total.toFixed(2)}</span>
+              </div>
+            </div>
+            
+            <div style="margin-top: 60px; text-align: center; color: #94a3b8; font-size: 12px;">
+              <p>Gracias por su preferencia.</p>
+            </div>
+          </div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+              }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
   const handleGenerateReceipt = async () => {
       setReceiptSaving(true);
       const calc = calculateReceipt();
@@ -455,6 +572,7 @@ export default function BillingPanel() {
          markShadowAuditAsSaved(receiptCase.internal_id).catch(() => {});
          
          toast.success("Recibo generado correctamente.");
+         printReceipt(calc);
          closeReceiptModal();
          fetchData();
       } else {
