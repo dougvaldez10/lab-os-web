@@ -33,6 +33,7 @@ import {
   getBillingHistory, 
   registrarAbono,
   registerGlobalPayment,
+  applyCustomDistribution,
   getPendingFacturacionCases,
   markCaseAsSent
 } from "@/app/actions/billing";
@@ -91,6 +92,10 @@ export default function BillingPanel() {
   const [globalPickerSearch, setGlobalPickerSearch] = useState("");
   const [globalPickerOpen, setGlobalPickerOpen] = useState(false);
   const [submittingGlobal, setSubmittingGlobal] = useState(false);
+
+  // Custom allocations for CxC Level 2
+  const [customAllocations, setCustomAllocations] = useState({}); // { [caseId]: Number }
+  const [submittingCustomDistribution, setSubmittingCustomDistribution] = useState(false);
 
   // Stats for analytics
   const [stats, setStats] = useState({ totalCxC: 0, totalRecaudado: 0, recentPayments: [], methods: [] });
@@ -288,7 +293,7 @@ export default function BillingPanel() {
 
       const res = await registerGlobalPayment(fd);
       if (res.success) {
-        toast.success(`Pago registrado. Se saldaron ${res.casosSaldadosCount} casos automáticamente.`, { 
+        toast.success(`Pago registrado. Se agregaron $${montoVal.toFixed(2)} al saldo a favor de la clínica.`, { 
           id: toastId,
           duration: 5000 
         });
@@ -305,6 +310,81 @@ export default function BillingPanel() {
       console.error(err);
     } finally {
       setSubmittingGlobal(false);
+    }
+  };
+
+  const handleToggleCaseSelection = (caseId, pendingBalance, currentWalletBalance) => {
+    setCustomAllocations(prev => {
+      const copy = { ...prev };
+      if (copy[caseId] !== undefined) {
+        delete copy[caseId];
+      } else {
+        const currentTotalAssigned = Object.values(copy).reduce((acc, val) => acc + val, 0);
+        const currentRemaining = Math.max(0, currentWalletBalance - currentTotalAssigned);
+        const fillAmount = Math.min(pendingBalance, currentRemaining);
+        copy[caseId] = Math.round(fillAmount * 100) / 100;
+      }
+      return copy;
+    });
+  };
+
+  const handleUpdateAllocationAmount = (caseId, amountStr, pendingBalance) => {
+    const amt = parseFloat(amountStr);
+    setCustomAllocations(prev => {
+      const copy = { ...prev };
+      if (isNaN(amt) || amt <= 0) {
+        copy[caseId] = 0;
+      } else {
+        copy[caseId] = Math.min(pendingBalance, amt);
+      }
+      return copy;
+    });
+  };
+
+  const handleApplyCustomDistribution = async () => {
+    if (!selectedClinic) return;
+    
+    const filteredAllocations = {};
+    let totalAssigned = 0;
+    for (const caseId in customAllocations) {
+      const amt = Number(customAllocations[caseId]) || 0;
+      if (amt > 0) {
+        filteredAllocations[caseId] = amt;
+        totalAssigned += amt;
+      }
+    }
+
+    if (Object.keys(filteredAllocations).length === 0) {
+      toast.error("Por favor asigna un abono a al menos un caso.");
+      return;
+    }
+
+    const currentClinicData = allClinics.find(cl => cl.id === selectedClinic.id) || selectedClinic;
+    const walletBalance = Number(currentClinicData?.saldo_favor) || 0;
+
+    if (totalAssigned > (walletBalance + 0.01)) {
+      toast.error(`El total asignado ($${totalAssigned.toFixed(2)}) supera el saldo a favor disponible ($${walletBalance.toFixed(2)}).`);
+      return;
+    }
+
+    setSubmittingCustomDistribution(true);
+    const toastId = toast.loading("Aplicando distribución de pagos...");
+    
+    try {
+      const creator = currentUser ? (currentUser.username || currentUser.email) : adminName || "Admin";
+      const res = await applyCustomDistribution(selectedClinic.id, filteredAllocations, creator);
+      if (res.success) {
+        toast.success("Distribución aplicada correctamente.", { id: toastId });
+        setCustomAllocations({});
+        await fetchData();
+      } else {
+        toast.error(res.error || "Error al aplicar la distribución.", { id: toastId });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error inesperado al aplicar distribución.", { id: toastId });
+    } finally {
+      setSubmittingCustomDistribution(false);
     }
   };
 
@@ -962,95 +1042,176 @@ export default function BillingPanel() {
                       </button>
                     </div>
 
+                    {/* Cartera / Saldo a Favor de la clínica */}
+                    {(() => {
+                      const currentClinicData = allClinics.find(cl => cl.id === selectedClinic.id) || selectedClinic;
+                      const walletBalance = Number(currentClinicData?.saldo_favor) || 0;
+                      const totalAssigned = Object.keys(customAllocations).reduce((acc, caseId) => acc + (Number(customAllocations[caseId]) || 0), 0);
+                      const remainingToDistribute = walletBalance - totalAssigned;
+
+                      return (
+                        <div className="px-6 py-4 bg-amber-50/40 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-amber-50 text-[#D4AF37] rounded-xl border border-amber-100 shadow-sm">
+                              <Wallet size={20} />
+                            </div>
+                            <div>
+                              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cartera / Saldo a Favor Disponible</div>
+                              <div className="text-lg font-black text-slate-800 mt-0.5">
+                                ${walletBalance.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4 w-full md:w-auto">
+                            <div className="text-right">
+                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Por Distribuir</div>
+                              <div className={`text-sm font-bold ${remainingToDistribute < 0 ? 'text-rose-600' : 'text-slate-600'}`}>
+                                ${remainingToDistribute.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                              </div>
+                            </div>
+                            
+                            <button
+                              onClick={handleApplyCustomDistribution}
+                              disabled={submittingCustomDistribution || Object.keys(customAllocations).length === 0 || remainingToDistribute < -0.01}
+                              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+                            >
+                              {submittingCustomDistribution ? (
+                                <RefreshCw size={14} className="animate-spin" />
+                              ) : (
+                                <CheckCircle2 size={14} />
+                              )}
+                              Aplicar Distribución
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Tabla de Casos */}
                     <div className="flex-1 overflow-x-auto">
-                      <table className="w-full text-left text-sm whitespace-nowrap">
-                        <thead className="bg-slate-50/50 border-b border-slate-200 text-slate-500 font-bold sticky top-0">
-                          <tr>
-                            <th className="px-6 py-4">Folio</th>
-                            <th className="px-6 py-4">Paciente</th>
-                            <th className="px-6 py-4">Fecha Entrega</th>
-                            <th className="px-6 py-4">IVA (8%)</th>
-                            <th className="px-6 py-4">Total</th>
-                            <th className="px-6 py-4">Saldo Pendiente</th>
-                            <th className="px-6 py-4 text-right">Acción</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {selectedClinicCases.length === 0 ? (
-                            <tr>
-                              <td colSpan="6" className="px-6 py-8 text-center text-slate-400">
-                                No hay casos con saldo pendiente para esta clínica.
-                              </td>
-                            </tr>
-                          ) : (
-                            selectedClinicCases.map((c) => (
-                              <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
-                                <td className="px-6 py-4 font-bold text-slate-800">
-                                  #{c.codigo}
-                                </td>
-                                <td className="px-6 py-4 font-semibold text-slate-700">
-                                  {c.paciente}
-                                </td>
-                                <td className="px-6 py-4 text-slate-600 text-xs">
-                                  {c.fecha_entrega ? (
-                                    <span className="flex items-center gap-1">
-                                      <Calendar size={12} className="text-slate-400" />
-                                      {c.fecha_entrega}
-                                    </span>
-                                  ) : (
-                                    <span className="text-slate-400">—</span>
-                                  )}
-                                </td>
-                                <td className="px-6 py-4 text-center">
-                                  <input 
-                                    type="checkbox" 
-                                    checked={c.iva_aplicado || false} 
-                                    onChange={(e) => handleToggleIVA(c, e.target.checked)} 
-                                    className="w-4 h-4 text-[#D4AF37] focus:ring-[#D4AF37] rounded cursor-pointer border-slate-300" 
-                                  />
-                                </td>
-                                <td className="px-6 py-4 font-medium text-slate-600">
-                                  ${c.total_caso
-                                    ? (c.iva_aplicado
-                                        ? (Number(c.total_caso) / 1.08).toFixed(2)
-                                        : Number(c.total_caso).toFixed(2))
-                                    : "0.00"}
-                                </td>
-                                <td className="px-6 py-4">
-                                  {Number(c.saldo_pendiente) < 0 ? (
-                                    <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1 text-xs">
-                                      <DollarSign size={12} className="text-emerald-500" />
-                                      {Math.abs(Number(c.saldo_pendiente)).toFixed(2)}
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center gap-1 font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-2.5 py-1 text-xs">
-                                      <DollarSign size={12} className="text-rose-500" />
-                                      {Number(c.saldo_pendiente).toFixed(2)}
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="px-6 py-4 text-right flex justify-end gap-2">
-                                  <button
-                                    title="Editar Caso"
-                                    onClick={() => handleOpenEdit(c)}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-800 rounded-lg transition-all"
-                                  >
-                                    <Edit size={18} />
-                                  </button>
-                                  <button
-                                    title="Registrar Abono"
-                                    onClick={() => handleOpenAbono(c)}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-emerald-600 hover:text-emerald-800 rounded-lg transition-all"
-                                  >
-                                    <PlusCircle size={18} />
-                                  </button>
-                                </td>
+                      {(() => {
+                        const currentClinicData = allClinics.find(cl => cl.id === selectedClinic.id) || selectedClinic;
+                        const walletBalance = Number(currentClinicData?.saldo_favor) || 0;
+
+                        return (
+                          <table className="w-full text-left text-sm whitespace-nowrap">
+                            <thead className="bg-slate-50/50 border-b border-slate-200 text-slate-500 font-bold sticky top-0">
+                              <tr>
+                                <th className="px-6 py-4 text-center w-12">Asignar</th>
+                                <th className="px-6 py-4">Folio</th>
+                                <th className="px-6 py-4">Paciente</th>
+                                <th className="px-6 py-4">Fecha Entrega</th>
+                                <th className="px-6 py-4 text-center">IVA (8%)</th>
+                                <th className="px-6 py-4">Total</th>
+                                <th className="px-6 py-4">Saldo Pendiente</th>
+                                <th className="px-6 py-4">Abonar ($)</th>
+                                <th className="px-6 py-4 text-right">Acción</th>
                               </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {selectedClinicCases.length === 0 ? (
+                                <tr>
+                                  <td colSpan="9" className="px-6 py-8 text-center text-slate-400">
+                                    No hay casos con saldo pendiente para esta clínica.
+                                  </td>
+                                </tr>
+                              ) : (
+                                selectedClinicCases.map((c) => {
+                                  const isAllocated = customAllocations[c.id] !== undefined;
+                                  const allocatedAmount = customAllocations[c.id] !== undefined ? customAllocations[c.id] : "";
+
+                                  return (
+                                    <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
+                                      <td className="px-6 py-4 text-center">
+                                        <input 
+                                          type="checkbox" 
+                                          checked={isAllocated} 
+                                          onChange={() => handleToggleCaseSelection(c.id, Number(c.saldo_pendiente), walletBalance)} 
+                                          className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded cursor-pointer border-slate-300" 
+                                        />
+                                      </td>
+                                      <td className="px-6 py-4 font-bold text-slate-800">
+                                        #{c.codigo}
+                                      </td>
+                                      <td className="px-6 py-4 font-semibold text-slate-700">
+                                        {c.paciente}
+                                      </td>
+                                      <td className="px-6 py-4 text-slate-600 text-xs">
+                                        {c.fecha_entrega ? (
+                                          <span className="flex items-center gap-1">
+                                            <Calendar size={12} className="text-slate-400" />
+                                            {c.fecha_entrega}
+                                          </span>
+                                        ) : (
+                                          <span className="text-slate-400">—</span>
+                                        )}
+                                      </td>
+                                      <td className="px-6 py-4 text-center">
+                                        <input 
+                                          type="checkbox" 
+                                          checked={c.iva_aplicado || false} 
+                                          onChange={(e) => handleToggleIVA(c, e.target.checked)} 
+                                          className="w-4 h-4 text-[#D4AF37] focus:ring-[#D4AF37] rounded cursor-pointer border-slate-300" 
+                                        />
+                                      </td>
+                                      <td className="px-6 py-4 font-medium text-slate-600">
+                                        ${c.total_caso
+                                          ? (c.iva_aplicado
+                                              ? (Number(c.total_caso) / 1.08).toFixed(2)
+                                              : Number(c.total_caso).toFixed(2))
+                                          : "0.00"}
+                                      </td>
+                                      <td className="px-6 py-4">
+                                        {Number(c.saldo_pendiente) < 0 ? (
+                                          <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1 text-xs">
+                                            <DollarSign size={12} className="text-emerald-500" />
+                                            {Math.abs(Number(c.saldo_pendiente)).toFixed(2)}
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1 font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-2.5 py-1 text-xs">
+                                            <DollarSign size={12} className="text-rose-500" />
+                                            {Number(c.saldo_pendiente).toFixed(2)}
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="px-6 py-4">
+                                        <input 
+                                          type="number" 
+                                          step="0.01"
+                                          min="0"
+                                          max={Number(c.saldo_pendiente)}
+                                          placeholder="0.00"
+                                          value={allocatedAmount}
+                                          disabled={!isAllocated}
+                                          onChange={(e) => handleUpdateAllocationAmount(c.id, e.target.value, Number(c.saldo_pendiente))}
+                                          className="w-24 bg-white disabled:bg-slate-50 border border-slate-200 disabled:border-slate-100 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
+                                        />
+                                      </td>
+                                      <td className="px-6 py-4 text-right flex justify-end gap-2">
+                                        <button
+                                          title="Editar Caso"
+                                          onClick={() => handleOpenEdit(c)}
+                                          className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-800 rounded-lg transition-all"
+                                        >
+                                          <Edit size={18} />
+                                        </button>
+                                        <button
+                                          title="Registrar Abono"
+                                          onClick={() => handleOpenAbono(c)}
+                                          className="inline-flex items-center justify-center w-8 h-8 text-emerald-600 hover:text-emerald-800 rounded-lg transition-all"
+                                        >
+                                          <PlusCircle size={18} />
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })
+                              )}
+                            </tbody>
+                          </table>
+                        );
+                      })()}
                     </div>
 
                     {/* Resumen final en pie de tabla */}
@@ -1492,7 +1653,7 @@ export default function BillingPanel() {
               </div>
               <div>
                 <h3 className="font-black text-slate-800">Motor de Cobranza Global</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Distribución FIFO (First In First Out) por clínica</p>
+                <p className="text-xs text-slate-500 mt-0.5">El pago se sumará a la cartera / saldo a favor de la clínica</p>
               </div>
             </div>
 

@@ -114,7 +114,7 @@ export async function getBillingSummary() {
     // (positivo = deuda, negativo = saldo a favor de la clínica)
     const { data: cases, error } = await supabase
       .from('casos_master')
-      .select('id, codigo, paciente, doctor, total_caso, saldo_pendiente, fecha_entrega, cliente_id, iva_aplicado, estado, clientes(nombre)')
+      .select('id, codigo, paciente, doctor, total_caso, saldo_pendiente, fecha_entrega, cliente_id, iva_aplicado, estado, clientes(nombre, saldo_favor)')
       .eq('depto_actual', 'Facturación')
       .neq('saldo_pendiente', 0)
       .order('fecha_entrega', { ascending: true });
@@ -136,7 +136,8 @@ export async function getBillingSummary() {
           id: cliId,
           nombre: cliName,
           total_deuda: 0,
-          casos_count: 0
+          casos_count: 0,
+          saldo_favor: Number(c.clientes?.saldo_favor) || 0
         };
       }
       clinicsMap[cliId].total_deuda += Number(c.saldo_pendiente) || 0;
@@ -382,56 +383,146 @@ export async function registerGlobalPayment(formData) {
       comprobanteUrl = publicUrl;
     }
 
-    // 2. Transacción FIFO
-    // Obtener los casos de la clínica con saldo_pendiente > 0 ordenados por fecha_entrega ASC
-    const { data: cases, error: fetchErr } = await supabase
-      .from('casos_master')
-      .select('id, codigo, paciente, saldo_pendiente, total_caso')
-      .eq('cliente_id', clienteId)
-      .eq('depto_actual', 'Facturación')
-      .gt('saldo_pendiente', 0)
-      .order('fecha_entrega', { ascending: true })
-      .order('id', { ascending: true });
+    // 2. Obtener el cliente para verificar su saldo_favor
+    const { data: cliente, error: getErr } = await supabase
+      .from('clientes')
+      .select('saldo_favor, nombre')
+      .eq('id', clienteId)
+      .single();
 
-    if (fetchErr) {
-      console.error("Fetch cases error:", fetchErr);
-      return { success: false, error: `Error al consultar casos con saldo pendiente: ${fetchErr.message}` };
+    if (getErr) {
+      console.error("Error al obtener cliente:", getErr);
+      return { success: false, error: `Error al obtener datos del cliente: ${getErr.message}` };
     }
 
-    let saldoRestante = montoTotal;
-    const casosSaldados = [];
+    const nuevoSaldoFavor = (Number(cliente.saldo_favor) || 0) + montoTotal;
+
+    // Actualizar cliente con el nuevo saldo a favor
+    const { error: updateErr } = await supabase
+      .from('clientes')
+      .update({ saldo_favor: nuevoSaldoFavor })
+      .eq('id', clienteId);
+
+    if (updateErr) {
+      console.error("Error al actualizar saldo_favor:", updateErr);
+      return { success: false, error: `Error al actualizar saldo a favor del cliente: ${updateErr.message}` };
+    }
+
+    // 3. Auditoría: insertar registro en pagos_historico
+    const notasMsg = `Abono registrado a la cartera / saldo a favor de la clínica. Monto: $${montoTotal.toFixed(2)}`;
+    
+    const { error: insertErr } = await supabase
+      .from('pagos_historico')
+      .insert({
+        cliente_id: clienteId,
+        id_caso: null,
+        monto_abono: montoTotal,
+        metodo_pago: metodo,
+        creado_por: admin,
+        comprobante_url: comprobanteUrl,
+        notes: notasMsg // Note: checking if DB uses 'notas' or 'notes' -> wait, the previous code used 'notas'. Let's keep 'notas'
+      });
+
+    // Wait, let's double check if the field is 'notas' or 'notes'. The target code at line 470 used 'notas: notasMsg'. Let's use 'notas'
+    const { error: insertErrReal } = await supabase
+      .from('pagos_historico')
+      .insert({
+        cliente_id: clienteId,
+        id_caso: null,
+        monto_abono: montoTotal,
+        metodo_pago: metodo,
+        creado_por: admin,
+        comprobante_url: comprobanteUrl,
+        notas: notasMsg
+      });
+
+    if (insertErrReal) {
+      console.error("Error al insertar pagos_historico:", insertErrReal);
+      return { success: false, error: `Error al registrar pago histórico: ${insertErrReal.message}` };
+    }
+
+    revalidatePath('/admin/facturacion');
+    return {
+      success: true,
+      nuevoSaldoFavor
+    };
+
+  } catch (err) {
+    console.error("registerGlobalPayment error:", err);
+    return { success: false, error: err.message || "Error inesperado." };
+  }
+}
+
+export async function applyCustomDistribution(clienteId, allocations, adminName) {
+  try {
+    await checkAdminAccess();
+    const supabase = getAdminClient();
+
+    if (!clienteId || !allocations || Object.keys(allocations).length === 0) {
+      return { success: false, error: "Datos incompletos para aplicar la distribución." };
+    }
+
+    // 1. Obtener el cliente para verificar su saldo_favor
+    const { data: cliente, error: getErr } = await supabase
+      .from('clientes')
+      .select('saldo_favor, nombre')
+      .eq('id', clienteId)
+      .single();
+
+    if (getErr) {
+      return { success: false, error: `Error al obtener cliente: ${getErr.message}` };
+    }
+
+    const saldoFavorActual = Number(cliente.saldo_favor) || 0;
+    
+    // Calcular el total que se va a distribuir
+    let totalADistribuir = 0;
+    for (const caseId in allocations) {
+      totalADistribuir += Number(allocations[caseId]) || 0;
+    }
+
+    // Validar que el total a distribuir no sea mayor que el saldo_favor disponible (con un pequeño margen de redondeo)
+    if (totalADistribuir > (saldoFavorActual + 0.01)) {
+      return { success: false, error: `El total a distribuir ($${totalADistribuir.toFixed(2)}) supera el saldo a favor disponible ($${saldoFavorActual.toFixed(2)}).` };
+    }
+
+    // 2. Procesar cada asignación
     const updates = [];
 
-    for (const caso of (cases || [])) {
-      if (saldoRestante <= 0) break;
+    for (const caseIdStr in allocations) {
+      const caseId = parseInt(caseIdStr);
+      const abono = Number(allocations[caseIdStr]) || 0;
+      if (abono <= 0) continue;
 
-      const deudaCaso = parseFloat(caso.saldo_pendiente) || 0;
-      let nuevoSaldo = 0;
-      let estadoPago = 'Pagado';
+      // Obtener el caso para saber su saldo actual
+      const { data: caso, error: caseErr } = await supabase
+        .from('casos_master')
+        .select('id, codigo, paciente, saldo_pendiente')
+        .eq('id', caseId)
+        .single();
 
-      if (saldoRestante >= deudaCaso) {
-        // Salda el caso por completo
-        nuevoSaldo = 0;
-        estadoPago = 'Pagado';
-        saldoRestante -= deudaCaso;
-        casosSaldados.push(caso.codigo);
-      } else {
-        // Saldo parcial para este caso
-        nuevoSaldo = Math.round((deudaCaso - saldoRestante) * 100) / 100;
-        estadoPago = 'Pendiente';
-        saldoRestante = 0;
+      if (caseErr || !caso) {
+        return { success: false, error: `Error al buscar el caso con ID ${caseId}: ${caseErr?.message || 'No encontrado'}` };
       }
+
+      const saldoPendienteActual = Number(caso.saldo_pendiente) || 0;
+      if (abono > (saldoPendienteActual + 0.01)) {
+        return { success: false, error: `El abono asignado al caso #${caso.codigo} ($${abono.toFixed(2)}) supera su saldo pendiente ($${saldoPendienteActual.toFixed(2)}).` };
+      }
+
+      const nuevoSaldo = Math.max(0, Math.round((saldoPendienteActual - abono) * 100) / 100);
+      const estadoPago = nuevoSaldo === 0 ? 'Pagado' : 'Pendiente';
 
       updates.push({
         id: caso.id,
         codigo: caso.codigo,
-        monto_aplicado: Math.round((deudaCaso - nuevoSaldo) * 100) / 100,
+        monto_aplicado: abono,
         saldo_pendiente: nuevoSaldo,
         estado_pago: estadoPago
       });
     }
 
-    // Actualizar casos en la base de datos
+    // 3. Aplicar las actualizaciones a la base de datos
     for (const update of updates) {
       const { error: updateErr } = await supabase
         .from('casos_master')
@@ -442,49 +533,44 @@ export async function registerGlobalPayment(formData) {
         .eq('id', update.id);
 
       if (updateErr) {
-        console.error(`Error al actualizar caso ${update.id}:`, updateErr);
-        return { success: false, error: `Error al actualizar saldo del caso ${update.codigo}: ${updateErr.message}` };
+        return { success: false, error: `Error al actualizar saldo del caso #${update.codigo}: ${updateErr.message}` };
       }
     }
 
-    // 3. Auditoría: insertar registro único en pagos_historico
-    let notasMsg = "";
-    if (updates.length > 0) {
-      notasMsg = `Pago global distribuido en casos: ${updates.map(u => `${u.codigo} ($${u.monto_aplicado.toFixed(2)})`).join(', ')}`;
-      if (saldoRestante > 0) {
-        notasMsg += ` | Saldo a favor restante: $${saldoRestante.toFixed(2)}`;
-      }
-    } else {
-      notasMsg = `Anticipo / Saldo a favor (Clínica sin casos con deuda). Monto: $${saldoRestante.toFixed(2)}`;
-    }
-    
-    const { error: insertErr } = await supabase
-      .from('pagos_historico')
-      .insert({
-        cliente_id: clienteId,
-        id_caso: null, // indica pago global FIFO
-        monto_abono: montoTotal,
-        metodo_pago: metodo,
-        creado_por: admin,
-        comprobante_url: comprobanteUrl,
-        notas: notasMsg
-      });
+    // 4. Descontar del saldo_favor del cliente
+    const nuevoSaldoFavor = Math.max(0, Math.round((saldoFavorActual - totalADistribuir) * 100) / 100);
+    const { error: updateClientErr } = await supabase
+      .from('clientes')
+      .update({ saldo_favor: nuevoSaldoFavor })
+      .eq('id', clienteId);
 
-    if (insertErr) {
-      console.error("Error al insertar pagos_historico:", insertErr);
-      return { success: false, error: `Error al registrar pago histórico: ${insertErr.message}` };
+    if (updateClientErr) {
+      return { success: false, error: `Error al actualizar saldo a favor del cliente: ${updateClientErr.message}` };
+    }
+
+    // 5. Insertar registros en pagos_historico por cada caso abonado
+    for (const update of updates) {
+      const { error: insertErr } = await supabase
+        .from('pagos_historico')
+        .insert({
+          cliente_id: clienteId,
+          id_caso: update.id,
+          monto_abono: update.monto_aplicado,
+          metodo_pago: 'Saldo a Favor',
+          creado_por: adminName,
+          notas: `Abono de $${update.monto_aplicado.toFixed(2)} aplicado desde la cartera / saldo a favor.`
+        });
+
+      if (insertErr) {
+        console.error("Error al registrar historial de pago:", insertErr);
+      }
     }
 
     revalidatePath('/admin/facturacion');
-    return {
-      success: true,
-      casosSaldadosCount: casosSaldados.length,
-      casosSaldados,
-      totalCasosAfectados: updates.length
-    };
+    return { success: true, nuevoSaldoFavor };
 
   } catch (err) {
-    console.error("registerGlobalPayment error:", err);
-    return { success: false, error: err.message };
+    console.error("applyCustomDistribution error:", err);
+    return { success: false, error: err.message || "Error inesperado." };
   }
 }
