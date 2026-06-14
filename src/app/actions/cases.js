@@ -294,40 +294,33 @@ export async function toggleCaseIVA(caseId, applyIva) {
   try {
     const supabase = getAdminClient();
     
-    // 1. Obtener la suma de casos_detalle para el caso
-    const { data: detalles } = await supabase
-      .from('casos_detalle')
-      .select('subtotal')
-      .eq('caso_id', caseId);
-      
-    let subtotalItems = 0;
-    if (detalles && detalles.length > 0) {
-      subtotalItems = detalles.reduce((acc, d) => acc + (Number(d.subtotal) || 0), 0);
-    }
-    
-    // 2. Obtener el master para leer el descuento y saldo
+    // 1. Obtener el master para leer el total y saldo
     const { data: master } = await supabase
       .from('casos_master')
-      .select('descuento, total_caso, saldo_pendiente')
+      .select('descuento, total_caso, saldo_pendiente, iva_aplicado')
       .eq('id', caseId)
       .single();
       
     if (!master) return { success: false, error: 'Caso no encontrado' };
     
-    const desc = Number(master.descuento) || 0;
-    
-    // 3. Recalcular total nuevo
-    const baseAmount = Math.max(0, subtotalItems - desc);
-    const newTotal = applyIva ? baseAmount * 1.08 : baseAmount;
-    
-    // 4. Ajustar saldo pendiente
+    const isCurrentlyIva = master.iva_aplicado || false;
     const oldTotal = Number(master.total_caso) || 0;
     const oldSaldo = Number(master.saldo_pendiente) || 0;
     
+    let newTotal = oldTotal;
+    if (applyIva && !isCurrentlyIva) {
+      newTotal = oldTotal * 1.08;
+    } else if (!applyIva && isCurrentlyIva) {
+      newTotal = oldTotal / 1.08;
+    }
+    
+    newTotal = Math.round(newTotal * 100) / 100;
+    
     let newSaldo = oldSaldo + (newTotal - oldTotal);
     if (newSaldo < 0) newSaldo = 0;
+    newSaldo = Math.round(newSaldo * 100) / 100;
     
-    // 5. Update en BD
+    // 2. Update en BD
     const { error } = await supabase
       .from('casos_master')
       .update({

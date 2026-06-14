@@ -678,13 +678,11 @@ export default function BillingPanel() {
     cl.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Calcular total pendiente sin IVA para las clínicas filtradas
+  // Calcular total pendiente para las clínicas filtradas
   const filteredClinicIds = new Set(filteredClinics.map(cl => cl.id));
   const filteredCases = cases.filter(c => filteredClinicIds.has(c.cliente_id));
-  const totalGeneralSinIva = filteredCases.reduce((acc, c) => {
-    const pending = Number(c.saldo_pendiente) || 0;
-    const pendingSinIva = (pending > 0 && c.iva_aplicado) ? (pending / 1.08) : pending;
-    return acc + pendingSinIva;
+  const totalGeneral = filteredCases.reduce((acc, c) => {
+    return acc + (Number(c.saldo_pendiente) || 0);
   }, 0);
 
   // Casos de la clínica seleccionada (CxC Nivel 2)
@@ -884,24 +882,19 @@ export default function BillingPanel() {
                           })
                         )}
                       </tbody>
-                      {pendingCases.length > 0 && (
-                        <tfoot className="bg-slate-50 border-t-2 border-slate-200">
-                          <tr>
-                            <td colSpan="4" className="px-6 py-5 text-right font-black text-slate-600 uppercase tracking-wider text-xs">
-                              Total Acumulado (Sin Enviar):
-                            </td>
-                            <td className="px-6 py-5">
-                              <span className="inline-flex items-center gap-1 font-black text-rose-700 bg-rose-100 border border-rose-200 rounded-xl px-3 py-1.5 text-sm shadow-sm">
-                                <DollarSign size={14} className="text-rose-600" />
-                                {totalPendientes.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                              </span>
-                            </td>
-                            <td></td>
-                          </tr>
-                        </tfoot>
-                      )}
                     </table>
                   </div>
+
+                  {pendingCases.length > 0 && (
+                    <div className="bg-slate-50/80 px-6 py-4 border-t border-slate-200 flex justify-between items-center shrink-0">
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider cursor-help" title="Total Acumulado Sin Enviar">
+                        Total:
+                      </span>
+                      <span className="text-lg font-black text-rose-600">
+                        ${totalPendientes.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -1005,11 +998,11 @@ export default function BillingPanel() {
                         
                         {/* Resumen General de Cuentas por Cobrar */}
                         <div className="bg-slate-50/80 px-6 py-4 border-t border-slate-200 flex justify-between items-center shrink-0">
-                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                            Total General Pendiente (Sin IVA):
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider cursor-help" title="Total General Pendiente (Con y Sin IVA)">
+                            Total:
                           </span>
-                          <span className={`text-lg font-black ${totalGeneralSinIva < 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            ${totalGeneralSinIva.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          <span className={`text-lg font-black ${totalGeneral < 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            ${totalGeneral.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
                       </div>

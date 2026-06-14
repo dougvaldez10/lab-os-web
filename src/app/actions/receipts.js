@@ -24,6 +24,7 @@ export async function generateReceipt(casoId, payload) {
       .from('casos_master')
       .update({
         iva_aplicado: payload.applyIva,
+        descuento: payload.discount || 0,
         total_caso: payload.total,
         saldo_pendiente: payload.total
       })
