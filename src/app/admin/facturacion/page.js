@@ -707,14 +707,26 @@ export default function BillingPanel() {
             Administración de cuentas por cobrar, registro de abonos y control de historial de pagos.
           </p>
         </div>
-        <button 
-          onClick={fetchData} 
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 text-sm font-semibold transition-colors shadow-sm disabled:opacity-50"
-        >
-          <RefreshCw size={16} className={loading ? "animate-spin text-amber-500" : ""} />
-          Actualizar Datos
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setIsGlobalPaymentOpen(true);
+              setGlobalClienteId("");
+              setGlobalMonto("");
+              setGlobalComprobante(null);
+            }}
+            className="px-4 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold flex items-center gap-2 shadow-sm hover-lift"
+          >
+            <Plus size={18} /> Registrar Pago
+          </button>
+          <button 
+            onClick={fetchData} 
+            disabled={loading}
+            className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm hover:rotate-180 transition-all duration-500 cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw size={20} className={loading ? "animate-spin text-amber-500" : ""} />
+          </button>
+        </div>
       </div>
 
       {/* Tabs Navigation */}
@@ -902,8 +914,8 @@ export default function BillingPanel() {
                 {/* CxC - Nivel 1: Resumen de Clínicas */}
                 {!selectedClinic ? (
                   <div className="flex-1 flex flex-col">
-                    {/* Buscador y Botón de Pago Global */}
-                    <div className="flex flex-col sm:flex-row gap-4 mb-4 shrink-0">
+                    {/* Buscador */}
+                    <div className="mb-4 shrink-0">
                       <div className="relative flex-1 max-w-md">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <Search size={18} className="text-slate-400" />
@@ -916,18 +928,6 @@ export default function BillingPanel() {
                           className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none shadow-sm transition-all"
                         />
                       </div>
-                      <button
-                        onClick={() => {
-                          setIsGlobalPaymentOpen(true);
-                          setGlobalClienteId("");
-                          setGlobalMonto("");
-                          setGlobalComprobante(null);
-                        }}
-                        className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-400 via-[#D4AF37] to-amber-500 hover:from-[#B8860B] hover:to-[#D4AF37] text-white rounded-xl text-sm font-black shadow-lg hover:shadow-amber-500/20 hover-lift cursor-pointer"
-                      >
-                        <PlusCircle size={18} />
-                        Registrar Pago Global
-                      </button>
                     </div>
 
                     {filteredClinics.length === 0 ? (

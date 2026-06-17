@@ -305,7 +305,7 @@ export default function AdminBoard() {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsNewCaseModalOpen(true)}
-            className="px-4 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold flex items-center gap-2 shadow-md hover-lift"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center gap-2 shadow-md hover-lift"
           >
             <Plus size={18} />
             Nuevo trabajo

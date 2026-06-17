@@ -63,10 +63,9 @@ export default function AnalyticsPanel() {
         <button 
           onClick={fetchData} 
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 text-sm font-semibold transition-colors shadow-sm disabled:opacity-50"
+          className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm hover:rotate-180 transition-all duration-500 cursor-pointer disabled:opacity-50"
         >
-          <RefreshCw size={16} className={loading ? "animate-spin text-purple-500" : ""} />
-          Actualizar Datos
+          <RefreshCw size={20} className={loading ? "animate-spin text-purple-500" : ""} />
         </button>
       </div>
 
