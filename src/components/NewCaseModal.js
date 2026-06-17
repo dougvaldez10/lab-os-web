@@ -273,8 +273,11 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm p-0 sm:p-4 font-sans">
-      <div className="w-full max-w-2xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden border border-slate-100">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-md p-0 sm:p-4 font-sans">
+      <div 
+        className="w-full max-w-2xl bg-white rounded-t-3xl sm:rounded-3xl flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden border border-slate-100"
+        style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
+      >
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-white shrink-0 shadow-sm z-10">

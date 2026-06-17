@@ -250,9 +250,15 @@ export default function EditCaseModal({ caseData, onClose, onUpdated, isReceiptM
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose}></motion.div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={onClose}></motion.div>
         
-        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl relative z-10 flex flex-col max-h-[90vh]">
+        <motion.div 
+          initial={{ scale: 0.95, opacity: 0 }} 
+          animate={{ scale: 1, opacity: 1 }} 
+          exit={{ scale: 0.95, opacity: 0 }} 
+          className="bg-white rounded-2xl w-full max-w-4xl relative z-10 flex flex-col max-h-[90vh]"
+          style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
+        >
           {/* Header */}
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
             <div>

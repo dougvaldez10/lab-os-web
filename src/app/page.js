@@ -1043,8 +1043,11 @@ export default function Home() {
       {/* MODAL DE RECIBO / BORRADOR */}
       {receiptCase && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[#0f172a]/40 backdrop-blur-sm transition-opacity" onClick={closeReceiptModal}></div>
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
+          <div className="absolute inset-0 bg-[#0f172a]/40 backdrop-blur-md transition-opacity" onClick={closeReceiptModal}></div>
+          <div 
+            className="bg-white rounded-2xl w-full max-w-md relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in-95"
+            style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
+          >
              <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white relative z-20">
                 <div>
                    <h2 className="text-xl font-black text-slate-800 tracking-tight">Borrador de Recibo</h2>

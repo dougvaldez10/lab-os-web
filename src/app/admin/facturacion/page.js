@@ -1490,7 +1490,7 @@ export default function BillingPanel() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
           <div 
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
             onClick={() => setAbonoModal(null)}
           />
 
@@ -1499,7 +1499,8 @@ export default function BillingPanel() {
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white rounded-2xl w-full max-w-md shadow-2xl relative z-10 overflow-hidden flex flex-col"
+            className="bg-white rounded-2xl w-full max-w-md relative z-10 overflow-hidden flex flex-col"
+            style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
           >
             {/* Header */}
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
@@ -1627,7 +1628,7 @@ export default function BillingPanel() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             className="bg-white/90 backdrop-blur-md rounded-2xl w-full max-w-md relative z-10 overflow-hidden flex flex-col border border-white/20"
-            style={{ boxShadow: '-12px 16px 40px -5px rgba(0,0,0,0.25)' }}
+            style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
           >
             {/* Header */}
             <div className="px-6 py-4 bg-slate-50/80 border-b border-slate-100 flex items-center gap-3">
@@ -1873,7 +1874,7 @@ export default function BillingPanel() {
             className="fixed inset-0 z-[70] flex items-center justify-center p-4"
           >
             <div
-              className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+              className="absolute inset-0 bg-slate-900/50 backdrop-blur-md"
               onClick={() => setConfirmSendModal(null)}
             />
             <motion.div
@@ -1881,7 +1882,8 @@ export default function BillingPanel() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.92, opacity: 0, y: 20 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="bg-white rounded-2xl w-full max-w-sm shadow-2xl relative z-10 overflow-hidden"
+              className="bg-white rounded-2xl w-full max-w-sm relative z-10 overflow-hidden"
+              style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
             >
               {/* Header verde */}
               <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 py-5 flex items-center gap-3">
@@ -1948,8 +1950,11 @@ export default function BillingPanel() {
       {/* MODAL DE RECIBO / BORRADOR */}
       {receiptCase && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[#0f172a]/40 backdrop-blur-sm transition-opacity" onClick={closeReceiptModal}></div>
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 max-h-[90vh]">
+          <div className="absolute inset-0 bg-[#0f172a]/40 backdrop-blur-md transition-opacity" onClick={closeReceiptModal}></div>
+          <div 
+            className="bg-white rounded-2xl w-full max-w-md relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 max-h-[90vh]"
+            style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
+          >
              <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white relative z-20 shrink-0">
                 <div>
                    <h2 className="text-xl font-black text-slate-800 tracking-tight">Ajustes de Cobro</h2>
