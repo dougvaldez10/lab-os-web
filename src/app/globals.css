@@ -91,3 +91,8 @@ body {
   border-radius: 2rem; /* 32px */
   corner-shape: squircle;
 }
+
+/* Apply squircle curvature continuity globally to all elements using Tailwind rounded classes */
+[class*="rounded-"] {
+  corner-shape: squircle !important;
+}
