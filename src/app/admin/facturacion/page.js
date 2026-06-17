@@ -38,7 +38,7 @@ import {
   markCaseAsSent
 } from "@/app/actions/billing";
 import { getAllClinics } from "@/app/actions/clients";
-import { toggleCaseIVA } from "@/app/actions/cases";
+import { toggleCaseIVA, updateCaseDiscount, getCaseDetailsForEdit } from "@/app/actions/cases";
 import { generateReceipt } from "@/app/actions/receipts";
 import { getAuditAlerts, logShadowAudit, markShadowAuditAsSaved } from "@/app/actions/audit";
 import EditCaseModal from "./EditCaseModal";
@@ -96,6 +96,7 @@ export default function BillingPanel() {
   // Custom allocations for CxC Level 2
   const [customAllocations, setCustomAllocations] = useState({}); // { [caseId]: Number }
   const [submittingCustomDistribution, setSubmittingCustomDistribution] = useState(false);
+  const [isEditReceiptMode, setIsEditReceiptMode] = useState(false);
 
   // Stats for analytics
   const [stats, setStats] = useState({ totalCxC: 0, totalRecaudado: 0, recentPayments: [], methods: [] });
@@ -423,27 +424,40 @@ export default function BillingPanel() {
     }
   };
 
-  const openReceiptModal = (caso) => {
-    // Adapter para formatear como espera el modal
-    const items = caso.casos_detalle?.map(d => ({
-      unidades: d.unidades,
-      producto: d.producto,
-      precio_unitario: 0, // El modal asume calcular o simplemente no muestra precio individual real si no viene en detalle, pero LabOS guarda el total_caso
-      dientes: d.dientes
-    })) || [];
-    
-    setReceiptCase({
-      id: caso.codigo,
-      internal_id: caso.id,
-      patient: caso.paciente,
-      doctor: caso.doctor || caso.clientes?.nombre,
-      items: items,
-      total_caso: caso.total_caso || 0,
-      iva_aplicado: caso.iva_aplicado
-    });
-    setDiscountType("$");
-    setDiscountValue("");
-    setApplyIva(caso.iva_aplicado || false);
+  const openReceiptModal = async (caso) => {
+    const toastId = toast.loading("Cargando detalles del caso...");
+    try {
+      const res = await getCaseDetailsForEdit(caso.id);
+      let items = [];
+      let discountVal = 0;
+      
+      if (res.success) {
+        items = res.detalles?.map(d => ({
+          unidades: d.unidades,
+          producto: d.producto,
+          precio_unitario: Number(d.precio_unit) || 0,
+          dientes: d.dientes
+        })) || [];
+        discountVal = Number(res.master?.descuento) || 0;
+      }
+      
+      setReceiptCase({
+        id: caso.codigo,
+        internal_id: caso.id,
+        patient: caso.paciente,
+        doctor: caso.doctor || caso.clientes?.nombre,
+        items: items,
+        total_caso: caso.total_caso || 0,
+        iva_aplicado: caso.iva_aplicado
+      });
+      setDiscountType("$");
+      setDiscountValue(discountVal > 0 ? String(discountVal) : "");
+      setApplyIva(caso.iva_aplicado || false);
+      toast.dismiss(toastId);
+    } catch (err) {
+      console.error(err);
+      toast.error("Error al cargar detalles.", { id: toastId });
+    }
   };
 
   const closeReceiptModal = () => {
@@ -452,33 +466,20 @@ export default function BillingPanel() {
 
   const calculateReceipt = () => {
     if (!receiptCase) return { subtotal: 0, discountAmount: 0, ivaAmount: 0, total: 0 };
-    let subtotal = Number(receiptCase.total_caso) || 0;
     
-    // Si ya tiene IVA aplicado en la BD, el total_caso de la BD YA incluye IVA o lo trataremos como base.
-    // Depende de la lógica actual, asumiremos que total_caso es el subtotal si no tiene IVA,
-    // o hay que desglosarlo si ya lo tenía. Mejor asumimos total_caso base para el modal
-    if (receiptCase.iva_aplicado && !applyIva) {
-      // Si venía con IVA y se lo quitan
-      subtotal = subtotal / 1.08; 
-    } else if (!receiptCase.iva_aplicado && applyIva) {
-      // no hacer nada al subtotal, el IVA se suma abajo
-    } else if (receiptCase.iva_aplicado && applyIva) {
-      subtotal = subtotal / 1.08; // extraer base para recalcular
-    }
-
-    let discountAmount = 0;
-    const val = parseFloat(discountValue);
-    if (!isNaN(val) && val > 0) {
-      if (discountType === "$") {
-        discountAmount = val;
-      } else {
-        discountAmount = subtotal * (val / 100);
-      }
-    }
+    // Subtotal basado en detalles si existen, si no total_caso
+    const subtotal = receiptCase.items && receiptCase.items.length > 0
+      ? receiptCase.items.reduce((acc, it) => acc + (Number(it.unidades) * Number(it.precio_unitario)), 0)
+      : Number(receiptCase.total_caso);
     
-    let afterDiscount = Math.max(0, subtotal - discountAmount);
-    let ivaAmount = applyIva ? (afterDiscount * 0.08) : 0;
-    let total = afterDiscount + ivaAmount;
+    const disc = parseFloat(discountValue) || 0;
+    const discountAmount = discountType === "%" 
+      ? subtotal * (disc / 100) 
+      : disc;
+      
+    const subtotalConDescuento = Math.max(0, subtotal - discountAmount);
+    const ivaAmount = receiptCase.iva_aplicado ? (subtotalConDescuento * 0.08) : 0;
+    const total = subtotalConDescuento + ivaAmount;
     
     return { subtotal, discountAmount, ivaAmount, total };
   };
@@ -510,15 +511,18 @@ export default function BillingPanel() {
     return () => clearTimeout(timer);
   }, [discountValue, discountType, applyIva, receiptCase]);
 
-  const printReceipt = (calc) => {
+  const printReceipt = (calc, customCaseObj = null) => {
+    const activeCase = customCaseObj || receiptCase;
+    if (!activeCase) return;
+
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       toast.error("Por favor permite las ventanas emergentes (pop-ups) para imprimir el recibo.");
       return;
     }
 
-    const itemsHtml = receiptCase.items && receiptCase.items.length > 0 
-      ? receiptCase.items.map(it => `
+    const itemsHtml = activeCase.items && activeCase.items.length > 0 
+      ? activeCase.items.map(it => `
         <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
           <div>
             <div style="font-weight: bold; font-size: 14px;">
@@ -552,7 +556,7 @@ export default function BillingPanel() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Recibo - Orden #${receiptCase.id}</title>
+          <title>Recibo - Orden #${activeCase.id}</title>
           <style>
             body { font-family: 'Inter', system-ui, sans-serif; color: #0f172a; margin: 0; padding: 40px; }
             .container { max-width: 800px; margin: 0 auto; }
@@ -581,7 +585,7 @@ export default function BillingPanel() {
                 <p class="subtitle">Laboratorio Dental Lab OS</p>
               </div>
               <div style="text-align: right;">
-                <h2 style="margin: 0; font-size: 20px; font-weight: bold;">Orden #${receiptCase.id}</h2>
+                <h2 style="margin: 0; font-size: 20px; font-weight: bold;">Orden #${activeCase.id}</h2>
                 <p class="subtitle">Fecha: ${new Date().toLocaleDateString()}</p>
               </div>
             </div>
@@ -589,11 +593,11 @@ export default function BillingPanel() {
             <div class="info-box">
               <div class="info-item">
                 <span class="info-label">Paciente</span>
-                <span class="info-value">${receiptCase.patient}</span>
+                <span class="info-value">${activeCase.patient}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Doctor/Clínica</span>
-                <span class="info-value">${receiptCase.doctor}</span>
+                <span class="info-value">${activeCase.doctor}</span>
               </div>
             </div>
 
@@ -635,36 +639,25 @@ export default function BillingPanel() {
     printWindow.document.close();
   };
 
-  const handleGenerateReceipt = async () => {
+  const handleSaveAdjustments = async () => {
+      if (!receiptCase) return;
       setReceiptSaving(true);
-      const calc = calculateReceipt();
-      const payload = {
-         discountType,
-         discountValue: parseFloat(discountValue) || 0,
-         applyIva,
-         subtotal: calc.subtotal,
-         ivaAmount: calc.ivaAmount,
-         total: calc.total
-      };
-      
-      const res = await generateReceipt(receiptCase.internal_id, payload);
-      setReceiptSaving(false);
-      
-      if (res.success) {
-         logShadowAudit({
-           caso_id: receiptCase.internal_id,
-           codigo_caso: receiptCase.id,
-           snapshot_data: { discountType, discountValue, applyIva },
-           guardado_oficial: true
-         }).catch(() => {});
-         markShadowAuditAsSaved(receiptCase.internal_id).catch(() => {});
-         
-         toast.success("Recibo generado correctamente.");
-         printReceipt(calc);
-         closeReceiptModal();
-         fetchData();
-      } else {
-         toast.error(res.error || "Error al generar recibo.");
+      const toastId = toast.loading("Guardando ajustes de cobro...");
+      try {
+         const calc = calculateReceipt();
+         const res = await updateCaseDiscount(receiptCase.internal_id, discountValue || 0, discountType);
+         if (res.success) {
+            toast.success("Ajustes de cobro guardados correctamente.", { id: toastId });
+            closeReceiptModal();
+            fetchData();
+         } else {
+            toast.error(res.error || "Error al guardar los ajustes.", { id: toastId });
+         }
+      } catch (err) {
+         console.error(err);
+         toast.error("Error inesperado al guardar ajustes.", { id: toastId });
+      } finally {
+         setReceiptSaving(false);
       }
   };
 
@@ -850,13 +843,16 @@ export default function BillingPanel() {
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                   <div className="flex items-center justify-center gap-2">
-                                    <button
-                                      onClick={() => openReceiptModal(c)}
-                                      disabled={isSent}
-                                      className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-30"
-                                    >
-                                      <FileText size={14} /> Recibo
-                                    </button>
+                                     <button
+                                       onClick={() => {
+                                         setIsEditReceiptMode(true);
+                                         handleOpenEdit(c);
+                                       }}
+                                       disabled={isSent}
+                                       className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-30 cursor-pointer"
+                                     >
+                                       <FileText size={14} /> Recibo
+                                     </button>
                                     <button
                                       onClick={() => handleMarkAsSent(c)}
                                       disabled={isSending || isSent}
@@ -1050,20 +1046,13 @@ export default function BillingPanel() {
                             </div>
                             <div>
                               <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cartera / Saldo a Favor Disponible</div>
-                              <div className="text-lg font-black text-slate-800 mt-0.5">
-                                ${walletBalance.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                              <div className={`text-lg font-black mt-0.5 ${remainingToDistribute < 0 ? 'text-rose-600' : 'text-slate-800'}`}>
+                                ${remainingToDistribute.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                               </div>
                             </div>
                           </div>
 
                           <div className="flex items-center gap-4 w-full md:w-auto">
-                            <div className="text-right">
-                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Por Distribuir</div>
-                              <div className={`text-sm font-bold ${remainingToDistribute < 0 ? 'text-rose-600' : 'text-slate-600'}`}>
-                                ${remainingToDistribute.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                              </div>
-                            </div>
-                            
                             <button
                               onClick={handleApplyCustomDistribution}
                               disabled={submittingCustomDistribution || Object.keys(customAllocations).length === 0 || remainingToDistribute < -0.01}
@@ -1183,9 +1172,9 @@ export default function BillingPanel() {
                                       </td>
                                       <td className="px-6 py-4 text-right flex justify-end gap-2">
                                         <button
-                                          title="Editar Caso"
-                                          onClick={() => handleOpenEdit(c)}
-                                          className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-800 rounded-lg transition-all"
+                                          title="Ajustes de Cobro"
+                                          onClick={() => openReceiptModal(c)}
+                                          className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-800 rounded-lg transition-all cursor-pointer"
                                         >
                                           <Edit size={18} />
                                         </button>
@@ -1519,7 +1508,7 @@ export default function BillingPanel() {
               </div>
               <div>
                 <h3 className="font-black text-slate-800">Registrar Abono</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Caso #{abonoModal.codigo} â€” Paciente: {abonoModal.paciente}</p>
+                <p className="text-xs text-slate-500 mt-0.5">Caso #{abonoModal.codigo} — Paciente: {abonoModal.paciente}</p>
               </div>
             </div>
 
@@ -1854,7 +1843,12 @@ export default function BillingPanel() {
       {editModalCase && (
         <EditCaseModal
           caseData={editModalCase}
-          onClose={() => setEditModalCase(null)}
+          isReceiptMode={isEditReceiptMode}
+          onPrintReceipt={printReceipt}
+          onClose={() => {
+            setEditModalCase(null);
+            setIsEditReceiptMode(false);
+          }}
           onUpdated={() => {
             fetchData();
           }}
@@ -1951,7 +1945,7 @@ export default function BillingPanel() {
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 max-h-[90vh]">
              <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white relative z-20 shrink-0">
                 <div>
-                   <h2 className="text-xl font-black text-slate-800 tracking-tight">Borrador de Recibo</h2>
+                   <h2 className="text-xl font-black text-slate-800 tracking-tight">Ajustes de Cobro</h2>
                    <p className="text-sm font-medium text-slate-500 mt-0.5">Orden #{receiptCase.id}</p>
                 </div>
                 <button onClick={closeReceiptModal} className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-full transition-colors">
@@ -2056,18 +2050,18 @@ export default function BillingPanel() {
                          )}
                          <div className="w-full h-px bg-slate-100 my-1"></div>
                          <div className="flex justify-between items-center mt-2">
-                            <span className="font-bold text-slate-800">Total a Cobrar</span>
+                            <span className="font-bold text-slate-800">Total Final</span>
                             <span className="text-2xl font-black text-[#0062cc] tracking-tight">${calc.total.toFixed(2)}</span>
                          </div>
                       </div>
                       
                       <button
                          disabled={receiptSaving}
-                         onClick={handleGenerateReceipt}
-                         className="w-full bg-[#1e293b] hover:bg-[#0f172a] disabled:opacity-70 text-white rounded-xl py-3.5 font-bold text-[15px] flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"
+                         onClick={handleSaveAdjustments}
+                         className="w-full bg-[#1e293b] hover:bg-[#0f172a] disabled:opacity-70 text-white rounded-xl py-3.5 font-bold text-[15px] flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98] cursor-pointer"
                       >
-                         {receiptSaving ? <RefreshCw size={18} className="animate-spin" /> : <Calculator size={18} />}
-                         {receiptSaving ? "Procesando..." : "Generar Recibo (PDF)"}
+                         {receiptSaving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
+                         {receiptSaving ? "Procesando..." : "Guardar Ajustes"}
                       </button>
                    </div>
                 );

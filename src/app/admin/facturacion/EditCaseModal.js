@@ -9,7 +9,7 @@ import { deleteAdminCase } from '@/app/actions/admin-cases';
 import { getProducts } from '@/app/actions/products';
 import { logShadowAudit, markShadowAuditAsSaved } from '@/app/actions/audit';
 
-export default function EditCaseModal({ caseData, onClose, onUpdated }) {
+export default function EditCaseModal({ caseData, onClose, onUpdated, isReceiptMode = false, onPrintReceipt = null }) {
   const [detalles, setDetalles] = useState([]);
   const [descuento, setDescuento] = useState(0);
   const [descuentoTipo, setDescuentoTipo] = useState('fijo'); // 'fijo' or 'porcentaje'
@@ -200,7 +200,7 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
     return () => clearTimeout(timer);
   }, [detalles, descuento, descuentoTipo, ivaAplicado]);
 
-  const handleSave = async () => {
+  const handleSave = async (shouldPrint = false) => {
     setSaving(true);
     const toastId = toast.loading("Guardando cambios...");
     try {
@@ -215,6 +215,27 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
         markShadowAuditAsSaved(caseData.id).catch(() => {});
         
         toast.success("Caso actualizado correctamente", { id: toastId });
+
+        if (shouldPrint && onPrintReceipt) {
+          const caseObjForPrint = {
+            id: caseData.codigo,
+            patient: caseData.paciente,
+            doctor: caseData.doctor || caseData.clientes?.nombre,
+            items: detalles.map(d => ({
+              unidades: d.unidades,
+              producto: d.producto,
+              dientes: d.dientes
+            }))
+          };
+          const calcForPrint = {
+            subtotal: subtotal,
+            discountAmount: montoDescuentoReal,
+            ivaAmount: ivaAplicado ? subtotalConDescuento * 0.08 : 0,
+            total: total
+          };
+          onPrintReceipt(calcForPrint, caseObjForPrint);
+        }
+
         onUpdated();
         onClose();
       } else {
@@ -236,7 +257,7 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
             <div>
               <h2 className="text-xl font-bold text-slate-800 flex items-baseline gap-2">
-                Editar Caso #{caseData?.codigo}
+                {isReceiptMode ? `Borrador de Recibo #${caseData?.codigo}` : `Editar Caso #${caseData?.codigo}`}
                 {caseData?.estado && (
                   <span className={`text-[11px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md ${caseData.estado === 'Terminado' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                     {caseData.estado}
@@ -499,13 +520,23 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
                 Cancelar
               </button>
               <button
-                onClick={handleSave}
+                onClick={() => handleSave(false)}
                 disabled={saving || loading}
-                className="px-5 py-2 text-sm font-bold text-white bg-[#D4AF37] hover:bg-[#B8860B] rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+                className="px-5 py-2 text-sm font-bold text-white bg-[#D4AF37] hover:bg-[#B8860B] rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 <Save size={16} />
                 {saving ? "Guardando..." : "Guardar Cambios"}
               </button>
+              {isReceiptMode && (
+                <button
+                  onClick={() => handleSave(true)}
+                  disabled={saving || loading}
+                  className="px-5 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <Save size={16} />
+                  {saving ? "Guardando..." : "Guardar e Imprimir Recibo"}
+                </button>
+              )}
             </div>
           </div>
         </motion.div>

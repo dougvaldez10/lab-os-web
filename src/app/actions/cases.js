@@ -541,3 +541,67 @@ export async function returnCaseToBoard(caseId) {
     return { success: false, error: err.message };
   }
 }
+
+export async function updateCaseDiscount(caseId, discountAmount, discountType) {
+  try {
+    const supabase = getAdminClient();
+
+    // 1. Obtener la suma de casos_detalle para el caso
+    const { data: detalles } = await supabase
+      .from('casos_detalle')
+      .select('subtotal')
+      .eq('caso_id', caseId);
+
+    let subtotalItems = 0;
+    if (detalles && detalles.length > 0) {
+      subtotalItems = detalles.reduce((acc, d) => acc + (Number(d.subtotal) || 0), 0);
+    }
+
+    // 2. Obtener el master actual
+    const { data: master } = await supabase
+      .from('casos_master')
+      .select('total_caso, saldo_pendiente, iva_aplicado')
+      .eq('id', caseId)
+      .single();
+
+    if (!master) return { success: false, error: 'Caso no encontrado' };
+
+    const discountVal = Number(discountAmount) || 0;
+    const descReal = discountType === 'porcentaje'
+      ? subtotalItems * (discountVal / 100)
+      : discountVal;
+
+    const baseAmount = Math.max(0, subtotalItems - descReal);
+    const newTotal = master.iva_aplicado ? baseAmount * 1.08 : baseAmount;
+
+    // Calcular el nuevo saldo pendiente
+    const oldTotal = Number(master.total_caso) || 0;
+    const oldSaldo = Number(master.saldo_pendiente) || 0;
+
+    let newSaldo = oldSaldo + (newTotal - oldTotal);
+    if (newSaldo < 0) newSaldo = 0;
+
+    // Redondear a 2 decimales
+    const roundedTotal = Math.round(newTotal * 100) / 100;
+    const roundedSaldo = Math.round(newSaldo * 100) / 100;
+
+    // Update in DB
+    const { error } = await supabase
+      .from('casos_master')
+      .update({
+        descuento: descReal,
+        total_caso: roundedTotal,
+        saldo_pendiente: roundedSaldo
+      })
+      .eq('id', caseId);
+
+    if (error) throw error;
+
+    revalidatePath('/admin/facturacion');
+    return { success: true, newTotal: roundedTotal, newSaldo: roundedSaldo };
+
+  } catch (error) {
+    console.error("updateCaseDiscount error:", error);
+    return { success: false, error: error.message };
+  }
+}
