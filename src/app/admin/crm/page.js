@@ -203,7 +203,7 @@ export default function AdminCRM() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setEditingItem(null)}></div>
           <div 
-            className="bg-white rounded-2xl w-full max-w-lg relative z-10 flex flex-col"
+            className="bg-white rounded-squircle-2xl w-full max-w-lg relative z-10 flex flex-col"
             style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
           >
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">

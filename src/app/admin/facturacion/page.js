@@ -1500,7 +1500,7 @@ export default function BillingPanel() {
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white rounded-2xl w-full max-w-md relative z-10 overflow-hidden flex flex-col"
+            className="bg-white rounded-squircle-2xl w-full max-w-md relative z-10 overflow-hidden flex flex-col"
             style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
           >
             {/* Header */}
@@ -1628,7 +1628,7 @@ export default function BillingPanel() {
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white/90 backdrop-blur-md rounded-2xl w-full max-w-md relative z-10 overflow-hidden flex flex-col border border-white/20"
+            className="bg-white/90 backdrop-blur-md rounded-squircle-2xl w-full max-w-md relative z-10 overflow-hidden flex flex-col border border-white/20"
             style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
           >
             {/* Header */}
@@ -1883,7 +1883,7 @@ export default function BillingPanel() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.92, opacity: 0, y: 20 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="bg-white rounded-2xl w-full max-w-sm relative z-10 overflow-hidden"
+              className="bg-white rounded-squircle-2xl w-full max-w-sm relative z-10 overflow-hidden"
               style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
             >
               {/* Header verde */}
@@ -1953,7 +1953,7 @@ export default function BillingPanel() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-[#0f172a]/40 backdrop-blur-md transition-opacity" onClick={closeReceiptModal}></div>
           <div 
-            className="bg-white rounded-2xl w-full max-w-md relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 max-h-[90vh]"
+            className="bg-white rounded-squircle-2xl w-full max-w-md relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 max-h-[90vh]"
             style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
           >
              <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white relative z-20 shrink-0">
