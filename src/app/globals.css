@@ -96,3 +96,21 @@ body {
 [class*="rounded-"] {
   corner-shape: squircle !important;
 }
+
+/* Premium micro-interactions and springy hover/active states */
+@utility hover-lift {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background-color 0.2s ease;
+  &:hover {
+    transform: translateY(-2px);
+  }
+  &:active {
+    transform: translateY(0) scale(0.97);
+  }
+}
+
+@utility hover-shift {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+  &:hover {
+    transform: translateX(4px);
+  }
+}

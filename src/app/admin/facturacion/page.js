@@ -923,7 +923,7 @@ export default function BillingPanel() {
                           setGlobalMonto("");
                           setGlobalComprobante(null);
                         }}
-                        className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-400 via-[#D4AF37] to-amber-500 hover:from-[#B8860B] hover:to-[#D4AF37] text-white rounded-xl text-sm font-black transition-all shadow-lg hover:shadow-amber-500/20 active:scale-95 duration-200 cursor-pointer"
+                        className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-400 via-[#D4AF37] to-amber-500 hover:from-[#B8860B] hover:to-[#D4AF37] text-white rounded-xl text-sm font-black shadow-lg hover:shadow-amber-500/20 hover-lift cursor-pointer"
                       >
                         <PlusCircle size={18} />
                         Registrar Pago Global
@@ -957,7 +957,7 @@ export default function BillingPanel() {
                                     <div className="w-8 h-8 rounded-full bg-amber-100 text-[#D4AF37] flex items-center justify-center font-black group-hover:bg-[#D4AF37] group-hover:text-white transition-colors">
                                       {cli.nombre.charAt(0).toUpperCase()}
                                     </div>
-                                    <span className="group-hover:text-[#D4AF37] transition-colors">{cli.nombre}</span>
+                                    <span className="group-hover:text-[#D4AF37] group-hover:translate-x-1.5 transition-all duration-200 inline-block">{cli.nombre}</span>
                                   </td>
                                   <td className="px-6 py-4 text-slate-600 font-medium">
                                     <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-xs font-semibold">
@@ -976,7 +976,7 @@ export default function BillingPanel() {
                                     )}
                                   </td>
                                   <td className="px-6 py-4 text-right">
-                                    <button className="p-1.5 bg-slate-50 group-hover:bg-amber-50 text-slate-400 group-hover:text-[#D4AF37] rounded-lg transition-colors inline-flex">
+                                    <button className="p-1.5 bg-slate-50 group-hover:bg-amber-50 text-slate-400 group-hover:text-[#D4AF37] rounded-lg transition-all group-hover:translate-x-0.5 inline-flex">
                                       <ChevronRight size={18} />
                                     </button>
                                   </td>

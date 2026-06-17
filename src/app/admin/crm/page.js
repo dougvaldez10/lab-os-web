@@ -111,10 +111,10 @@ export default function AdminCRM() {
           <p className="text-sm text-slate-500 mt-1">Gestión de Clínicas y Doctores.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => openModal()} className="px-4 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold transition-colors flex items-center gap-2 shadow-sm">
+          <button onClick={() => openModal()} className="px-4 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold flex items-center gap-2 shadow-sm hover-lift">
             <Plus size={18} /> Agregar {activeTab === "clinicas" ? "Clínica" : "Doctor"}
           </button>
-          <button onClick={fetchData} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
+          <button onClick={fetchData} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm hover:rotate-180 transition-all duration-500 cursor-pointer">
             <RefreshCw size={20} className={loading ? "animate-spin text-blue-500" : ""} />
           </button>
         </div>
