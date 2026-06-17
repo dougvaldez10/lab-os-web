@@ -1626,7 +1626,8 @@ export default function BillingPanel() {
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white/90 backdrop-blur-md rounded-2xl w-full max-w-md shadow-2xl relative z-10 overflow-hidden flex flex-col border border-white/20"
+            className="bg-white/90 backdrop-blur-md rounded-2xl w-full max-w-md relative z-10 overflow-hidden flex flex-col border border-white/20"
+            style={{ boxShadow: '-12px 16px 40px -5px rgba(0,0,0,0.25)' }}
           >
             {/* Header */}
             <div className="px-6 py-4 bg-slate-50/80 border-b border-slate-100 flex items-center gap-3">
@@ -1698,12 +1699,12 @@ export default function BillingPanel() {
                                 className="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-xs font-bold text-slate-700 flex justify-between items-center transition-colors cursor-pointer"
                               >
                                 <span>{cl.nombre}</span>
-                                <div className="flex flex-col items-end gap-0.5">
+                                <div className="flex items-center gap-3">
+                                  {saldoFavor > 0 && (
+                                    <span className="text-emerald-500 font-black">+{saldoFavor.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</span>
+                                  )}
                                   {clinicWithDebt && (
                                     <span className="text-rose-500 font-black">${clinicWithDebt.total_deuda.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
-                                  )}
-                                  {saldoFavor > 0 && (
-                                    <span className="text-emerald-500 font-black text-[10px]">+{saldoFavor.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</span>
                                   )}
                                 </div>
                               </button>
