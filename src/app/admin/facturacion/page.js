@@ -717,8 +717,8 @@ export default function BillingPanel() {
         </button>
       </div>
 
-      {/* Tabs Navigation (Framer Motion) */}
-      <div className="flex border-b border-slate-200 mb-6 shrink-0 relative p-1 bg-slate-200/50 rounded-xl max-w-md">
+      {/* Tabs Navigation */}
+      <div className="flex items-center gap-2 mb-6 shrink-0 bg-white p-1.5 rounded-xl border border-slate-200 w-fit max-w-full overflow-x-auto">
         {[
           { id: "pendientes", label: "Casos Pendientes", icon: FileText },
           { id: "cxc", label: "Cuentas por Cobrar", icon: Wallet },
@@ -733,19 +733,12 @@ export default function BillingPanel() {
                 setActiveTab(tab.id);
                 setSelectedClinic(null); // Reset Level 2 CxC on tab change
               }}
-              className={`flex-1 relative flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs md:text-sm font-bold transition-colors duration-200 ${
-                isActive ? "text-slate-900 z-10" : "text-slate-500 hover:text-slate-800"
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${
+                isActive ? "bg-slate-100 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              {isActive && (
-                <motion.span
-                  layoutId="activeTabPill"
-                  className="absolute inset-0 bg-white rounded-lg shadow-sm"
-                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                />
-              )}
-              <Icon size={16} className={isActive ? "text-[#D4AF37]" : ""} />
-              <span className="relative z-10">{tab.label}</span>
+              <Icon size={18} className={isActive ? "text-slate-900" : "text-slate-400"} />
+              <span>{tab.label}</span>
             </button>
           );
         })}
