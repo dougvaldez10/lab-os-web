@@ -717,9 +717,9 @@ export default function BillingPanel() {
               setGlobalComprobante(null);
             }}
             title="Registrar Pago"
-            className="px-4 py-2 bg-white border border-[#D4AF37] rounded-xl hover:bg-[#D4AF37] text-[#D4AF37] hover:text-white font-bold shadow-sm transition-all duration-300 cursor-pointer flex items-center justify-center gap-2"
+            className="px-4 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold shadow-md hover-lift transition-all duration-300 flex items-center justify-center gap-2"
           >
-            <Plus size={20} /> Registrar Pago
+            <Plus size={18} /> Registrar Pago
           </button>
           <button 
             onClick={fetchData} 
