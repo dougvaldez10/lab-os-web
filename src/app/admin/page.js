@@ -392,8 +392,8 @@ export default function AdminBoard() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setEditingCase(null)}></div>
           <div 
-            className="bg-white rounded-squircle-2xl w-full max-w-2xl relative z-10 flex flex-col max-h-[90vh]"
-            style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
+            className="bg-white rounded-[24px] w-full max-w-2xl relative z-10 flex flex-col max-h-[90vh]"
+            style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 -10px 40px -15px rgba(0, 0, 0, 0.1)' }}
           >
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
               <h2 className="text-xl font-bold text-slate-800">

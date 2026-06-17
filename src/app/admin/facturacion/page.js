@@ -7,6 +7,7 @@ import {
   ChevronRight, 
   Search, 
   RefreshCw, 
+  Plus,
   ArrowLeft, 
   DollarSign, 
   User, 
@@ -715,14 +716,16 @@ export default function BillingPanel() {
               setGlobalMonto("");
               setGlobalComprobante(null);
             }}
-            className="px-4 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold flex items-center gap-2 shadow-sm hover-lift"
+            title="Registrar Pago"
+            className="p-2 bg-white border border-[#D4AF37] rounded-xl hover:bg-[#D4AF37] text-[#D4AF37] hover:text-white shadow-sm transition-all duration-300 cursor-pointer flex items-center justify-center"
           >
-            <Plus size={18} /> Registrar Pago
+            <Plus size={20} />
           </button>
           <button 
             onClick={fetchData} 
             disabled={loading}
-            className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm hover:rotate-180 transition-all duration-500 cursor-pointer disabled:opacity-50"
+            title="Actualizar Datos"
+            className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm hover:rotate-180 transition-all duration-500 cursor-pointer disabled:opacity-50 flex items-center justify-center"
           >
             <RefreshCw size={20} className={loading ? "animate-spin text-amber-500" : ""} />
           </button>
@@ -1483,18 +1486,13 @@ export default function BillingPanel() {
       {abonoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
-            onClick={() => setAbonoModal(null)}
-          />
-
-          {/* Modal Container */}
+          <div className="absolute inset-0 bg-[#0f172a]/40 backdrop-blur-md transition-opacity" onClick={() => setAbonoModal(null)}></div>
           <motion.div 
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white rounded-squircle-2xl w-full max-w-md relative z-10 overflow-hidden flex flex-col"
-            style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
+            className="bg-white rounded-[24px] w-full max-w-md relative z-10 overflow-hidden flex flex-col"
+            style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 -10px 40px -15px rgba(0, 0, 0, 0.1)' }}
           >
             {/* Header */}
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
@@ -1609,20 +1607,14 @@ export default function BillingPanel() {
 
       {/* REGISTRAR PAGO GLOBAL MODAL */}
       {isGlobalPaymentOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            onClick={() => setIsGlobalPaymentOpen(false)}
-          />
-
-          {/* Modal Container (Glassmorphism design) */}
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#0f172a]/40 backdrop-blur-md transition-opacity" onClick={() => setIsGlobalPaymentOpen(false)}></div>
           <motion.div 
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white/90 backdrop-blur-md rounded-squircle-2xl w-full max-w-md relative z-10 overflow-hidden flex flex-col border border-white/20"
-            style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
+            className="bg-white/90 backdrop-blur-md rounded-[24px] w-full max-w-md relative z-10 overflow-hidden flex flex-col border border-white/20"
+            style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 -10px 40px -15px rgba(0, 0, 0, 0.1)' }}
           >
             {/* Header */}
             <div className="px-6 py-4 bg-slate-50/80 border-b border-slate-100 flex items-center gap-3">
@@ -1876,8 +1868,8 @@ export default function BillingPanel() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.92, opacity: 0, y: 20 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="bg-white rounded-squircle-2xl w-full max-w-sm relative z-10 overflow-hidden"
-              style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
+              className="bg-white rounded-[24px] w-full max-w-sm relative z-10 overflow-hidden"
+              style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 -10px 40px -15px rgba(0, 0, 0, 0.1)' }}
             >
               {/* Header verde */}
               <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 py-5 flex items-center gap-3">
@@ -1946,8 +1938,8 @@ export default function BillingPanel() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-[#0f172a]/40 backdrop-blur-md transition-opacity" onClick={closeReceiptModal}></div>
           <div 
-            className="bg-white rounded-squircle-2xl w-full max-w-md relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 max-h-[90vh]"
-            style={{ boxShadow: '-24px 32px 72px -16px rgba(15, 23, 42, 0.35), -8px 12px 24px -10px rgba(15, 23, 42, 0.2)' }}
+            className="bg-white rounded-[24px] w-full max-w-md relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 max-h-[90vh]"
+            style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 -10px 40px -15px rgba(0, 0, 0, 0.1)' }}
           >
              <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white relative z-20 shrink-0">
                 <div>
@@ -1960,21 +1952,21 @@ export default function BillingPanel() {
              </div>
              
              <div className="p-6 bg-[#f8fafc] flex-1 overflow-y-auto">
-                <div className="mb-6 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                <div className="mb-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
                    <div className="text-sm">
                       <span className="text-slate-400 block mb-1">Paciente</span>
-                      <span className="font-bold text-slate-800">{receiptCase.patient}</span>
+                      <span className="font-bold text-slate-800">{receiptCase.paciente || receiptCase.patient}</span>
                    </div>
                    <div className="w-full h-px bg-slate-50 my-3"></div>
                    <div className="text-sm">
                       <span className="text-slate-400 block mb-1">Doctor/Clínica</span>
-                      <span className="font-semibold text-slate-700">{receiptCase.doctor}</span>
+                      <span className="font-semibold text-slate-700">{receiptCase.doctor || receiptCase.clientes?.nombre}</span>
                    </div>
                 </div>
 
                 <div className="mb-6">
                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 px-1">Desglose de Conceptos</h3>
-                   <div className="bg-white border border-slate-100 rounded-xl overflow-hidden shadow-sm">
+                   <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
                       {receiptCase.items && receiptCase.items.length > 0 ? receiptCase.items.map((it, idx) => (
                          <div key={idx} className="px-4 py-3 flex justify-between items-center border-b border-slate-50 last:border-0">
                             <div>
