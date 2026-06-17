@@ -77,7 +77,7 @@ Igual que la digital, pero al entrar desde Recepción, debe pasar primero por `Y
 
 1.  **Borrado en Cascada (Cascade Delete):** Debido a que la base de datos de Supabase protege la integridad referencial, para borrar un `casos_master` en el panel de `/admin`, el servidor ejecuta una limpieza manual agresiva previa en `casos_detalle`, `cuenta_corriente_clinica` y `casos_tiempos_historicos`.
     *   **Nota técnica:** En `casos_tiempos_historicos`, la columna de relación foránea se llama **`id_caso`** (tipo entero, enlaza al `id` interno del caso).
-2.  **Despliegues en Vercel:** Al hacer cambios al código, un simple `git push origin main` detona la compilación en Vercel. Si los cambios no se reflejan, verificar siempre en la consola web de Vercel que no haya "Deployments Queued" trabados.
+2.  **Despliegues en Vercel (¡REGLA DE ORO PARA LA IA!):** El usuario **NUNCA** prueba en `localhost`. **TODO el testeo lo hace en la URL de producción en vivo (`os.legiondentallab.com`)**. Por lo tanto, si tú (la IA) haces un cambio en el código para arreglar un bug o añadir una función, **DEBES HACER `git add .`, `git commit` y `git push` INMEDIATAMENTE**. Si no subes el código a GitHub, Vercel no lo compilará y el usuario nunca verá los cambios (y pensará que no arreglaste nada). ¡Asegúrate siempre de pushear tus cambios!
 3.  **UI/UX Premium:** La estética es clave en Lab OS. Se exige el uso de paletas de colores armoniosas (ej. detalles en dorado `#D4AF37`), esquinas redondeadas modernas (`rounded-xl`, `rounded-2xl`), *glassmorphism* y micro-animaciones (con Framer Motion o utilidades de Tailwind) para mantener una calidad Premium.
 
 ---
