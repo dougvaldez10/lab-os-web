@@ -1684,6 +1684,7 @@ export default function BillingPanel() {
                         ) : (
                           filteredPickerClinics.map(cl => {
                             const clinicWithDebt = clinics.find(c => c.id === cl.id);
+                            const saldoFavor = Number(cl.saldo_favor) || 0;
                             return (
                               <button
                                 key={cl.id}
@@ -1697,9 +1698,14 @@ export default function BillingPanel() {
                                 className="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-xs font-bold text-slate-700 flex justify-between items-center transition-colors cursor-pointer"
                               >
                                 <span>{cl.nombre}</span>
-                                {clinicWithDebt && (
-                                  <span className="text-rose-500 font-black">${clinicWithDebt.total_deuda.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
-                                )}
+                                <div className="flex flex-col items-end gap-0.5">
+                                  {clinicWithDebt && (
+                                    <span className="text-rose-500 font-black">${clinicWithDebt.total_deuda.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                                  )}
+                                  {saldoFavor > 0 && (
+                                    <span className="text-emerald-500 font-black text-[10px]">+{saldoFavor.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</span>
+                                  )}
+                                </div>
                               </button>
                             );
                           })
