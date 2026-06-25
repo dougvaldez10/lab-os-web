@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { ClipboardList, Users, Wallet, BarChart3, ChevronLeft, ChevronRight, LogOut, UserCog, ShieldAlert } from "lucide-react";
 import { logoutUser, getCurrentUser } from "@/lib/auth";
 import { getAuditAlerts } from "@/app/actions/audit";
@@ -40,6 +41,85 @@ export default function Sidebar() {
     const nextState = !collapsed;
     setCollapsed(nextState);
     localStorage.setItem("labos-sidebar-collapsed", String(nextState));
+  };
+
+  const [hoveredMenu, setHoveredMenu] = useState(null);
+  const [hoverTimeout, setHoverTimeout] = useState(null);
+
+  const handleMouseEnter = (href) => {
+    if (hoverTimeout) clearTimeout(hoverTimeout);
+    setHoveredMenu(href);
+  };
+
+  const handleMouseLeave = () => {
+    const timeout = setTimeout(() => {
+      setHoveredMenu(null);
+    }, 200);
+    setHoverTimeout(timeout);
+  };
+
+  const subMenus = {
+    "/admin/facturacion": [
+      { label: "Casos Pendientes", href: "/admin/facturacion?tab=pendientes" },
+      { label: "Cuentas por Cobrar", href: "/admin/facturacion?tab=cxc" },
+      { label: "Historial de Pagos", href: "/admin/facturacion?tab=history" }
+    ],
+    "/admin/crm": [
+      { label: "Clínicas", href: "/admin/crm?tab=clinicas" },
+      { label: "Doctores", href: "/admin/crm?tab=doctores" }
+    ]
+  };
+
+  const popoverVariants = {
+    hidden: {
+      opacity: 0,
+      scaleX: 0.1,
+      scaleY: 0.4,
+      x: -30,
+      originX: 0,
+      originY: 0.5,
+    },
+    visible: {
+      opacity: 1,
+      scaleX: 1,
+      scaleY: 1,
+      x: 0,
+      transition: {
+        type: "spring",
+        stiffness: 350,
+        damping: 25,
+        staggerChildren: 0.06,
+        delayChildren: 0.02
+      }
+    },
+    exit: {
+      opacity: 0,
+      scale: 0.85,
+      x: -10,
+      transition: {
+        duration: 0.12,
+        ease: "easeOut"
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { 
+      opacity: 0, 
+      scale: 0.5, 
+      x: -15,
+      originX: 0
+    },
+    visible: { 
+      opacity: 1, 
+      scale: 1, 
+      x: 0,
+      transition: { 
+        type: "spring", 
+        stiffness: 350, 
+        damping: 20 
+      }
+    }
   };
 
   const menuItems = [
@@ -92,7 +172,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav 
-        className="flex-1 py-1 px-1 md:py-4 md:px-3 flex flex-row md:flex-col gap-1 md:gap-2 overflow-x-auto overflow-y-hidden md:overflow-y-auto"
+        className="flex-1 py-1 px-1 md:py-4 md:px-3 flex flex-row md:flex-col gap-1 md:gap-2 overflow-x-auto overflow-y-hidden md:overflow-visible"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         <style dangerouslySetInnerHTML={{__html: `nav::-webkit-scrollbar { display: none; }`}} />
@@ -100,36 +180,76 @@ export default function Sidebar() {
           const Icon = item.icon;
           // Determine if the item is active
           const isActive = pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href));
+          const hasSubmenu = subMenus[item.href] !== undefined;
+          const isHovered = hoveredMenu === item.href;
 
           return (
-            <Link
+            <div
               key={item.href}
-              href={item.href}
-              title={isCollapsed ? item.label : undefined}
-              className={`relative flex items-center gap-3 px-3 py-2.5 md:px-4 md:py-3 rounded-xl transition-all duration-250 ${
-                isActive
-                  ? "bg-slate-800 text-white font-semibold md:border-l-2 md:border-b-0 border-b-2 border-[#D4AF37] shadow-inner"
-                  : "hover:bg-slate-800/60 hover:text-white text-slate-400"
-              } justify-center md:justify-start ${isCollapsed ? "md:justify-center md:px-0" : ""}`}
+              className="relative"
+              onMouseEnter={() => hasSubmenu && handleMouseEnter(item.href)}
+              onMouseLeave={() => hasSubmenu && handleMouseLeave()}
             >
-              <Icon size={20} className={`${item.iconColor} shrink-0 transition-transform duration-200 hover:scale-110`} />
-              
-              <span className={`font-medium text-sm whitespace-nowrap flex-1 hidden md:block ${isCollapsed ? 'md:hidden' : ''}`}>
-                {item.label}
-              </span>
-              
-              {/* Badge for Desktop Expanded */}
-              {item.badge > 0 && (
-                <span className={`bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full hidden md:block ${isCollapsed ? 'md:hidden' : ''}`}>
-                  {item.badge}
+              <Link
+                href={item.href}
+                title={isCollapsed ? item.label : undefined}
+                className={`relative flex items-center gap-3 px-3 py-2.5 md:px-4 md:py-3 rounded-xl transition-all duration-250 ${
+                  isActive
+                    ? "bg-slate-800 text-white font-semibold md:border-l-2 md:border-b-0 border-b-2 border-[#D4AF37] shadow-inner"
+                    : "hover:bg-slate-800/60 hover:text-white text-slate-400"
+                } justify-center md:justify-start ${isCollapsed ? "md:justify-center md:px-0" : ""}`}
+              >
+                <Icon size={20} className={`${item.iconColor} shrink-0 transition-transform duration-200 hover:scale-110`} />
+                
+                <span className={`font-medium text-sm whitespace-nowrap flex-1 hidden md:block ${isCollapsed ? 'md:hidden' : ''}`}>
+                  {item.label}
                 </span>
+                
+                {/* Badge for Desktop Expanded */}
+                {item.badge > 0 && (
+                  <span className={`bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full hidden md:block ${isCollapsed ? 'md:hidden' : ''}`}>
+                    {item.badge}
+                  </span>
+                )}
+                
+                {/* Badge for Mobile and Desktop Collapsed */}
+                {item.badge > 0 && (
+                  <div className={`absolute bottom-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse block md:hidden ${isCollapsed ? 'md:block' : ''}`}></div>
+                )}
+              </Link>
+
+              {/* Popover Bubble Menu (Desktop Only) */}
+              {hasSubmenu && (
+                <AnimatePresence>
+                  {isHovered && (
+                    <motion.div
+                      variants={popoverVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                      className="hidden md:flex absolute left-[calc(100%+12px)] top-1/2 -translate-y-1/2 z-[100] flex-col gap-2 p-3 bg-slate-950/80 border border-slate-700/50 backdrop-blur-xl rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.6)] min-w-[180px]"
+                    >
+                      {subMenus[item.href].map((subItem) => (
+                        <Link
+                          key={subItem.href}
+                          href={subItem.href}
+                          onClick={() => setHoveredMenu(null)}
+                          className="block"
+                        >
+                          <motion.div
+                            variants={itemVariants}
+                            whileHover={{ scale: 1.03, backgroundColor: "rgba(212, 175, 55, 0.2)", borderColor: "rgba(212, 175, 55, 0.5)", color: "#ffffff" }}
+                            className="px-5 py-2.5 bg-slate-800/80 text-slate-300 rounded-full text-xs font-bold text-center border border-slate-700/40 shadow-sm transition-all whitespace-nowrap cursor-pointer"
+                          >
+                            {subItem.label}
+                          </motion.div>
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               )}
-              
-              {/* Badge for Mobile and Desktop Collapsed */}
-              {item.badge > 0 && (
-                <div className={`absolute bottom-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse block md:hidden ${isCollapsed ? 'md:block' : ''}`}></div>
-              )}
-            </Link>
+            </div>
           );
         })}
       </nav>

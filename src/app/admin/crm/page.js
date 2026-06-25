@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Edit, Trash2, Plus, RefreshCw, X, Save, Building2, UserCircle } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { 
@@ -9,6 +10,7 @@ import {
 } from "@/app/actions/admin-crm";
 
 export default function AdminCRM() {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("clinicas");
   
   const [clientes, setClientes] = useState([]);
@@ -32,6 +34,13 @@ export default function AdminCRM() {
     
     setLoading(false);
   };
+
+  const tabParam = searchParams.get("tab");
+  useEffect(() => {
+    if (tabParam && ["clinicas", "doctores"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   useEffect(() => {
     fetchData();

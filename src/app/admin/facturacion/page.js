@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { 
   Wallet, 
   History, 
@@ -47,6 +48,7 @@ import EditCaseModal from "./EditCaseModal";
 import NewCaseModal from "@/components/NewCaseModal";
 
 export default function BillingPanel() {
+  const searchParams = useSearchParams();
   // Navigation tabs
   const [activeTab, setActiveTab] = useState("pendientes"); // cxc, history, analytics
   const [loading, setLoading] = useState(true);
@@ -105,6 +107,14 @@ export default function BillingPanel() {
 
   // Stats for analytics
   const [stats, setStats] = useState({ totalCxC: 0, totalRecaudado: 0, recentPayments: [], methods: [] });
+
+  // Sync activeTab with URL 'tab' search parameter
+  const tabParam = searchParams.get("tab");
+  useEffect(() => {
+    if (tabParam && ["pendientes", "cxc", "history"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   // Fetch current user and main data
   useEffect(() => {
