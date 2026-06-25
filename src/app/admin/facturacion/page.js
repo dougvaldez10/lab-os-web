@@ -39,15 +39,16 @@ import {
   getPendingFacturacionCases,
   markCaseAsSent
 } from "@/app/actions/billing";
-import { getAllClinics } from "@/app/actions/clients";
+import { getAllClinics, getClients } from "@/app/actions/clients";
 import { toggleCaseIVA, updateCaseDiscount, getCaseDetailsForEdit } from "@/app/actions/cases";
 import { generateReceipt } from "@/app/actions/receipts";
 import { getAuditAlerts, logShadowAudit, markShadowAuditAsSaved } from "@/app/actions/audit";
 import EditCaseModal from "./EditCaseModal";
+import NewCaseModal from "@/components/NewCaseModal";
 
 export default function BillingPanel() {
   // Navigation tabs
-  const [activeTab, setActiveTab] = useState("cxc"); // cxc, history, analytics
+  const [activeTab, setActiveTab] = useState("pendientes"); // cxc, history, analytics
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [adminName, setAdminName] = useState("");
@@ -55,6 +56,7 @@ export default function BillingPanel() {
   // States for CxC
   const [clinics, setClinics] = useState([]);
   const [allClinics, setAllClinics] = useState([]);
+  const [doctores, setDoctores] = useState([]);
   const [cases, setCases] = useState([]);
   const [selectedClinic, setSelectedClinic] = useState(null); // Level 2 selection
   const [searchTerm, setSearchTerm] = useState("");
@@ -74,6 +76,7 @@ export default function BillingPanel() {
   const [abonoModal, setAbonoModal] = useState(null);
   const [globalAbonoModal, setGlobalAbonoModal] = useState(false);
   const [editModalCase, setEditModalCase] = useState(null);
+  const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
   const [receiptCase, setReceiptCase] = useState(null);
   const [receiptSaving, setReceiptSaving] = useState(false);
   const [discountType, setDiscountType] = useState("$");
@@ -142,8 +145,12 @@ export default function BillingPanel() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const allRes = await getAllClinics();
+      const [allRes, docsRes] = await Promise.all([
+        getAllClinics(),
+        getClients()
+      ]);
       if (allRes) setAllClinics(allRes);
+      if (docsRes) setDoctores(docsRes);
 
       if (activeTab === "pendientes") {
         const res = await getPendingFacturacionCases();
@@ -683,6 +690,42 @@ export default function BillingPanel() {
   // Casos de la clínica seleccionada (CxC Nivel 2)
   const selectedClinicCases = cases.filter(c => c.cliente_id === selectedClinic?.id);
 
+  // Ordenar casos de la clínica seleccionada por fecha_entrega (más antigua primero)
+  const sortedSelectedClinicCases = [...selectedClinicCases].sort((a, b) => {
+    if (!a.fecha_entrega) return 1;
+    if (!b.fecha_entrega) return -1;
+    return a.fecha_entrega.localeCompare(b.fecha_entrega);
+  });
+
+  const isAnyCaseAllocated = selectedClinicCases.some(c => customAllocations[c.id] !== undefined);
+
+  const handleToggleSelectAll = (walletBalance) => {
+    if (isAnyCaseAllocated) {
+      setCustomAllocations(prev => {
+        const copy = { ...prev };
+        selectedClinicCases.forEach(c => {
+          delete copy[c.id];
+        });
+        return copy;
+      });
+    } else {
+      let remaining = walletBalance;
+      const newAllocations = {};
+      sortedSelectedClinicCases.forEach(c => {
+        const pending = Number(c.saldo_pendiente) || 0;
+        if (pending > 0 && remaining > 0) {
+          const fill = Math.min(pending, remaining);
+          newAllocations[c.id] = Math.round(fill * 100) / 100;
+          remaining = Math.round((remaining - fill) * 100) / 100;
+        }
+      });
+      setCustomAllocations(prev => ({
+        ...prev,
+        ...newAllocations
+      }));
+    }
+  };
+
   // Filtrado de Historial
   const filteredHistory = historyCases.filter(c => 
     c.codigo.toLowerCase().includes(historySearchTerm.toLowerCase()) ||
@@ -709,18 +752,29 @@ export default function BillingPanel() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => {
-              setIsGlobalPaymentOpen(true);
-              setGlobalClienteId("");
-              setGlobalMonto("");
-              setGlobalComprobante(null);
-            }}
-            title="Registrar Pago"
-            className="px-4 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold shadow-md hover-lift transition-all duration-300 flex items-center justify-center gap-2"
-          >
-            <Plus size={18} /> Registrar Pago
-          </button>
+          {activeTab === "cxc" && (
+            <button
+              onClick={() => {
+                setIsGlobalPaymentOpen(true);
+                setGlobalClienteId("");
+                setGlobalMonto("");
+                setGlobalComprobante(null);
+              }}
+              title="Registrar Pago"
+              className="px-4 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold shadow-md hover-lift transition-all duration-300 flex items-center justify-center gap-2"
+            >
+              <Plus size={18} /> Registrar Pago
+            </button>
+          )}
+          {activeTab === "pendientes" && (
+            <button
+              onClick={() => setIsNewCaseModalOpen(true)}
+              title="Nuevo Trabajo"
+              className="px-4 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold shadow-md hover-lift transition-all duration-300 flex items-center justify-center gap-2"
+            >
+              <Plus size={18} /> Nuevo Trabajo
+            </button>
+          )}
           <button 
             onClick={fetchData} 
             disabled={loading}
@@ -1036,20 +1090,33 @@ export default function BillingPanel() {
                       const remainingToDistribute = walletBalance - totalAssigned;
 
                       return (
-                        <div className="px-6 py-4 bg-amber-50/40 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-amber-50 text-[#D4AF37] rounded-xl border border-amber-100 shadow-sm">
-                              <Wallet size={20} />
+                        <div className="py-4 pr-6 pl-0 bg-amber-50/40 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+                          <div className="flex items-center flex-1 w-full">
+                            {/* Casilla superior de asignar/seleccionar todos alineada con la columna "Asignar" */}
+                            <div className="w-[85px] flex justify-center shrink-0">
+                              <input 
+                                type="checkbox" 
+                                checked={isAnyCaseAllocated} 
+                                onChange={() => handleToggleSelectAll(walletBalance)} 
+                                className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded cursor-pointer border-slate-300"
+                                title="Seleccionar/Deseleccionar todos los casos y distribuir saldo disponible" 
+                              />
                             </div>
-                            <div>
-                              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cartera / Saldo a Favor Disponible</div>
-                              <div className={`text-lg font-black mt-0.5 ${remainingToDistribute < 0 ? 'text-rose-600' : 'text-slate-800'}`}>
-                                ${remainingToDistribute.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                            {/* Contenedor de Cartera / Saldo alineado con la columna "Folio" */}
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-amber-50 text-[#D4AF37] rounded-xl border border-amber-100 shadow-sm">
+                                <Wallet size={20} />
+                              </div>
+                              <div>
+                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cartera / Saldo a Favor Disponible</div>
+                                <div className={`text-lg font-black mt-0.5 ${remainingToDistribute < 0 ? 'text-rose-600' : 'text-slate-800'}`}>
+                                  ${remainingToDistribute.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                </div>
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-4 w-full md:w-auto">
+                          <div className="flex items-center gap-4 w-full md:w-auto pl-6 md:pl-0">
                             <button
                               onClick={handleApplyCustomDistribution}
                               disabled={submittingCustomDistribution || Object.keys(customAllocations).length === 0 || remainingToDistribute < -0.01}
@@ -1077,7 +1144,7 @@ export default function BillingPanel() {
                           <table className="w-full text-left text-sm whitespace-nowrap">
                             <thead className="bg-slate-50/50 border-b border-slate-200 text-slate-500 font-bold sticky top-0">
                               <tr>
-                                <th className="px-6 py-4 text-center w-12">Asignar</th>
+                                <th className="py-4 text-center w-[85px]">Asignar</th>
                                 <th className="px-6 py-4">Folio</th>
                                 <th className="px-6 py-4">Paciente</th>
                                 <th className="px-6 py-4">Fecha Entrega</th>
@@ -1089,20 +1156,20 @@ export default function BillingPanel() {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                              {selectedClinicCases.length === 0 ? (
+                              {sortedSelectedClinicCases.length === 0 ? (
                                 <tr>
                                   <td colSpan="9" className="px-6 py-8 text-center text-slate-400">
                                     No hay casos con saldo pendiente para esta clínica.
                                   </td>
                                 </tr>
                               ) : (
-                                selectedClinicCases.map((c) => {
+                                sortedSelectedClinicCases.map((c) => {
                                   const isAllocated = customAllocations[c.id] !== undefined;
                                   const allocatedAmount = customAllocations[c.id] !== undefined ? customAllocations[c.id] : "";
 
                                   return (
                                     <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
-                                      <td className="px-6 py-4 text-center">
+                                      <td className="py-4 text-center w-[85px]">
                                         <input 
                                           type="checkbox" 
                                           checked={isAllocated} 
@@ -2067,6 +2134,13 @@ export default function BillingPanel() {
           </div>
         </div>
       )}
+      <NewCaseModal 
+        isOpen={isNewCaseModalOpen} 
+        onClose={() => setIsNewCaseModalOpen(false)} 
+        clients={doctores} 
+        onActionComplete={fetchData} 
+        initialDepto="Facturación"
+      />
     </div>
   );
 }

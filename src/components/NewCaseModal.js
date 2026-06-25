@@ -79,7 +79,7 @@ const ClientSelect = ({ clients, selected, onChange }) => {
   );
 };
 
-export default function NewCaseModal({ isOpen, onClose, clients, onActionComplete }) {
+export default function NewCaseModal({ isOpen, onClose, clients, onActionComplete, initialDepto }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [selectedTeeth, setSelectedTeeth] = useState([]);
@@ -250,6 +250,9 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
     setIsSubmitting(true);
     const formData = new FormData(e.target);
     formData.append('items', JSON.stringify(finalItems));
+    if (initialDepto) {
+      formData.append('depto_actual', initialDepto);
+    }
 
     const loadingToast = toast.loading(`Registrando caso complejo...`);
     

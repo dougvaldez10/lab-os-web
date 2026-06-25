@@ -64,15 +64,20 @@ export async function createNewCase(formData) {
       return { success: false, error: "Faltan campos (Cliente, Paciente, Tipo, No. Orden)." };
     }
 
-    // Auto-enrutamiento inicial
-    let depto_actual = 'Recepción';
-    if (tipo === 'Análogo') {
-      depto_actual = 'Yesos';
-    } else if (tipo === 'Digital') {
-      depto_actual = 'Digital_Diseno';
+    // Auto-enrutamiento inicial o override
+    let depto_actual = formData.get('depto_actual');
+    let estado = 'Pendiente';
+    if (depto_actual === 'Facturación') {
+      estado = 'Finalizado';
+    } else if (!depto_actual) {
+      depto_actual = 'Recepción';
+      if (tipo === 'Análogo') {
+        depto_actual = 'Yesos';
+      } else if (tipo === 'Digital') {
+        depto_actual = 'Digital_Diseno';
+      }
     }
 
-    const estado     = 'Pendiente';
     const usuario_id = user ? user.id : null;
 
     const fecha_ingreso = new Date().toISOString().split('T')[0];
