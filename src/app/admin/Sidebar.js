@@ -88,8 +88,8 @@ export default function Sidebar() {
         type: "spring",
         stiffness: 350,
         damping: 25,
-        staggerChildren: 0.06,
-        delayChildren: 0.02
+        staggerChildren: 0.02,
+        delayChildren: 0.01
       }
     },
     exit: {
@@ -106,8 +106,8 @@ export default function Sidebar() {
   const itemVariants = {
     hidden: { 
       opacity: 0, 
-      scale: 0.5, 
-      x: -15,
+      scale: 0.92, 
+      x: -8,
       originX: 0
     },
     visible: { 
@@ -117,7 +117,7 @@ export default function Sidebar() {
       transition: { 
         type: "spring", 
         stiffness: 350, 
-        damping: 20 
+        damping: 25 
       }
     }
   };
@@ -227,7 +227,7 @@ export default function Sidebar() {
                       initial="hidden"
                       animate="visible"
                       exit="exit"
-                      className="hidden md:flex absolute left-[calc(100%+12px)] top-1/2 -translate-y-1/2 z-[100] flex-col gap-2 p-3 bg-slate-950/80 border border-slate-700/50 backdrop-blur-xl rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.6)] min-w-[180px]"
+                      className="hidden md:flex absolute left-[calc(100%+12px)] top-1/2 -translate-y-1/2 z-[100] flex-col gap-2 p-3 bg-slate-900/55 border border-slate-700/30 backdrop-blur-md rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] min-w-[180px]"
                     >
                       {subMenus[item.href].map((subItem) => (
                         <Link
@@ -239,7 +239,7 @@ export default function Sidebar() {
                           <motion.div
                             variants={itemVariants}
                             whileHover={{ scale: 1.03, backgroundColor: "rgba(212, 175, 55, 0.2)", borderColor: "rgba(212, 175, 55, 0.5)", color: "#ffffff" }}
-                            className="px-5 py-2.5 bg-slate-800/80 text-slate-300 rounded-full text-xs font-bold text-center border border-slate-700/40 shadow-sm transition-all whitespace-nowrap cursor-pointer"
+                            className="px-5 py-2.5 bg-slate-800/65 text-slate-300 rounded-full text-xs font-bold text-center border border-slate-700/30 shadow-sm whitespace-nowrap cursor-pointer"
                           >
                             {subItem.label}
                           </motion.div>
