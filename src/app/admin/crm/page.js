@@ -179,17 +179,17 @@ export default function AdminCRM() {
       {/* LAYER 2: EL VIDRIO OPACO (ZONA FUERA DEL RECTANGULO) */}
       <div className="absolute inset-0 z-10 pointer-events-none flex flex-col">
         {/* Top glass (cubre la cabecera) */}
-        <div style={{ height: `${topHeight}px` }} className="bg-slate-50/60 backdrop-blur-md w-full" />
+        <div style={{ height: `${topHeight}px` }} className="bg-slate-50/30 backdrop-blur-sm w-full transition-all duration-300" />
         
         {/* Middle section (cubre los lados izquierdo y derecho) */}
         <div className="flex-1 flex">
-          <div className="w-4 md:w-8 bg-slate-50/60 backdrop-blur-md h-full" />
+          <div className="w-4 md:w-8 bg-slate-50/30 backdrop-blur-sm h-full transition-all duration-300" />
           <div className="flex-1 bg-transparent h-full" /> {/* EL HUECO (CUTOUT) */}
-          <div className="w-4 md:w-8 bg-slate-50/60 backdrop-blur-md h-full" />
+          <div className="w-4 md:w-8 bg-slate-50/30 backdrop-blur-sm h-full transition-all duration-300" />
         </div>
         
         {/* Bottom glass */}
-        <div className="h-4 md:h-8 bg-slate-50/60 backdrop-blur-md w-full" />
+        <div className="h-4 md:h-8 bg-slate-50/30 backdrop-blur-sm w-full transition-all duration-300" />
       </div>
 
       {/* LAYER 3: LOS PAPELES SOLIDOS (TÍTULOS, BOTONES Y CABECERAS DE TABLA) */}
