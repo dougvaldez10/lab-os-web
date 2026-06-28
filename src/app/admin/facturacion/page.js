@@ -950,8 +950,8 @@ export default function BillingPanel() {
                 transition={{ duration: 0.2 }}
                 className="h-full flex flex-col"
               >
-                <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                  <div className="overflow-x-auto flex-1">
+                <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm md:overflow-visible overflow-hidden flex flex-col">
+                  <div className="md:overflow-visible overflow-x-auto flex-1">
                     <table className="w-full text-left text-sm whitespace-nowrap">
                       <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-10">
                         <tr>
@@ -1128,8 +1128,8 @@ export default function BillingPanel() {
                         </p>
                       </div>
                     ) : (
-                      <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                        <div className="overflow-x-auto flex-1">
+                      <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm md:overflow-visible overflow-hidden flex flex-col">
+                        <div className="md:overflow-visible overflow-x-auto flex-1">
                           <table className="w-full text-left text-sm whitespace-nowrap">
                             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0">
                               <tr>
@@ -1463,8 +1463,8 @@ export default function BillingPanel() {
                   />
                 </div>
 
-                <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                  <div className="overflow-x-auto flex-1">
+                <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm md:overflow-visible overflow-hidden flex flex-col">
+                  <div className="md:overflow-visible overflow-x-auto flex-1">
                     <table className="w-full text-left text-sm whitespace-nowrap">
                       <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0">
                         <tr>
@@ -1745,7 +1745,7 @@ export default function BillingPanel() {
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white rounded-[24px] w-full max-w-md relative z-10 overflow-hidden flex flex-col"
+            className="bg-white rounded-[24px] w-full max-w-md relative z-10 md:overflow-visible overflow-hidden flex flex-col"
             style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 -10px 40px -15px rgba(0, 0, 0, 0.1)' }}
           >
             {/* Header */}
@@ -1867,7 +1867,7 @@ export default function BillingPanel() {
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white/90 backdrop-blur-md rounded-[24px] w-full max-w-md relative z-10 overflow-hidden flex flex-col border border-white/20"
+            className="bg-white/90 backdrop-blur-md rounded-[24px] w-full max-w-md relative z-10 md:overflow-visible overflow-hidden flex flex-col border border-white/20"
             style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 -10px 40px -15px rgba(0, 0, 0, 0.1)' }}
           >
             {/* Header */}

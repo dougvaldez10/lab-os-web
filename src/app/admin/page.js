@@ -329,8 +329,8 @@ export default function AdminBoard() {
         />
       </div>
 
-      <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-        <div className="overflow-x-auto flex-1">
+      <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 md:overflow-visible overflow-hidden flex flex-col">
+        <div className="md:overflow-visible overflow-x-auto flex-1">
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-10">
               <tr>

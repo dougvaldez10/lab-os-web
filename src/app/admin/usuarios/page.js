@@ -157,7 +157,7 @@ export default function AdminUsuarios() {
         {loading && usuarios.length === 0 ? (
           <div className="col-span-full py-8 text-center text-slate-400 font-medium">Cargando usuarios...</div>
         ) : usuarios.map(u => (
-          <div key={u.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col group hover:shadow-md transition-shadow">
+          <div key={u.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 md:overflow-visible overflow-hidden flex flex-col group hover:shadow-md transition-shadow">
             <div className="p-6 flex flex-col items-center relative">
               <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                  <button onClick={() => openModal(u)} className="p-2 bg-slate-100 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"><Edit size={16} /></button>
