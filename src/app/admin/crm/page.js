@@ -136,9 +136,9 @@ export default function AdminCRM() {
             loading && clientes.length === 0 ? (
                <div className="py-8 text-center text-slate-400">Cargando clínicas...</div>
             ) : clientes.map(c => (
-               <div key={c.id} className="relative group border-b border-slate-400">
-                 {/* La línea horizontal que sale del cuadro hacia los lados */}
-                 <div className="absolute bottom-[-1px] left-[-100vw] right-[-100vw] h-[1px] bg-slate-400 pointer-events-none z-0"></div>
+               <div key={c.id} className="relative group">
+                 {/* La línea horizontal con gradiente suave */}
+                 <div className="absolute bottom-0 left-[-30vw] right-[-30vw] h-[1px] bg-gradient-to-r from-transparent via-slate-400/70 to-transparent pointer-events-none z-0"></div>
                  {/* Los datos de la fila */}
                  <div className="grid grid-cols-[1.5fr_1fr_1fr_1.5fr_100px] gap-4 py-3 items-center hover:bg-slate-50/50 transition-colors relative z-10 text-sm">
                     <div className="font-bold text-slate-800 px-4">{c.nombre}</div>
@@ -156,9 +156,9 @@ export default function AdminCRM() {
             loading && doctores.length === 0 ? (
                <div className="py-8 text-center text-slate-400">Cargando doctores...</div>
             ) : doctores.map(d => (
-               <div key={d.id} className="relative group border-b border-slate-400">
-                 {/* La línea horizontal que sale del cuadro hacia los lados */}
-                 <div className="absolute bottom-[-1px] left-[-100vw] right-[-100vw] h-[1px] bg-slate-400 pointer-events-none z-0"></div>
+               <div key={d.id} className="relative group">
+                 {/* La línea horizontal con gradiente suave */}
+                 <div className="absolute bottom-0 left-[-30vw] right-[-30vw] h-[1px] bg-gradient-to-r from-transparent via-slate-400/70 to-transparent pointer-events-none z-0"></div>
                  {/* Los datos de la fila */}
                  <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_100px] gap-4 py-3 items-center hover:bg-slate-50/50 transition-colors relative z-10 text-sm">
                     <div className="font-bold text-slate-800 px-4">{d.trato} {d.nombre} {d.apellido}</div>
