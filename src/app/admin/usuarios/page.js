@@ -6,6 +6,7 @@ import { toast, Toaster } from "sonner";
 import { 
   getAllUsers, createUserInSystem, updateUserInSystem, deleteUserInSystem 
 } from "@/lib/auth";
+import GlassLayout from "@/components/admin/GlassLayout";
 
 const allDepartments = [
   "Recepción", "Yesos", "Digital_Escaneo", "Digital_Diseno", "Digital_Fresado", 
@@ -133,61 +134,61 @@ export default function AdminUsuarios() {
   };
 
   return (
-    <div className="p-6 h-full flex flex-col bg-slate-50">
-      <Toaster position="bottom-right" />
-      
-      <div className="flex justify-between items-center mb-6 shrink-0">
-        <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            <UserCog className="text-rose-400" /> Gestión de Usuarios
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">Configuración local de acceso y roles (Laboratorio Actual).</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => openModal()} className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold transition-colors flex items-center gap-2 shadow-sm">
-            <Plus size={18} /> Agregar Usuario
-          </button>
-          <button onClick={fetchData} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
-            <RefreshCw size={20} className={loading ? "animate-spin text-rose-500" : ""} />
-          </button>
-        </div>
-      </div>
+    <>
+      <GlassLayout
+        title="Gestión de Usuarios"
+        subtitle="Configuración local de acceso y roles (Laboratorio Actual)."
+        icon={<UserCog size={24} className="text-rose-400" />}
+        iconBg="bg-rose-400/10 border-rose-400/20"
+        scrollbarClass="usuarios-scroll"
+        headerActions={
+          <>
+            <button onClick={() => openModal()} className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold transition-colors flex items-center gap-2 shadow-sm">
+              <Plus size={18} /> Agregar Usuario
+            </button>
+            <button onClick={fetchData} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
+              <RefreshCw size={20} className={loading ? "animate-spin text-rose-500" : ""} />
+            </button>
+          </>
+        }
+        tableHeader={null} // No table header, we use a grid
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-8 relative z-10 pt-4">
+          {loading && usuarios.length === 0 ? (
+            <div className="col-span-full py-8 text-center text-slate-400 font-medium">Cargando usuarios...</div>
+          ) : usuarios.map(u => (
+            <div key={u.id} className="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-slate-200 md:overflow-visible overflow-hidden flex flex-col group hover:shadow-md transition-shadow">
+              <div className="p-6 flex flex-col items-center relative">
+                <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <button onClick={() => openModal(u)} className="p-2 bg-slate-100 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"><Edit size={16} /></button>
+                   <button onClick={() => handleDelete(u.id, u.username)} className="p-2 bg-slate-100 hover:bg-red-100 text-red-600 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 overflow-y-auto pb-8">
-        {loading && usuarios.length === 0 ? (
-          <div className="col-span-full py-8 text-center text-slate-400 font-medium">Cargando usuarios...</div>
-        ) : usuarios.map(u => (
-          <div key={u.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 md:overflow-visible overflow-hidden flex flex-col group hover:shadow-md transition-shadow">
-            <div className="p-6 flex flex-col items-center relative">
-              <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                 <button onClick={() => openModal(u)} className="p-2 bg-slate-100 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"><Edit size={16} /></button>
-                 <button onClick={() => handleDelete(u.id, u.username)} className="p-2 bg-slate-100 hover:bg-red-100 text-red-600 rounded-lg transition-colors"><Trash2 size={16} /></button>
-              </div>
-
-              <div className="w-20 h-20 rounded-full overflow-hidden shadow-inner ring-4 ring-slate-50 mb-4 bg-slate-100 flex items-center justify-center text-slate-400 text-3xl font-bold">
-                 {u.avatar_base64 ? (
-                    <img src={u.avatar_base64} alt={u.username} className="w-full h-full object-cover" />
-                 ) : (
-                    u.username.charAt(0).toUpperCase()
-                 )}
-              </div>
-              
-              <h3 className="text-lg font-bold text-slate-800">{u.username}</h3>
-              <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider font-semibold">Roles Asignados</p>
-              
-              <div className="flex flex-wrap gap-1.5 justify-center mt-3">
-                 {u.rol ? u.rol.split(',').map(r => (
-                    <span key={r} className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md border border-slate-200">
-                       {r}
-                    </span>
-                 )) : (
-                    <span className="text-xs text-slate-400 italic">Sin roles</span>
-                 )}
+                <div className="w-20 h-20 rounded-full overflow-hidden shadow-inner ring-4 ring-slate-50 mb-4 bg-slate-100 flex items-center justify-center text-slate-400 text-3xl font-bold">
+                   {u.avatar_base64 ? (
+                      <img src={u.avatar_base64} alt={u.username} className="w-full h-full object-cover" />
+                   ) : (
+                      u.username.charAt(0).toUpperCase()
+                   )}
+                </div>
+                
+                <h3 className="text-lg font-bold text-slate-800">{u.username}</h3>
+                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider font-semibold">Roles Asignados</p>
+                
+                <div className="flex flex-wrap gap-1.5 justify-center mt-3">
+                   {u.rol ? u.rol.split(',').map(r => (
+                      <span key={r} className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md border border-slate-200">
+                         {r}
+                      </span>
+                   )) : (
+                      <span className="text-xs text-slate-400 italic">Sin roles</span>
+                   )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </GlassLayout>
 
       {/* MODAL */}
       {editingItem && (
@@ -301,7 +302,7 @@ export default function AdminUsuarios() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

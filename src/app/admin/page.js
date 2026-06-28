@@ -8,6 +8,7 @@ import { getClients, getAllClinics } from "@/app/actions/clients";
 import { getProducts } from "@/app/actions/products";
 import { getCaseDetailsForEdit, updateCaseProductionDetails } from "@/app/actions/cases";
 import NewCaseModal from "@/components/NewCaseModal";
+import GlassLayout from "@/components/admin/GlassLayout";
 
 export default function AdminBoard() {
   const [cases, setCases] = useState([]);
@@ -294,98 +295,85 @@ export default function AdminBoard() {
   };
 
   return (
-    <div className="p-6 h-full flex flex-col bg-slate-50">
-      <Toaster position="bottom-right" />
-      
-      <div className="flex justify-between items-center mb-6 shrink-0">
-        <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Casos en curso</h1>
-          <p className="text-sm text-slate-500 mt-1">Vista administrativa. Puedes modificar cualquier detalle del caso.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setIsNewCaseModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center gap-2 shadow-md hover-lift"
-          >
-            <Plus size={18} />
-            Nuevo trabajo
-          </button>
-          <button onClick={fetchInitialData} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm hover:rotate-180 transition-all duration-500 cursor-pointer">
-            <RefreshCw size={20} className={loading ? "animate-spin text-blue-500" : ""} />
-          </button>
-        </div>
-      </div>
-
-      <div className="mb-4 relative shrink-0">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search size={18} className="text-slate-400" />
-        </div>
-        <input
-          type="text"
-          placeholder="Buscar por paciente, orden, doctor o depto..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none shadow-sm"
-        />
-      </div>
-
-      <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 md:overflow-visible overflow-hidden flex flex-col">
-        <div className="md:overflow-visible overflow-x-auto flex-1">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-10">
-              <tr>
-                <SortableHeader label="Orden" sortKey="id" />
-                <SortableHeader label="Paciente" sortKey="patient" />
-                <SortableHeader label="Doctor" sortKey="doctor" />
-                <SortableHeader label="Depto Actual" sortKey="dept" />
-                <SortableHeader label="Estado" sortKey="status" />
-                <SortableHeader label="F. Entrega" sortKey="fecha_entrega" />
-                <th className="px-4 py-3 text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading && cases.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="px-4 py-8 text-center text-slate-400">Cargando casos...</td>
-                </tr>
-              ) : filteredCases.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="px-4 py-8 text-center text-slate-400">No se encontraron casos.</td>
-                </tr>
-              ) : (
-                sortedCases.map(c => (
-                  <tr key={c.internal_id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-slate-900">#{c.id}</td>
-                    <td className="px-4 py-3 text-slate-700 font-bold truncate max-w-[200px]">{c.patient}</td>
-                    <td className="px-4 py-3 text-slate-600 truncate max-w-[150px]">{c.doctor}</td>
-                    <td className="px-4 py-3 text-slate-600">{c.dept}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                        c.status === 'En Proceso' ? 'bg-blue-50 text-blue-700' :
-                        c.status === 'En Pausa' ? 'bg-red-50 text-red-700' :
-                        'bg-slate-100 text-slate-600'
-                      }`}>
-                        {c.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">{formatFecha(c.fecha_entrega, c.hora_entrega)}</td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => handleEdit(c)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">
-                          <Edit size={16} />
-                        </button>
-                        <button onClick={() => handleDelete(c.internal_id, c.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <>
+      <GlassLayout
+        title="Casos en curso"
+        subtitle="Vista administrativa. Puedes modificar cualquier detalle del caso."
+        icon={<AlertCircle size={24} className="text-[#60a5fa]" />}
+        iconBg="bg-[#60a5fa]/10 border-[#60a5fa]/20"
+        scrollbarClass="casos-scroll"
+        headerActions={
+          <>
+            <button 
+              onClick={() => setIsNewCaseModalOpen(true)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center gap-2 shadow-md hover-lift"
+            >
+              <Plus size={18} />
+              Nuevo trabajo
+            </button>
+            <button onClick={fetchInitialData} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm hover:rotate-180 transition-all duration-500 cursor-pointer">
+              <RefreshCw size={20} className={loading ? "animate-spin text-blue-500" : ""} />
+            </button>
+          </>
+        }
+        tabs={
+          <div className="relative w-full md:w-96 mb-2">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={18} className="text-slate-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar por paciente, orden, doctor o depto..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-transparent border-none pl-10 pr-4 py-1.5 text-sm focus:ring-0 outline-none"
+            />
+          </div>
+        }
+        tableHeader={
+          <div className="grid grid-cols-[1fr_2fr_1.5fr_1.5fr_1fr_1fr_100px] gap-4 px-4 py-3 text-slate-700">
+            <SortableHeader label="Orden" sortKey="id" />
+            <SortableHeader label="Paciente" sortKey="patient" />
+            <SortableHeader label="Doctor" sortKey="doctor" />
+            <SortableHeader label="Depto Actual" sortKey="dept" />
+            <SortableHeader label="Estado" sortKey="status" />
+            <SortableHeader label="F. Entrega" sortKey="fecha_entrega" />
+            <div className="font-bold text-right px-4">Acciones</div>
+          </div>
+        }
+      >
+        {loading && cases.length === 0 ? (
+           <div className="py-8 text-center text-slate-400">Cargando casos...</div>
+        ) : filteredCases.length === 0 ? (
+           <div className="py-8 text-center text-slate-400">No se encontraron casos.</div>
+        ) : (
+          sortedCases.map(c => (
+            <div key={c.internal_id} className="relative group">
+              <div className="absolute bottom-0 left-[-30vw] right-[-30vw] h-[1px] bg-gradient-to-r from-transparent via-slate-400/70 to-transparent pointer-events-none z-0"></div>
+              <div className="grid grid-cols-[1fr_2fr_1.5fr_1.5fr_1fr_1fr_100px] gap-4 py-3 items-center hover:bg-slate-50/50 transition-colors relative z-10 text-sm">
+                <div className="font-medium text-slate-900 px-4">#{c.id}</div>
+                <div className="text-slate-700 font-bold px-4 truncate">{c.patient}</div>
+                <div className="text-slate-600 px-4 truncate">{c.doctor}</div>
+                <div className="text-slate-600 px-4">{c.dept}</div>
+                <div className="px-4">
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    c.status === 'En Proceso' ? 'bg-blue-50 text-blue-700' :
+                    c.status === 'En Pausa' ? 'bg-red-50 text-red-700' :
+                    'bg-slate-100 text-slate-600'
+                  }`}>
+                    {c.status}
+                  </span>
+                </div>
+                <div className="text-slate-600 px-4">{formatFecha(c.fecha_entrega, c.hora_entrega)}</div>
+                <div className="text-right px-4">
+                  <button onClick={() => handleEdit(c)} className="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg mr-2"><Edit size={16} /></button>
+                  <button onClick={() => handleDelete(c.internal_id, c.id)} className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg"><Trash2 size={16} /></button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </GlassLayout>
 
       {/* MODAL DE EDICIÓN */}
       {editingCase && (
@@ -694,7 +682,7 @@ export default function AdminBoard() {
         clients={clients} 
         onActionComplete={fetchInitialData} 
       />
-    </div>
+    </>
   );
 }
 

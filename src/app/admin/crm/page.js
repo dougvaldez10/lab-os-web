@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Edit, Trash2, Plus, RefreshCw, X, Save, Building2, UserCircle } from "lucide-react";
 import { toast, Toaster } from "sonner";
@@ -8,6 +8,7 @@ import {
   getAdminClients, createAdminClient, updateAdminClient, deleteAdminClient,
   getAdminDoctors, createAdminDoctor, updateAdminDoctor, deleteAdminDoctor 
 } from "@/app/actions/admin-crm";
+import GlassLayout from "@/components/admin/GlassLayout";
 
 export default function AdminCRM() {
   const searchParams = useSearchParams();
@@ -19,23 +20,6 @@ export default function AdminCRM() {
   
   const [editingItem, setEditingItem] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-
-  const topSectionRef = useRef(null);
-  const [topHeight, setTopHeight] = useState(200);
-
-  useEffect(() => {
-    if (topSectionRef.current) {
-      setTopHeight(topSectionRef.current.getBoundingClientRect().height);
-    }
-    // Añadimos un listener de resize para ajustar si cambia la pantalla
-    const handleResize = () => {
-      if (topSectionRef.current) {
-        setTopHeight(topSectionRef.current.getBoundingClientRect().height);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [activeTab, clientes, doctores]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -126,143 +110,100 @@ export default function AdminCRM() {
   };
 
   return (
-    <div className="flex-1 relative h-full w-full overflow-hidden bg-slate-50">
+    <>
+      <GlassLayout
+      title="Directorio CRM"
+      subtitle="Gestión de Clínicas y Doctores."
+      icon={<Building2 size={24} className="text-[#D4AF37]" />}
+      iconBg="bg-[#D4AF37]/10 border-[#D4AF37]/20"
+      scrollbarClass="crm-scroll"
+      headerActions={
+        <>
+          <button onClick={() => openModal()} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-2 shadow-sm pointer-events-auto">
+            <Plus size={18} /> Agregar {activeTab === "clinicas" ? "Clínica" : "Doctor"}
+          </button>
+          <button onClick={fetchData} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm pointer-events-auto">
+            <RefreshCw size={20} className={loading ? "animate-spin text-emerald-500" : ""} />
+          </button>
+        </>
+      }
+      tabs={
+        <>
+          <button 
+            onClick={() => setActiveTab("clinicas")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'clinicas' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            <Building2 size={18} /> Clínicas
+          </button>
+          <button 
+            onClick={() => setActiveTab("doctores")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'doctores' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            <UserCircle size={18} /> Doctores
+          </button>
+        </>
+      }
+      tableHeader={
+        activeTab === "clinicas" ? (
+           <div className="grid grid-cols-[1.5fr_1fr_1fr_1.5fr_100px] gap-4 px-4 py-3 font-bold text-slate-700 text-sm">
+              <div className="px-4">Nombre Clínica</div>
+              <div className="px-4">Teléfono</div>
+              <div className="px-4">Email</div>
+              <div className="px-4">Dirección</div>
+              <div className="px-4 text-right">Acciones</div>
+           </div>
+        ) : (
+           <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_100px] gap-4 px-4 py-3 font-bold text-slate-700 text-sm">
+              <div className="px-4">Nombre Doctor</div>
+              <div className="px-4">Clínica (Asignada)</div>
+              <div className="px-4">Teléfono</div>
+              <div className="px-4">Email</div>
+              <div className="px-4 text-right">Acciones</div>
+           </div>
+        )
+      }
+    >
       <Toaster position="bottom-right" />
-
-      {/* LAYER 1: LA HOJA DE PAPEL (SCROLLING) */}
-      <div className="absolute inset-0 overflow-y-auto overflow-x-hidden crm-scroll z-0">
-        <div style={{ paddingTop: `${topHeight}px` }} className="px-4 md:px-8 pb-24 w-full flex flex-col">
-          {activeTab === "clinicas" ? (
-            loading && clientes.length === 0 ? (
-               <div className="py-8 text-center text-slate-400">Cargando clínicas...</div>
-            ) : clientes.map(c => (
-               <div key={c.id} className="relative group">
-                 {/* La línea horizontal con gradiente suave */}
-                 <div className="absolute bottom-0 left-[-30vw] right-[-30vw] h-[1px] bg-gradient-to-r from-transparent via-slate-400/70 to-transparent pointer-events-none z-0"></div>
-                 {/* Los datos de la fila */}
-                 <div className="grid grid-cols-[1.5fr_1fr_1fr_1.5fr_100px] gap-4 py-3 items-center hover:bg-slate-50/50 transition-colors relative z-10 text-sm">
-                    <div className="font-bold text-slate-800 px-4">{c.nombre}</div>
-                    <div className="text-slate-600 px-4">{c.tel_fijo}</div>
-                    <div className="text-slate-600 px-4">{c.email}</div>
-                    <div className="text-slate-600 px-4 truncate max-w-[200px]">{c.direccion}</div>
-                    <div className="text-right px-4">
-                      <button onClick={() => openModal(c)} className="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg mr-2"><Edit size={16} /></button>
-                      <button onClick={() => handleDelete(c.id, c.nombre, "clinica")} className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg"><Trash2 size={16} /></button>
-                    </div>
-                 </div>
-               </div>
-            ))
-          ) : (
-            loading && doctores.length === 0 ? (
-               <div className="py-8 text-center text-slate-400">Cargando doctores...</div>
-            ) : doctores.map(d => (
-               <div key={d.id} className="relative group">
-                 {/* La línea horizontal con gradiente suave */}
-                 <div className="absolute bottom-0 left-[-30vw] right-[-30vw] h-[1px] bg-gradient-to-r from-transparent via-slate-400/70 to-transparent pointer-events-none z-0"></div>
-                 {/* Los datos de la fila */}
-                 <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_100px] gap-4 py-3 items-center hover:bg-slate-50/50 transition-colors relative z-10 text-sm">
-                    <div className="font-bold text-slate-800 px-4">{d.trato} {d.nombre} {d.apellido}</div>
-                    <div className="text-slate-600 px-4">{d.clientes?.nombre || "Sin Clínica"}</div>
-                    <div className="text-slate-600 px-4">{d.telefono}</div>
-                    <div className="text-slate-600 px-4">{d.email}</div>
-                    <div className="text-right px-4">
-                      <button onClick={() => openModal(d)} className="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg mr-2"><Edit size={16} /></button>
-                      <button onClick={() => handleDelete(d.id, d.nombre, "doctor")} className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg"><Trash2 size={16} /></button>
-                    </div>
-                 </div>
-               </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* LAYER 2: EL VIDRIO OPACO (ZONA FUERA DEL RECTANGULO) */}
-      <div className="absolute inset-0 z-10 pointer-events-none flex flex-col">
-        {/* Top glass (cubre la cabecera) */}
-        <div style={{ height: `${topHeight}px` }} className="bg-slate-50/30 backdrop-blur-sm w-full transition-all duration-300" />
-        
-        {/* Middle section (cubre los lados izquierdo y derecho) */}
-        <div className="flex-1 flex">
-          <div className="w-4 md:w-8 bg-slate-50/30 backdrop-blur-sm h-full transition-all duration-300" />
-          <div className="flex-1 bg-transparent h-full" /> {/* EL HUECO (CUTOUT) */}
-          <div className="w-4 md:w-8 bg-slate-50/30 backdrop-blur-sm h-full transition-all duration-300" />
-        </div>
-        
-        {/* Bottom glass */}
-        <div className="h-4 md:h-8 bg-slate-50/30 backdrop-blur-sm w-full transition-all duration-300" />
-      </div>
-
-      {/* LAYER 3: LOS PAPELES SOLIDOS (TÍTULOS, BOTONES Y CABECERAS DE TABLA) */}
-      <div className="absolute inset-0 z-20 pointer-events-none flex flex-col">
-        <div ref={topSectionRef} className="pointer-events-none flex flex-col pt-4 md:pt-8 px-4 md:px-8">
-          
-          {/* Título y Tabs - Papel Sólido (Solo las letras y botones) */}
-          <div className="pointer-events-none pb-4">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-                  <div className="bg-[#D4AF37]/10 p-2 rounded-xl border border-[#D4AF37]/20 pointer-events-auto">
-                    <Building2 size={24} className="text-[#D4AF37]" />
-                  </div>
-                  <span className="pointer-events-auto">Directorio CRM</span>
-                </h1>
-                <p className="text-sm text-slate-500 mt-1 w-fit pr-2 pointer-events-auto">Gestión de Clínicas y Doctores.</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button onClick={() => openModal()} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-2 shadow-sm pointer-events-auto">
-                  <Plus size={18} /> Agregar {activeTab === "clinicas" ? "Clínica" : "Doctor"}
-                </button>
-                <button onClick={fetchData} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm pointer-events-auto">
-                  <RefreshCw size={20} className={loading ? "animate-spin text-emerald-500" : ""} />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 w-fit pointer-events-auto">
-              <button 
-                onClick={() => setActiveTab("clinicas")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'clinicas' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                <Building2 size={18} /> Clínicas
-              </button>
-              <button 
-                onClick={() => setActiveTab("doctores")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'doctores' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                <UserCircle size={18} /> Doctores
-              </button>
-            </div>
-          </div>
-
-          {/* Table Header - Papel Sólido */}
-          <div className="pointer-events-auto bg-slate-50 border border-slate-200 rounded-t-2xl shadow-sm relative z-30">
-            {activeTab === "clinicas" ? (
-               <div className="grid grid-cols-[1.5fr_1fr_1fr_1.5fr_100px] gap-4 px-4 py-3 font-bold text-slate-700 text-sm">
-                  <div className="px-4">Nombre Clínica</div>
-                  <div className="px-4">Teléfono</div>
-                  <div className="px-4">Email</div>
-                  <div className="px-4">Dirección</div>
-                  <div className="px-4 text-right">Acciones</div>
-               </div>
-            ) : (
-               <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_100px] gap-4 px-4 py-3 font-bold text-slate-700 text-sm">
-                  <div className="px-4">Nombre Doctor</div>
-                  <div className="px-4">Clínica (Asignada)</div>
-                  <div className="px-4">Teléfono</div>
-                  <div className="px-4">Email</div>
-                  <div className="px-4 text-right">Acciones</div>
-               </div>
-            )}
-          </div>
-        </div>
-
-        {/* El Marco del Hueco (Bordes del rectángulo) */}
-        <div className="flex-1 px-4 md:px-8 pb-4 md:pb-8 pointer-events-none">
-          <div className="w-full h-full border-x border-b border-slate-200 rounded-b-2xl pointer-events-none relative z-30"></div>
-        </div>
-      </div>
-
-      {/* MODAL */}
+      {activeTab === "clinicas" ? (
+        loading && clientes.length === 0 ? (
+           <div className="py-8 text-center text-slate-400">Cargando clínicas...</div>
+        ) : clientes.map(c => (
+           <div key={c.id} className="relative group">
+             <div className="absolute bottom-0 left-[-30vw] right-[-30vw] h-[1px] bg-gradient-to-r from-transparent via-slate-400/70 to-transparent pointer-events-none z-0"></div>
+             <div className="grid grid-cols-[1.5fr_1fr_1fr_1.5fr_100px] gap-4 py-3 items-center hover:bg-slate-50/50 transition-colors relative z-10 text-sm">
+                <div className="font-bold text-slate-800 px-4">{c.nombre}</div>
+                <div className="text-slate-600 px-4">{c.tel_fijo}</div>
+                <div className="text-slate-600 px-4">{c.email}</div>
+                <div className="text-slate-600 px-4 truncate max-w-[200px]">{c.direccion}</div>
+                <div className="text-right px-4">
+                  <button onClick={() => openModal(c)} className="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg mr-2"><Edit size={16} /></button>
+                  <button onClick={() => handleDelete(c.id, c.nombre, "clinica")} className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg"><Trash2 size={16} /></button>
+                </div>
+             </div>
+           </div>
+        ))
+      ) : (
+        loading && doctores.length === 0 ? (
+           <div className="py-8 text-center text-slate-400">Cargando doctores...</div>
+        ) : doctores.map(d => (
+           <div key={d.id} className="relative group">
+             <div className="absolute bottom-0 left-[-30vw] right-[-30vw] h-[1px] bg-gradient-to-r from-transparent via-slate-400/70 to-transparent pointer-events-none z-0"></div>
+             <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_100px] gap-4 py-3 items-center hover:bg-slate-50/50 transition-colors relative z-10 text-sm">
+                <div className="font-bold text-slate-800 px-4">{d.trato} {d.nombre} {d.apellido}</div>
+                <div className="text-slate-600 px-4">{d.clientes?.nombre || "Sin Clínica"}</div>
+                <div className="text-slate-600 px-4">{d.telefono}</div>
+                <div className="text-slate-600 px-4">{d.email}</div>
+                <div className="text-right px-4">
+                  <button onClick={() => openModal(d)} className="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg mr-2"><Edit size={16} /></button>
+                  <button onClick={() => handleDelete(d.id, d.nombre, "doctor")} className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg"><Trash2 size={16} /></button>
+                </div>
+             </div>
+           </div>
+        ))
+      )}
+    </GlassLayout>
+      
+    {/* MODAL */}
       {editingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md pointer-events-auto" onClick={() => setEditingItem(null)}></div>
@@ -350,6 +291,6 @@ export default function AdminCRM() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -116,11 +116,42 @@ body {
   }
 }
 
-/* CRM Scrollbar — verde (color del ícono de Directorio) */
+/* Custom Scrollbars per Section */
+/* CRM / Directorio (Verde) */
 .crm-scroll::-webkit-scrollbar { width: 6px; }
 .crm-scroll::-webkit-scrollbar-track { background: transparent; }
-.crm-scroll::-webkit-scrollbar-thumb { background: #22c55e; border-radius: 99px; }
-.crm-scroll { scrollbar-width: thin; scrollbar-color: #22c55e transparent; }
+.crm-scroll::-webkit-scrollbar-thumb { background: #4ade80; border-radius: 99px; }
+.crm-scroll { scrollbar-width: thin; scrollbar-color: #4ade80 transparent; }
+
+/* Casos (Azul) */
+.casos-scroll::-webkit-scrollbar { width: 6px; }
+.casos-scroll::-webkit-scrollbar-track { background: transparent; }
+.casos-scroll::-webkit-scrollbar-thumb { background: #60a5fa; border-radius: 99px; }
+.casos-scroll { scrollbar-width: thin; scrollbar-color: #60a5fa transparent; }
+
+/* Finanzas (Ámbar) */
+.finanzas-scroll::-webkit-scrollbar { width: 6px; }
+.finanzas-scroll::-webkit-scrollbar-track { background: transparent; }
+.finanzas-scroll::-webkit-scrollbar-thumb { background: #fbbf24; border-radius: 99px; }
+.finanzas-scroll { scrollbar-width: thin; scrollbar-color: #fbbf24 transparent; }
+
+/* Usuarios (Rosa) */
+.usuarios-scroll::-webkit-scrollbar { width: 6px; }
+.usuarios-scroll::-webkit-scrollbar-track { background: transparent; }
+.usuarios-scroll::-webkit-scrollbar-thumb { background: #fb7185; border-radius: 99px; }
+.usuarios-scroll { scrollbar-width: thin; scrollbar-color: #fb7185 transparent; }
+
+/* Métricas (Morado) */
+.metricas-scroll::-webkit-scrollbar { width: 6px; }
+.metricas-scroll::-webkit-scrollbar-track { background: transparent; }
+.metricas-scroll::-webkit-scrollbar-thumb { background: #c084fc; border-radius: 99px; }
+.metricas-scroll { scrollbar-width: thin; scrollbar-color: #c084fc transparent; }
+
+/* Auditoría (Rojo) */
+.auditoria-scroll::-webkit-scrollbar { width: 6px; }
+.auditoria-scroll::-webkit-scrollbar-track { background: transparent; }
+.auditoria-scroll::-webkit-scrollbar-thumb { background: #f87171; border-radius: 99px; }
+.auditoria-scroll { scrollbar-width: thin; scrollbar-color: #f87171 transparent; }
 
 /* Animated Table Row Dividers (Glassmorphism Effect) */
 table tbody tr {

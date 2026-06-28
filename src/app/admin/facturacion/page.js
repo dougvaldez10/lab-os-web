@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast, Toaster } from "sonner";
+import GlassLayout from "@/components/admin/GlassLayout";
 import { getCurrentUser } from "@/lib/auth";
 import { 
   getBillingSummary, 
@@ -853,82 +854,77 @@ export default function BillingPanel() {
   const totalPendientes = pendingCases.reduce((acc, c) => acc + (Number(c.saldo_pendiente) || 0), 0);
 
   return (
-    <div className="p-4 md:p-6 h-full flex flex-col bg-slate-50 overflow-y-auto">
-      <Toaster position="bottom-right" />
-
-      {/* Cabecera del Panel */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 shrink-0">
-        <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            <Wallet className="text-[#D4AF37]" size={28} />
-            Módulo Financiero y Facturación
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Administración de cuentas por cobrar, registro de abonos y control de historial de pagos.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {activeTab === "cxc" && (
-            <button
-              onClick={() => {
-                setIsGlobalPaymentOpen(true);
-                setGlobalClienteId("");
-                setGlobalMonto("");
-                setGlobalComprobante(null);
-              }}
-              title="Registrar Pago"
-              className="px-4 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold shadow-md hover-lift transition-all duration-300 flex items-center justify-center gap-2"
+    <>
+      <GlassLayout
+        title="Módulo Financiero y Facturación"
+        subtitle="Administración de cuentas por cobrar, registro de abonos y control de historial de pagos."
+        icon={<Wallet size={24} className="text-[#D4AF37]" />}
+        iconBg="bg-[#D4AF37]/10 border-[#D4AF37]/20"
+        scrollbarClass="facturacion-scroll"
+        headerActions={
+          <>
+            {activeTab === "cxc" && (
+              <button
+                onClick={() => {
+                  setIsGlobalPaymentOpen(true);
+                  setGlobalClienteId("");
+                  setGlobalMonto("");
+                  setGlobalComprobante(null);
+                }}
+                title="Registrar Pago"
+                className="px-4 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold shadow-md hover-lift transition-all duration-300 flex items-center justify-center gap-2"
+              >
+                <Plus size={18} /> Registrar Pago
+              </button>
+            )}
+            {activeTab === "pendientes" && (
+              <button
+                onClick={() => setIsNewCaseModalOpen(true)}
+                title="Nuevo Trabajo"
+                className="px-4 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold shadow-md hover-lift transition-all duration-300 flex items-center justify-center gap-2"
+              >
+                <Plus size={18} /> Nuevo Trabajo
+              </button>
+            )}
+            <button 
+              onClick={fetchData} 
+              disabled={loading}
+              title="Actualizar Datos"
+              className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm hover:rotate-180 transition-all duration-500 cursor-pointer disabled:opacity-50 flex items-center justify-center"
             >
-              <Plus size={18} /> Registrar Pago
+              <RefreshCw size={20} className={loading ? "animate-spin text-amber-500" : ""} />
             </button>
-          )}
-          {activeTab === "pendientes" && (
-            <button
-              onClick={() => setIsNewCaseModalOpen(true)}
-              title="Nuevo Trabajo"
-              className="px-4 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold shadow-md hover-lift transition-all duration-300 flex items-center justify-center gap-2"
-            >
-              <Plus size={18} /> Nuevo Trabajo
-            </button>
-          )}
-          <button 
-            onClick={fetchData} 
-            disabled={loading}
-            title="Actualizar Datos"
-            className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm hover:rotate-180 transition-all duration-500 cursor-pointer disabled:opacity-50 flex items-center justify-center"
-          >
-            <RefreshCw size={20} className={loading ? "animate-spin text-amber-500" : ""} />
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs Navigation */}
-      <div className="flex items-center gap-2 mb-6 shrink-0 bg-white p-1.5 rounded-xl border border-slate-200 w-fit max-w-full overflow-x-auto">
-        {[
-          { id: "pendientes", label: "Casos Pendientes", icon: FileText },
-          { id: "cxc", label: "Cuentas por Cobrar", icon: Wallet },
-          { id: "history", label: "Historial de Pagos", icon: History }
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setSelectedClinic(null); // Reset Level 2 CxC on tab change
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${
-                isActive ? "bg-slate-100 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              <Icon size={18} className={isActive ? "text-slate-900" : "text-slate-400"} />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
+          </>
+        }
+        tabs={
+          <>
+            {[
+              { id: "pendientes", label: "Casos Pendientes", icon: FileText },
+              { id: "cxc", label: "Cuentas por Cobrar", icon: Wallet },
+              { id: "history", label: "Historial de Pagos", icon: History }
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setSelectedClinic(null); // Reset Level 2 CxC on tab change
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${
+                    isActive ? "bg-slate-100 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  <Icon size={18} className={isActive ? "text-slate-900" : "text-slate-400"} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </>
+        }
+        tableHeader={null}
+      >
       {/* Contenido Principal */}
       <div className="flex-1 min-h-0">
         {loading && (
@@ -2390,8 +2386,8 @@ export default function BillingPanel() {
           </div>
         )}
       </AnimatePresence>
-
-    </div>
+      </GlassLayout>
+    </>
   );
 }
 
