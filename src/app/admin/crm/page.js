@@ -114,7 +114,7 @@ export default function AdminCRM() {
     <div className="flex-1 flex flex-col px-4 md:px-8 relative max-w-full overflow-x-hidden">
       <Toaster position="bottom-right" />
        {/* Sticky Top Bar (Header + Tabs) */}
-      <div className="sticky top-0 z-40 bg-slate-50 pt-4 md:pt-8 pb-4">
+      <div className="sticky top-0 z-40 bg-slate-50/60 backdrop-blur-xl pt-4 md:pt-8 pb-4">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -153,11 +153,11 @@ export default function AdminCRM() {
         </div>
       </div>
 
-      <div className="flex-1 bg-white/40 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200 md:overflow-visible overflow-hidden flex flex-col">
+      <div className="flex-1 bg-white/10 backdrop-blur-md rounded-2xl shadow-sm border border-white/20 md:overflow-visible overflow-hidden flex flex-col">
         <div className="md:overflow-visible overflow-x-auto flex-1">
           {activeTab === "clinicas" ? (
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-10">
+              <thead className="bg-[#f8fafc] border-b border-slate-200 text-slate-500 font-bold sticky top-[136px] md:top-[160px] z-30">
                 <tr>
                   <th className="px-4 py-3">Nombre Clínica</th>
                   <th className="px-4 py-3">Teléfono</th>
@@ -185,7 +185,7 @@ export default function AdminCRM() {
             </table>
           ) : (
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-10">
+              <thead className="bg-[#f8fafc] border-b border-slate-200 text-slate-500 font-bold sticky top-[136px] md:top-[160px] z-30">
                 <tr>
                   <th className="px-4 py-3">Nombre Doctor</th>
                   <th className="px-4 py-3">Clínica (Asignada)</th>

@@ -184,12 +184,12 @@ export default function Sidebar() {
           const isHovered = hoveredMenu === item.href;
 
           const colorMap = {
-            "text-blue-400": { bg: "bg-blue-500/20", shadow: "shadow-[0_0_15px_rgba(96,165,250,0.5)]", dropShadow: "drop-shadow-[0_0_12px_rgba(96,165,250,1)]", hoverBg: "rgba(96,165,250,0.2)", hoverBorder: "rgba(96,165,250,0.5)", border: "border border-blue-500/50" },
-            "text-amber-400": { bg: "bg-amber-400/20", shadow: "shadow-[0_0_15px_rgba(251,191,36,0.5)]", dropShadow: "drop-shadow-[0_0_12px_rgba(251,191,36,1)]", hoverBg: "rgba(251,191,36,0.2)", hoverBorder: "rgba(251,191,36,0.5)", border: "border border-amber-400/50" },
-            "text-green-400": { bg: "bg-green-400/20", shadow: "shadow-[0_0_15px_rgba(74,222,128,0.5)]", dropShadow: "drop-shadow-[0_0_12px_rgba(74,222,128,1)]", hoverBg: "rgba(74,222,128,0.2)", hoverBorder: "rgba(74,222,128,0.5)", border: "border border-green-400/50" },
-            "text-rose-400": { bg: "bg-rose-400/20", shadow: "shadow-[0_0_15px_rgba(251,113,133,0.5)]", dropShadow: "drop-shadow-[0_0_12px_rgba(251,113,133,1)]", hoverBg: "rgba(251,113,133,0.2)", hoverBorder: "rgba(251,113,133,0.5)", border: "border border-rose-400/50" },
-            "text-purple-400": { bg: "bg-purple-400/20", shadow: "shadow-[0_0_15px_rgba(192,132,252,0.5)]", dropShadow: "drop-shadow-[0_0_12px_rgba(192,132,252,1)]", hoverBg: "rgba(192,132,252,0.2)", hoverBorder: "rgba(192,132,252,0.5)", border: "border border-purple-400/50" },
-            "text-red-500": { bg: "bg-red-500/20", shadow: "shadow-[0_0_15px_rgba(239,68,68,0.5)]", dropShadow: "drop-shadow-[0_0_12px_rgba(239,68,68,1)]", hoverBg: "rgba(239,68,68,0.2)", hoverBorder: "rgba(239,68,68,0.5)", border: "border border-red-500/50" },
+            "text-blue-400": { bg: "bg-blue-500/20", shadow: "shadow-[0_0_25px_rgba(96,165,250,0.8),inset_0_0_15px_rgba(96,165,250,0.3)]", dropShadow: "drop-shadow-[0_0_15px_rgba(96,165,250,1)]", hoverBg: "rgba(96,165,250,0.2)", hoverBorder: "rgba(96,165,250,0.5)", border: "border border-blue-400/80" },
+            "text-amber-400": { bg: "bg-amber-400/20", shadow: "shadow-[0_0_25px_rgba(251,191,36,0.8),inset_0_0_15px_rgba(251,191,36,0.3)]", dropShadow: "drop-shadow-[0_0_15px_rgba(251,191,36,1)]", hoverBg: "rgba(251,191,36,0.2)", hoverBorder: "rgba(251,191,36,0.5)", border: "border border-amber-400/80" },
+            "text-green-400": { bg: "bg-green-400/20", shadow: "shadow-[0_0_25px_rgba(74,222,128,0.8),inset_0_0_15px_rgba(74,222,128,0.3)]", dropShadow: "drop-shadow-[0_0_15px_rgba(74,222,128,1)]", hoverBg: "rgba(74,222,128,0.2)", hoverBorder: "rgba(74,222,128,0.5)", border: "border border-green-400/80" },
+            "text-rose-400": { bg: "bg-rose-400/20", shadow: "shadow-[0_0_25px_rgba(251,113,133,0.8),inset_0_0_15px_rgba(251,113,133,0.3)]", dropShadow: "drop-shadow-[0_0_15px_rgba(251,113,133,1)]", hoverBg: "rgba(251,113,133,0.2)", hoverBorder: "rgba(251,113,133,0.5)", border: "border border-rose-400/80" },
+            "text-purple-400": { bg: "bg-purple-400/20", shadow: "shadow-[0_0_25px_rgba(192,132,252,0.8),inset_0_0_15px_rgba(192,132,252,0.3)]", dropShadow: "drop-shadow-[0_0_15px_rgba(192,132,252,1)]", hoverBg: "rgba(192,132,252,0.2)", hoverBorder: "rgba(192,132,252,0.5)", border: "border border-purple-400/80" },
+            "text-red-500": { bg: "bg-red-500/20", shadow: "shadow-[0_0_25px_rgba(239,68,68,0.8),inset_0_0_15px_rgba(239,68,68,0.3)]", dropShadow: "drop-shadow-[0_0_15px_rgba(239,68,68,1)]", hoverBg: "rgba(239,68,68,0.2)", hoverBorder: "rgba(239,68,68,0.5)", border: "border border-red-500/80" },
           };
           const activeStyle = colorMap[item.iconColor] || colorMap["text-amber-400"];
 
