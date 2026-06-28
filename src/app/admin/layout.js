@@ -28,12 +28,12 @@ export default async function AdminLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
+    <div className="min-h-screen bg-slate-50/50 backdrop-blur-md flex flex-col md:flex-row font-sans">
       {/* Sidebar de Administración */}
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 bg-slate-50 h-screen overflow-x-visible overflow-y-auto relative z-0">
+      <main className="flex-1 flex flex-col min-w-0 bg-transparent h-screen overflow-x-visible overflow-y-auto relative z-0">
         {children}
       </main>
     </div>
