@@ -111,55 +111,55 @@ export default function AdminCRM() {
   };
 
   return (
-    <div className="flex-1 flex flex-col p-4 md:p-8 h-screen overflow-hidden bg-slate-50">
+    <div className="flex-1 flex flex-col p-4 md:p-8 h-full overflow-hidden">
       <Toaster position="bottom-right" />
-      
-      <div className="flex-1 bg-white/10 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200 overflow-y-auto flex flex-col relative">
-        {/* Sticky Top Bar (Header + Tabs) */}
-        <div className="sticky top-0 z-40 bg-slate-50 p-6 pb-4 border-b border-slate-200 shrink-0">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-                <div className="bg-[#D4AF37]/10 p-2 rounded-xl border border-[#D4AF37]/20">
-                  <Building2 size={24} className="text-[#D4AF37]" />
-                </div>
-                Directorio CRM
-              </h1>
-              <p className="text-sm text-slate-500 mt-1">Gestión de Clínicas y Doctores.</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button onClick={() => openModal()} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-2 shadow-sm hover-lift">
-                <Plus size={18} /> Agregar {activeTab === "clinicas" ? "Clínica" : "Doctor"}
-              </button>
-              <button onClick={fetchData} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm hover:rotate-180 transition-all duration-500 cursor-pointer">
-                <RefreshCw size={20} className={loading ? "animate-spin text-emerald-500" : ""} />
-              </button>
-            </div>
-          </div>
 
-          {/* Tabs */}
-          <div className="flex items-center gap-2 shrink-0 bg-white p-1.5 rounded-xl border border-slate-200 w-fit">
-            <button 
-              onClick={() => setActiveTab("clinicas")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'clinicas' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              <Building2 size={18} /> Clínicas
+      {/* ── CAPA PAPEL: título, botones, tabs ── opaco, sin efecto, sin transparencia */}
+      <div className="shrink-0 mb-4">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+              <div className="bg-[#D4AF37]/10 p-2 rounded-xl border border-[#D4AF37]/20">
+                <Building2 size={24} className="text-[#D4AF37]" />
+              </div>
+              Directorio CRM
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">Gestión de Clínicas y Doctores.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => openModal()} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-2 shadow-sm hover-lift">
+              <Plus size={18} /> Agregar {activeTab === "clinicas" ? "Clínica" : "Doctor"}
             </button>
-            <button 
-              onClick={() => setActiveTab("doctores")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'doctores' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              <UserCircle size={18} /> Doctores
+            <button onClick={fetchData} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm hover:rotate-180 transition-all duration-500 cursor-pointer">
+              <RefreshCw size={20} className={loading ? "animate-spin text-emerald-500" : ""} />
             </button>
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col">
-          <div className="overflow-x-auto flex-1">
+        {/* Tabs — también papel opaco */}
+        <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 w-fit">
+          <button
+            onClick={() => setActiveTab("clinicas")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'clinicas' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            <Building2 size={18} /> Clínicas
+          </button>
+          <button
+            onClick={() => setActiveTab("doctores")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'doctores' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            <UserCircle size={18} /> Doctores
+          </button>
+        </div>
+      </div>
+
+      {/* ── RECTÁNGULO: borde visible, thead fijo, tbody con scroll interno ── */}
+      <div className="flex-1 border border-slate-200 rounded-2xl overflow-hidden flex flex-col min-h-0 bg-white shadow-sm">
+        {/* Scroll container — scrollbar verde a la derecha dentro del rectángulo */}
+        <div className="flex-1 overflow-y-auto crm-scroll min-h-0">
           {activeTab === "clinicas" ? (
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-30">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-10">
                 <tr>
                   <th className="px-4 py-3">Nombre Clínica</th>
                   <th className="px-4 py-3">Teléfono</th>
@@ -168,11 +168,11 @@ export default function AdminCRM() {
                   <th className="px-4 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {loading && clientes.length === 0 ? (
                   <tr><td colSpan="5" className="px-4 py-8 text-center text-slate-400">Cargando clínicas...</td></tr>
                 ) : clientes.map(c => (
-                  <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={c.id} className="hover:bg-slate-50 transition-colors border-b border-slate-100">
                     <td className="px-4 py-3 font-bold text-slate-800">{c.nombre}</td>
                     <td className="px-4 py-3 text-slate-600">{c.tel_fijo}</td>
                     <td className="px-4 py-3 text-slate-600">{c.email}</td>
@@ -187,7 +187,7 @@ export default function AdminCRM() {
             </table>
           ) : (
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-30">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-10">
                 <tr>
                   <th className="px-4 py-3">Nombre Doctor</th>
                   <th className="px-4 py-3">Clínica (Asignada)</th>
@@ -196,11 +196,11 @@ export default function AdminCRM() {
                   <th className="px-4 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {loading && doctores.length === 0 ? (
                   <tr><td colSpan="5" className="px-4 py-8 text-center text-slate-400">Cargando doctores...</td></tr>
                 ) : doctores.map(d => (
-                  <tr key={d.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={d.id} className="hover:bg-slate-50 transition-colors border-b border-slate-100">
                     <td className="px-4 py-3 font-bold text-slate-800">{d.trato} {d.nombre} {d.apellido}</td>
                     <td className="px-4 py-3 text-slate-600">{d.clientes?.nombre || "Sin Clínica"}</td>
                     <td className="px-4 py-3 text-slate-600">{d.telefono}</td>
@@ -214,7 +214,6 @@ export default function AdminCRM() {
               </tbody>
             </table>
           )}
-          </div>
         </div>
       </div>
 
@@ -222,7 +221,7 @@ export default function AdminCRM() {
       {editingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setEditingItem(null)}></div>
-          <div 
+          <div
             className="bg-white rounded-[24px] w-full max-w-lg relative z-10 flex flex-col"
             style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 -10px 40px -15px rgba(0, 0, 0, 0.1)' }}
           >
@@ -234,7 +233,7 @@ export default function AdminCRM() {
                 <X size={20} />
               </button>
             </div>
-            
+
             <form onSubmit={handleSave} className="p-6 flex flex-col gap-4">
               {activeTab === "clinicas" ? (
                 <>
@@ -294,13 +293,13 @@ export default function AdminCRM() {
               )}
 
               <div className="mt-4 flex gap-3 justify-end">
-                 <button type="button" onClick={() => setEditingItem(null)} className="px-5 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold transition-colors">
-                   Cancelar
-                 </button>
-                 <button type="submit" disabled={isSaving} className="px-5 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold transition-colors flex items-center gap-2 shadow-md">
-                   {isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
-                   Guardar
-                 </button>
+                <button type="button" onClick={() => setEditingItem(null)} className="px-5 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold transition-colors">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={isSaving} className="px-5 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold transition-colors flex items-center gap-2 shadow-md">
+                  {isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
+                  Guardar
+                </button>
               </div>
             </form>
           </div>
