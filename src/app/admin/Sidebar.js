@@ -184,12 +184,12 @@ export default function Sidebar() {
           const isHovered = hoveredMenu === item.href;
 
           const colorMap = {
-            "text-blue-400": { bg: "bg-blue-500/10", shadow: "shadow-[0_10px_30px_-5px_rgba(96,165,250,0.3),inset_0_0_20px_rgba(96,165,250,0.1)]", glowLine: "shadow-[0_0_10px_rgba(96,165,250,0.8)] bg-blue-400", dropShadow: "drop-shadow-[0_0_12px_rgba(96,165,250,0.8)]", hoverBg: "rgba(96,165,250,0.2)", hoverBorder: "rgba(96,165,250,0.5)" },
-            "text-amber-400": { bg: "bg-amber-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(251,191,36,0.3),inset_0_0_20px_rgba(251,191,36,0.1)]", glowLine: "shadow-[0_0_10px_rgba(251,191,36,0.8)] bg-amber-400", dropShadow: "drop-shadow-[0_0_12px_rgba(251,191,36,0.8)]", hoverBg: "rgba(251,191,36,0.2)", hoverBorder: "rgba(251,191,36,0.5)" },
-            "text-green-400": { bg: "bg-green-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(74,222,128,0.3),inset_0_0_20px_rgba(74,222,128,0.1)]", glowLine: "shadow-[0_0_10px_rgba(74,222,128,0.8)] bg-green-400", dropShadow: "drop-shadow-[0_0_12px_rgba(74,222,128,0.8)]", hoverBg: "rgba(74,222,128,0.2)", hoverBorder: "rgba(74,222,128,0.5)" },
-            "text-rose-400": { bg: "bg-rose-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(251,113,133,0.3),inset_0_0_20px_rgba(251,113,133,0.1)]", glowLine: "shadow-[0_0_10px_rgba(251,113,133,0.8)] bg-rose-400", dropShadow: "drop-shadow-[0_0_12px_rgba(251,113,133,0.8)]", hoverBg: "rgba(251,113,133,0.2)", hoverBorder: "rgba(251,113,133,0.5)" },
-            "text-purple-400": { bg: "bg-purple-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(192,132,252,0.3),inset_0_0_20px_rgba(192,132,252,0.1)]", glowLine: "shadow-[0_0_10px_rgba(192,132,252,0.8)] bg-purple-400", dropShadow: "drop-shadow-[0_0_12px_rgba(192,132,252,0.8)]", hoverBg: "rgba(192,132,252,0.2)", hoverBorder: "rgba(192,132,252,0.5)" },
-            "text-red-500": { bg: "bg-red-500/10", shadow: "shadow-[0_10px_30px_-5px_rgba(239,68,68,0.3),inset_0_0_20px_rgba(239,68,68,0.1)]", glowLine: "shadow-[0_0_10px_rgba(239,68,68,0.8)] bg-red-500", dropShadow: "drop-shadow-[0_0_12px_rgba(239,68,68,0.8)]", hoverBg: "rgba(239,68,68,0.2)", hoverBorder: "rgba(239,68,68,0.5)" },
+            "text-blue-400": { bg: "bg-slate-800", shadow: "shadow-[0_0_15px_rgba(96,165,250,0.5)]", dropShadow: "drop-shadow-[0_0_12px_rgba(96,165,250,1)]", hoverBg: "rgba(96,165,250,0.2)", hoverBorder: "rgba(96,165,250,0.5)", border: "border border-blue-500/50" },
+            "text-amber-400": { bg: "bg-slate-800", shadow: "shadow-[0_0_15px_rgba(251,191,36,0.5)]", dropShadow: "drop-shadow-[0_0_12px_rgba(251,191,36,1)]", hoverBg: "rgba(251,191,36,0.2)", hoverBorder: "rgba(251,191,36,0.5)", border: "border border-amber-400/50" },
+            "text-green-400": { bg: "bg-slate-800", shadow: "shadow-[0_0_15px_rgba(74,222,128,0.5)]", dropShadow: "drop-shadow-[0_0_12px_rgba(74,222,128,1)]", hoverBg: "rgba(74,222,128,0.2)", hoverBorder: "rgba(74,222,128,0.5)", border: "border border-green-400/50" },
+            "text-rose-400": { bg: "bg-slate-800", shadow: "shadow-[0_0_15px_rgba(251,113,133,0.5)]", dropShadow: "drop-shadow-[0_0_12px_rgba(251,113,133,1)]", hoverBg: "rgba(251,113,133,0.2)", hoverBorder: "rgba(251,113,133,0.5)", border: "border border-rose-400/50" },
+            "text-purple-400": { bg: "bg-slate-800", shadow: "shadow-[0_0_15px_rgba(192,132,252,0.5)]", dropShadow: "drop-shadow-[0_0_12px_rgba(192,132,252,1)]", hoverBg: "rgba(192,132,252,0.2)", hoverBorder: "rgba(192,132,252,0.5)", border: "border border-purple-400/50" },
+            "text-red-500": { bg: "bg-slate-800", shadow: "shadow-[0_0_15px_rgba(239,68,68,0.5)]", dropShadow: "drop-shadow-[0_0_12px_rgba(239,68,68,1)]", hoverBg: "rgba(239,68,68,0.2)", hoverBorder: "rgba(239,68,68,0.5)", border: "border border-red-500/50" },
           };
           const activeStyle = colorMap[item.iconColor] || colorMap["text-amber-400"];
 
@@ -205,8 +205,8 @@ export default function Sidebar() {
                 title={isCollapsed ? item.label : undefined}
                 className={`relative flex items-center gap-3 px-3 py-2.5 md:px-4 md:py-3 rounded-2xl transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
                   isActive
-                    ? `text-white font-bold ${activeStyle.bg} ${activeStyle.shadow} scale-[1.04] z-10`
-                    : "hover:bg-slate-800/40 hover:text-white text-slate-400 hover:shadow-lg"
+                    ? `text-white font-bold ${activeStyle.bg} ${activeStyle.shadow} ${activeStyle.border} scale-[1.04] z-10`
+                    : "hover:bg-slate-800/40 hover:text-white text-slate-400 hover:shadow-lg border border-transparent"
                 } justify-center md:justify-start ${isCollapsed ? "md:justify-center md:px-0" : ""}`}
                 style={isActive ? { transformStyle: 'preserve-3d', transform: 'translateZ(10px)' } : {}}
               >

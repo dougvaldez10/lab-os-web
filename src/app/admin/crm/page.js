@@ -111,41 +111,49 @@ export default function AdminCRM() {
   };
 
   return (
-    <div className="p-6 h-full flex flex-col bg-slate-50">
+    <div className="flex-1 flex flex-col px-4 md:px-8 relative max-w-full overflow-x-hidden">
       <Toaster position="bottom-right" />
-      
-      <div className="flex justify-between items-center mb-6 shrink-0">
-        <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Directorio CRM</h1>
-          <p className="text-sm text-slate-500 mt-1">Gestión de Clínicas y Doctores.</p>
+       {/* Sticky Top Bar (Header + Tabs) */}
+      <div className="sticky top-0 z-40 bg-slate-50 pt-4 md:pt-8 pb-4">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+              <div className="bg-[#D4AF37]/10 p-2 rounded-xl border border-[#D4AF37]/20">
+                <Building2 size={24} className="text-[#D4AF37]" />
+              </div>
+              Directorio CRM
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">Gestión de Clínicas y Doctores.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => openModal()} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-2 shadow-sm hover-lift">
+              <Plus size={18} /> Agregar {activeTab === "clinicas" ? "Clínica" : "Doctor"}
+            </button>
+            <button onClick={fetchData} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm hover:rotate-180 transition-all duration-500 cursor-pointer">
+              <RefreshCw size={20} className={loading ? "animate-spin text-emerald-500" : ""} />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => openModal()} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-2 shadow-sm hover-lift">
-            <Plus size={18} /> Agregar {activeTab === "clinicas" ? "Clínica" : "Doctor"}
+
+        {/* Tabs */}
+        <div className="flex items-center gap-2 shrink-0 bg-white p-1.5 rounded-xl border border-slate-200 w-fit">
+          <button 
+            onClick={() => setActiveTab("clinicas")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'clinicas' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            <Building2 size={18} /> Clínicas
           </button>
-          <button onClick={fetchData} className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm hover:rotate-180 transition-all duration-500 cursor-pointer">
-            <RefreshCw size={20} className={loading ? "animate-spin text-emerald-500" : ""} />
+          <button 
+            onClick={() => setActiveTab("doctores")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'doctores' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            <UserCircle size={18} /> Doctores
           </button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 mb-4 shrink-0 bg-white p-1.5 rounded-xl border border-slate-200 w-fit">
-        <button 
-          onClick={() => setActiveTab("clinicas")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'clinicas' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          <Building2 size={18} /> Clínicas
-        </button>
-        <button 
-          onClick={() => setActiveTab("doctores")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'doctores' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          <UserCircle size={18} /> Doctores
-        </button>
-      </div>
-
-      <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 md:overflow-visible overflow-hidden flex flex-col">
+      <div className="flex-1 bg-white/40 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200 md:overflow-visible overflow-hidden flex flex-col">
         <div className="md:overflow-visible overflow-x-auto flex-1">
           {activeTab === "clinicas" ? (
             <table className="w-full text-left text-sm whitespace-nowrap">
