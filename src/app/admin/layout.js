@@ -33,7 +33,7 @@ export default async function AdminLayout({ children }) {
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 bg-slate-50 h-screen overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 bg-slate-50 h-screen overflow-x-visible overflow-y-auto relative z-0">
         {children}
       </main>
     </div>

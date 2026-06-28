@@ -184,12 +184,12 @@ export default function Sidebar() {
           const isHovered = hoveredMenu === item.href;
 
           const colorMap = {
-            "text-blue-400": { bg: "bg-blue-500/10", shadow: "shadow-[0_10px_30px_-5px_rgba(96,165,250,0.3),inset_0_0_20px_rgba(96,165,250,0.1)]", border: "border-blue-400", dropShadow: "drop-shadow-[0_0_12px_rgba(96,165,250,0.8)]" },
-            "text-amber-400": { bg: "bg-amber-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(251,191,36,0.3),inset_0_0_20px_rgba(251,191,36,0.1)]", border: "border-amber-400", dropShadow: "drop-shadow-[0_0_12px_rgba(251,191,36,0.8)]" },
-            "text-green-400": { bg: "bg-green-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(74,222,128,0.3),inset_0_0_20px_rgba(74,222,128,0.1)]", border: "border-green-400", dropShadow: "drop-shadow-[0_0_12px_rgba(74,222,128,0.8)]" },
-            "text-rose-400": { bg: "bg-rose-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(251,113,133,0.3),inset_0_0_20px_rgba(251,113,133,0.1)]", border: "border-rose-400", dropShadow: "drop-shadow-[0_0_12px_rgba(251,113,133,0.8)]" },
-            "text-purple-400": { bg: "bg-purple-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(192,132,252,0.3),inset_0_0_20px_rgba(192,132,252,0.1)]", border: "border-purple-400", dropShadow: "drop-shadow-[0_0_12px_rgba(192,132,252,0.8)]" },
-            "text-red-500": { bg: "bg-red-500/10", shadow: "shadow-[0_10px_30px_-5px_rgba(239,68,68,0.3),inset_0_0_20px_rgba(239,68,68,0.1)]", border: "border-red-500", dropShadow: "drop-shadow-[0_0_12px_rgba(239,68,68,0.8)]" },
+            "text-blue-400": { bg: "bg-blue-500/10", shadow: "shadow-[0_10px_30px_-5px_rgba(96,165,250,0.3),inset_0_0_20px_rgba(96,165,250,0.1)]", glowLine: "shadow-[0_0_10px_rgba(96,165,250,0.8)] bg-blue-400", dropShadow: "drop-shadow-[0_0_12px_rgba(96,165,250,0.8)]", hoverBg: "rgba(96,165,250,0.2)", hoverBorder: "rgba(96,165,250,0.5)" },
+            "text-amber-400": { bg: "bg-amber-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(251,191,36,0.3),inset_0_0_20px_rgba(251,191,36,0.1)]", glowLine: "shadow-[0_0_10px_rgba(251,191,36,0.8)] bg-amber-400", dropShadow: "drop-shadow-[0_0_12px_rgba(251,191,36,0.8)]", hoverBg: "rgba(251,191,36,0.2)", hoverBorder: "rgba(251,191,36,0.5)" },
+            "text-green-400": { bg: "bg-green-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(74,222,128,0.3),inset_0_0_20px_rgba(74,222,128,0.1)]", glowLine: "shadow-[0_0_10px_rgba(74,222,128,0.8)] bg-green-400", dropShadow: "drop-shadow-[0_0_12px_rgba(74,222,128,0.8)]", hoverBg: "rgba(74,222,128,0.2)", hoverBorder: "rgba(74,222,128,0.5)" },
+            "text-rose-400": { bg: "bg-rose-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(251,113,133,0.3),inset_0_0_20px_rgba(251,113,133,0.1)]", glowLine: "shadow-[0_0_10px_rgba(251,113,133,0.8)] bg-rose-400", dropShadow: "drop-shadow-[0_0_12px_rgba(251,113,133,0.8)]", hoverBg: "rgba(251,113,133,0.2)", hoverBorder: "rgba(251,113,133,0.5)" },
+            "text-purple-400": { bg: "bg-purple-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(192,132,252,0.3),inset_0_0_20px_rgba(192,132,252,0.1)]", glowLine: "shadow-[0_0_10px_rgba(192,132,252,0.8)] bg-purple-400", dropShadow: "drop-shadow-[0_0_12px_rgba(192,132,252,0.8)]", hoverBg: "rgba(192,132,252,0.2)", hoverBorder: "rgba(192,132,252,0.5)" },
+            "text-red-500": { bg: "bg-red-500/10", shadow: "shadow-[0_10px_30px_-5px_rgba(239,68,68,0.3),inset_0_0_20px_rgba(239,68,68,0.1)]", glowLine: "shadow-[0_0_10px_rgba(239,68,68,0.8)] bg-red-500", dropShadow: "drop-shadow-[0_0_12px_rgba(239,68,68,0.8)]", hoverBg: "rgba(239,68,68,0.2)", hoverBorder: "rgba(239,68,68,0.5)" },
           };
           const activeStyle = colorMap[item.iconColor] || colorMap["text-amber-400"];
 
@@ -205,11 +205,16 @@ export default function Sidebar() {
                 title={isCollapsed ? item.label : undefined}
                 className={`relative flex items-center gap-3 px-3 py-2.5 md:px-4 md:py-3 rounded-2xl transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
                   isActive
-                    ? `text-white font-bold md:border-l-[3px] md:border-b-0 border-b-[3px] ${activeStyle.border} ${activeStyle.bg} ${activeStyle.shadow} scale-[1.04] md:translate-x-1 z-10`
+                    ? `text-white font-bold md:border-b-0 border-b-[3px] border-transparent ${activeStyle.bg} ${activeStyle.shadow} scale-[1.04] md:translate-x-1 z-10`
                     : "hover:bg-slate-800/40 hover:text-white text-slate-400 hover:shadow-lg"
                 } justify-center md:justify-start ${isCollapsed ? "md:justify-center md:px-0" : ""}`}
                 style={isActive ? { transformStyle: 'preserve-3d', transform: 'translateZ(10px)' } : {}}
               >
+                {/* Crescent Line for Active State (Absolute so it doesn't shift content) */}
+                {isActive && (
+                  <div className={`absolute left-0 top-[10%] bottom-[10%] w-[4px] rounded-r-full ${activeStyle.glowLine} hidden md:block`}></div>
+                )}
+                
                 <Icon size={20} className={`${item.iconColor} shrink-0 transition-all duration-500 ${isActive ? `${activeStyle.dropShadow} scale-110` : 'hover:scale-110'}`} />
                 
                 <span className={`font-medium text-sm whitespace-nowrap flex-1 hidden md:block transition-all duration-500 ${isActive ? 'tracking-wide' : ''} ${isCollapsed ? 'md:hidden' : ''}`}>
@@ -238,7 +243,7 @@ export default function Sidebar() {
                       initial="hidden"
                       animate="visible"
                       exit="exit"
-                      className="hidden md:flex absolute left-[calc(100%+12px)] top-1/2 -translate-y-1/2 z-[100] flex-col gap-2 p-3 bg-slate-900/55 border border-slate-700/30 backdrop-blur-md rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] min-w-[180px]"
+                      className="hidden md:flex absolute left-[calc(100%+12px)] top-1/2 -translate-y-1/2 z-[100] flex-col gap-2 p-3 bg-slate-900/85 border border-slate-700/50 backdrop-blur-2xl rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.6)] min-w-[180px]"
                     >
                       {subMenus[item.href].map((subItem) => (
                         <Link
@@ -249,8 +254,8 @@ export default function Sidebar() {
                         >
                           <motion.div
                             variants={itemVariants}
-                            whileHover={{ scale: 1.03, backgroundColor: "rgba(212, 175, 55, 0.2)", borderColor: "rgba(212, 175, 55, 0.5)", color: "#ffffff" }}
-                            className="px-5 py-2.5 bg-slate-800/65 text-slate-300 rounded-full text-xs font-bold text-center border border-slate-700/30 shadow-sm whitespace-nowrap cursor-pointer"
+                            whileHover={{ scale: 1.03, backgroundColor: activeStyle.hoverBg, borderColor: activeStyle.hoverBorder, color: "#ffffff" }}
+                            className="px-5 py-2.5 bg-slate-800/85 text-slate-300 rounded-full text-xs font-bold text-center border border-slate-700/30 shadow-sm whitespace-nowrap cursor-pointer transition-colors"
                           >
                             {subItem.label}
                           </motion.div>

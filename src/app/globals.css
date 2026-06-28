@@ -114,3 +114,22 @@ body {
     transform: translateX(4px);
   }
 }
+
+/* Animated Table Row Dividers (Glassmorphism Effect) */
+table tbody tr {
+  position: relative;
+}
+table tbody tr td {
+  border-bottom: none !important;
+}
+table tbody tr::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: -200px;
+  right: 0px;
+  height: 2px;
+  background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(203, 213, 225, 1) 0%, rgba(203, 213, 225, 0) 100%);
+  pointer-events: none;
+  z-index: 10;
+}
