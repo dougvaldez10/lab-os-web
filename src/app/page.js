@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, ChevronDown, ChevronUp, Plus, Check, RefreshCw, Layers, Smile, Shield, Smartphone, Package, Target, Sun, X, Calculator, DollarSign, Percent, Pause, Download, Upload, Play, AlertTriangle, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { getAllUsers, loginUser, getCurrentUser, logoutUser } from "@/lib/auth";
-import { generateReceipt } from "@/app/actions/receipts";
+import { saveReceiptData } from "@/app/actions/receipts";
 import { logShadowAudit, markShadowAuditAsSaved } from "@/app/actions/audit";
 import { getClients } from "@/app/actions/clients";
 import { getProducts } from "@/app/actions/products";
@@ -957,7 +957,7 @@ export default function Home() {
          applyIva
       };
       
-      const res = await generateReceipt(receiptCase.internal_id, payload);
+      const res = await saveReceiptData(receiptCase.internal_id, payload);
       setReceiptSaving(false);
       
       if (res.success) {

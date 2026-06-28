@@ -1541,39 +1541,41 @@ export default function BillingPanel() {
                                         {(!c.pagos || c.pagos.length === 0) ? (
                                           <p className="text-xs text-slate-400">No hay pagos registrados para este caso.</p>
                                         ) : (
-                                          <div className="space-y-2">
-                                            {c.pagos.map((p) => (
-                                              <div key={p.id} className="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-xs">
-                                                <div className="flex items-center gap-2">
-                                                  <Calendar size={13} className="text-slate-400" />
-                                                  <span className="text-slate-600 font-medium">
-                                                    {p.fecha_pago ? new Date(p.fecha_pago).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Fecha sin registrar'}
-                                                  </span>
-                                                  <span className="text-slate-300">|</span>
-                                                  <CreditCard size={13} className="text-slate-400" />
-                                                  <span className="bg-slate-200/80 px-2 py-0.5 rounded text-slate-700 font-bold text-[10px]">
-                                                    {p.metodo_pago}
-                                                  </span>
+                                          <>
+                                            <div className="space-y-2">
+                                              {c.pagos.map((p) => (
+                                                <div key={p.id} className="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-xs">
+                                                  <div className="flex items-center gap-2">
+                                                    <Calendar size={13} className="text-slate-400" />
+                                                    <span className="text-slate-600 font-medium">
+                                                      {p.fecha_pago ? new Date(p.fecha_pago).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Fecha sin registrar'}
+                                                    </span>
+                                                    <span className="text-slate-300">|</span>
+                                                    <CreditCard size={13} className="text-slate-400" />
+                                                    <span className="bg-slate-200/80 px-2 py-0.5 rounded text-slate-700 font-bold text-[10px]">
+                                                      {p.metodo_pago}
+                                                    </span>
+                                                  </div>
+                                                  <div className="flex items-center gap-4">
+                                                    <span className="text-slate-500">
+                                                      Registrado por: <strong className="text-slate-700">{p.creado_por || "Admin"}</strong>
+                                                    </span>
+                                                    <span className="text-sm font-black text-emerald-600">
+                                                      +${Number(p.monto_abono).toFixed(2)}
+                                                    </span>
+                                                  </div>
                                                 </div>
-                                                <div className="flex items-center gap-4">
-                                                  <span className="text-slate-500">
-                                                    Registrado por: <strong className="text-slate-700">{p.creado_por || "Admin"}</strong>
-                                                  </span>
-                                                  <span className="text-sm font-black text-emerald-600">
-                                                    +${Number(p.monto_abono).toFixed(2)}
-                                                  </span>
-                                                </div>
-                                              </div>
-                                            ))}
-                                          </div>
-                                          <div className="mt-4 flex justify-end">
-                                            <button 
-                                              onClick={() => setRevertModalCase(c)}
-                                              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-lg transition-colors border border-rose-200"
-                                            >
-                                              Revertir Último Abono
-                                            </button>
-                                          </div>
+                                              ))}
+                                            </div>
+                                            <div className="mt-4 flex justify-end">
+                                              <button 
+                                                onClick={() => setRevertModalCase(c)}
+                                                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-lg transition-colors border border-rose-200"
+                                              >
+                                                Revertir Último Abono
+                                              </button>
+                                            </div>
+                                          </>
                                         )}
                                       </div>
                                     </td>
