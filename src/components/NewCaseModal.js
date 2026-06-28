@@ -10,11 +10,36 @@ import { createNewCase } from "@/app/actions/create-case";
 const ClientSelect = ({ clients, selected, onChange }) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   
   const filtered = clients.filter(c => {
      const term = search.toLowerCase();
      return (c.nombre?.toLowerCase().includes(term) || c.nombre_dentista?.toLowerCase().includes(term));
   });
+
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [search]);
+
+  const handleKeyDown = (e) => {
+    if (!open) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedIndex(prev => (prev < filtered.length - 1 ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedIndex(prev => (prev > 0 ? prev - 1 : -1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (focusedIndex >= 0 && focusedIndex < filtered.length) {
+        onChange(filtered[focusedIndex].id);
+        setOpen(false);
+        setSearch('');
+      }
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+    }
+  };
 
   const selectedClient = clients.find(c => c.id === selected);
 
@@ -51,6 +76,7 @@ const ClientSelect = ({ clients, selected, onChange }) => {
                  className="w-full bg-white rounded-lg px-3 py-2 text-sm border border-slate-200 outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-all"
                  value={search}
                  onChange={(e) => setSearch(e.target.value)}
+                 onKeyDown={handleKeyDown}
                  onClick={e => e.stopPropagation()}
                />
             </div>
@@ -60,11 +86,11 @@ const ClientSelect = ({ clients, selected, onChange }) => {
                     <span>Sin resultados</span>
                  </div>
                ) : (
-                 filtered.map(c => (
+                 filtered.map((c, idx) => (
                    <div 
                      key={c.id} 
                      onClick={() => { onChange(c.id); setOpen(false); setSearch(''); }}
-                     className="px-4 py-2.5 hover:bg-[#D4AF37]/10 cursor-pointer border-b border-slate-50 last:border-0 transition-colors flex flex-col"
+                     className={`px-4 py-2.5 cursor-pointer border-b border-slate-50 last:border-0 transition-colors flex flex-col ${focusedIndex === idx ? 'bg-[#D4AF37]/20' : 'hover:bg-[#D4AF37]/10'}`}
                    >
                      <span className="font-bold text-slate-800 text-sm">{c.nombre_dentista ? (c.nombre_dentista.toLowerCase().includes('dr') ? c.nombre_dentista : 'Dr. ' + c.nombre_dentista) : c.nombre}</span>
                      {c.nombre_dentista && <span className="text-xs text-slate-500 font-medium">{c.nombre}</span>}
