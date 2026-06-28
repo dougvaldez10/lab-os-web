@@ -38,6 +38,7 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 /* Custom Scrollbar */
@@ -127,7 +128,7 @@ table tbody tr::after {
   position: absolute;
   bottom: 0;
   left: -200px;
-  right: 0px;
+  right: -100px;
   height: 2px;
   background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(203, 213, 225, 1) 0%, rgba(203, 213, 225, 0) 100%);
   pointer-events: none;

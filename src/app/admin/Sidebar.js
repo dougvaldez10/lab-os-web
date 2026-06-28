@@ -139,7 +139,7 @@ export default function Sidebar() {
 
   return (
     <aside 
-      className={`group w-full bg-slate-900/60 backdrop-blur-2xl text-slate-300 flex flex-row md:flex-col shrink-0 transition-all duration-500 relative border-b md:border-b-0 md:border-r border-slate-700/50 hover:shadow-[0_0_50px_rgba(255,255,255,0.05)] md:h-screen md:sticky md:top-0 z-50 ${
+      className={`group w-full bg-slate-900/30 backdrop-blur-2xl text-slate-300 flex flex-row md:flex-col shrink-0 transition-all duration-500 relative border-b md:border-b-0 md:border-r border-slate-700/50 hover:shadow-[0_0_50px_rgba(255,255,255,0.05)] md:h-screen md:sticky md:top-0 z-50 ${
         isCollapsed ? "md:w-20" : "md:w-64"
       } items-center md:items-stretch`}
     >
@@ -205,16 +205,11 @@ export default function Sidebar() {
                 title={isCollapsed ? item.label : undefined}
                 className={`relative flex items-center gap-3 px-3 py-2.5 md:px-4 md:py-3 rounded-2xl transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
                   isActive
-                    ? `text-white font-bold md:border-b-0 border-b-[3px] border-transparent ${activeStyle.bg} ${activeStyle.shadow} scale-[1.04] md:translate-x-1 z-10`
+                    ? `text-white font-bold ${activeStyle.bg} ${activeStyle.shadow} scale-[1.04] z-10`
                     : "hover:bg-slate-800/40 hover:text-white text-slate-400 hover:shadow-lg"
                 } justify-center md:justify-start ${isCollapsed ? "md:justify-center md:px-0" : ""}`}
                 style={isActive ? { transformStyle: 'preserve-3d', transform: 'translateZ(10px)' } : {}}
               >
-                {/* Crescent Line for Active State (Absolute so it doesn't shift content) */}
-                {isActive && (
-                  <div className={`absolute left-0 top-[10%] bottom-[10%] w-[4px] rounded-r-full ${activeStyle.glowLine} hidden md:block`}></div>
-                )}
-                
                 <Icon size={20} className={`${item.iconColor} shrink-0 transition-all duration-500 ${isActive ? `${activeStyle.dropShadow} scale-110` : 'hover:scale-110'}`} />
                 
                 <span className={`font-medium text-sm whitespace-nowrap flex-1 hidden md:block transition-all duration-500 ${isActive ? 'tracking-wide' : ''} ${isCollapsed ? 'md:hidden' : ''}`}>
