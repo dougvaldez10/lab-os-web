@@ -130,7 +130,7 @@ export default function AdminCRM() {
       <Toaster position="bottom-right" />
 
       {/* LAYER 1: LA HOJA DE PAPEL (SCROLLING) */}
-      <div className="absolute inset-0 overflow-y-auto crm-scroll z-0">
+      <div className="absolute inset-0 overflow-y-auto overflow-x-hidden crm-scroll z-0">
         <div style={{ paddingTop: `${topHeight}px` }} className="px-4 md:px-8 pb-24 w-full flex flex-col">
           {activeTab === "clinicas" ? (
             loading && clientes.length === 0 ? (
@@ -196,17 +196,17 @@ export default function AdminCRM() {
       <div className="absolute inset-0 z-20 pointer-events-none flex flex-col">
         <div ref={topSectionRef} className="pointer-events-none flex flex-col pt-4 md:pt-8 px-4 md:px-8">
           
-          {/* Título y Tabs - Papel Sólido */}
-          <div className="pointer-events-auto bg-slate-50 pb-4">
+          {/* Título y Tabs - Papel Sólido (Solo las letras y botones) */}
+          <div className="pointer-events-none pb-4">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3 bg-slate-50">
-                  <div className="bg-[#D4AF37]/10 p-2 rounded-xl border border-[#D4AF37]/20">
+                <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                  <div className="bg-[#D4AF37]/10 p-2 rounded-xl border border-[#D4AF37]/20 pointer-events-auto">
                     <Building2 size={24} className="text-[#D4AF37]" />
                   </div>
-                  <span className="bg-slate-50">Directorio CRM</span>
+                  <span className="pointer-events-auto">Directorio CRM</span>
                 </h1>
-                <p className="text-sm text-slate-500 mt-1 bg-slate-50 w-fit pr-2">Gestión de Clínicas y Doctores.</p>
+                <p className="text-sm text-slate-500 mt-1 w-fit pr-2 pointer-events-auto">Gestión de Clínicas y Doctores.</p>
               </div>
               <div className="flex items-center gap-3">
                 <button onClick={() => openModal()} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-2 shadow-sm pointer-events-auto">
