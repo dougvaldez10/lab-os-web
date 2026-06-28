@@ -154,12 +154,12 @@ export default function AdminCRM() {
       </div>
 
       {/* ── RECTÁNGULO: borde visible, thead fijo, tbody con scroll interno ── */}
-      <div className="flex-1 border border-slate-200 rounded-2xl overflow-hidden flex flex-col min-h-0 bg-white shadow-sm">
+      <div className="flex-1 border border-slate-200/50 rounded-2xl overflow-hidden flex flex-col min-h-0 bg-white/20 backdrop-blur-md shadow-sm relative">
         {/* Scroll container — scrollbar verde a la derecha dentro del rectángulo */}
         <div className="flex-1 overflow-y-auto crm-scroll min-h-0">
           {activeTab === "clinicas" ? (
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-10">
+              <thead className="bg-white/40 backdrop-blur-md border-b border-slate-200/50 text-slate-600 font-bold sticky top-0 z-10">
                 <tr>
                   <th className="px-4 py-3">Nombre Clínica</th>
                   <th className="px-4 py-3">Teléfono</th>
@@ -187,7 +187,7 @@ export default function AdminCRM() {
             </table>
           ) : (
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-10">
+              <thead className="bg-white/40 backdrop-blur-md border-b border-slate-200/50 text-slate-600 font-bold sticky top-0 z-10">
                 <tr>
                   <th className="px-4 py-3">Nombre Doctor</th>
                   <th className="px-4 py-3">Clínica (Asignada)</th>
