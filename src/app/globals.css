@@ -122,15 +122,5 @@ table tbody tr {
 }
 table tbody tr td {
   border-bottom: none !important;
-}
-table tbody tr::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: -200px;
-  right: -100px;
-  height: 2px;
-  background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(203, 213, 225, 1) 0%, rgba(203, 213, 225, 0) 100%);
-  pointer-events: none;
-  z-index: 10;
+  box-shadow: 0 1px 0 0 rgba(203, 213, 225, 0.8);
 }

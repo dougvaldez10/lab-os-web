@@ -114,9 +114,9 @@ export default function AdminCRM() {
     <div className="flex-1 flex flex-col p-4 md:p-8 h-screen overflow-hidden bg-slate-50">
       <Toaster position="bottom-right" />
       
-      <div className="flex-1 bg-white/10 backdrop-blur-md rounded-2xl shadow-sm border border-white/20 overflow-y-auto flex flex-col relative">
+      <div className="flex-1 bg-white/10 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200 overflow-y-auto flex flex-col relative">
         {/* Sticky Top Bar (Header + Tabs) */}
-        <div className="sticky top-0 z-45 bg-slate-50/70 backdrop-blur-md p-6 pb-4 border-b border-white/10 shrink-0">
+        <div className="sticky top-0 z-40 bg-slate-50 p-6 pb-4 border-b border-slate-200 shrink-0">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -159,7 +159,7 @@ export default function AdminCRM() {
           <div className="overflow-x-auto flex-1">
           {activeTab === "clinicas" ? (
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-[#f8fafc] border-b border-slate-200 text-slate-500 font-bold sticky top-[148px] z-30">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-30">
                 <tr>
                   <th className="px-4 py-3">Nombre Clínica</th>
                   <th className="px-4 py-3">Teléfono</th>
@@ -187,7 +187,7 @@ export default function AdminCRM() {
             </table>
           ) : (
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-[#f8fafc] border-b border-slate-200 text-slate-500 font-bold sticky top-[148px] z-30">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-30">
                 <tr>
                   <th className="px-4 py-3">Nombre Doctor</th>
                   <th className="px-4 py-3">Clínica (Asignada)</th>
