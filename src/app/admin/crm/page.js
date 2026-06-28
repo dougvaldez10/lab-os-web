@@ -214,6 +214,7 @@ export default function AdminCRM() {
               </tbody>
             </table>
           )}
+          </div>
         </div>
       </div>
 
