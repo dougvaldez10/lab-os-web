@@ -139,7 +139,7 @@ export default function Sidebar() {
 
   return (
     <aside 
-      className={`w-full bg-slate-900 text-slate-300 flex flex-row md:flex-col shrink-0 transition-all duration-300 relative border-b md:border-b-0 md:border-r border-slate-800/80 md:h-screen md:sticky md:top-0 z-50 ${
+      className={`group w-full bg-slate-900/60 backdrop-blur-2xl text-slate-300 flex flex-row md:flex-col shrink-0 transition-all duration-500 relative border-b md:border-b-0 md:border-r border-slate-700/50 hover:shadow-[0_0_50px_rgba(255,255,255,0.05)] md:h-screen md:sticky md:top-0 z-50 ${
         isCollapsed ? "md:w-20" : "md:w-64"
       } items-center md:items-stretch`}
     >
@@ -183,25 +183,36 @@ export default function Sidebar() {
           const hasSubmenu = subMenus[item.href] !== undefined;
           const isHovered = hoveredMenu === item.href;
 
+          const colorMap = {
+            "text-blue-400": { bg: "bg-blue-500/10", shadow: "shadow-[0_10px_30px_-5px_rgba(96,165,250,0.3),inset_0_0_20px_rgba(96,165,250,0.1)]", border: "border-blue-400", dropShadow: "drop-shadow-[0_0_12px_rgba(96,165,250,0.8)]" },
+            "text-amber-400": { bg: "bg-amber-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(251,191,36,0.3),inset_0_0_20px_rgba(251,191,36,0.1)]", border: "border-amber-400", dropShadow: "drop-shadow-[0_0_12px_rgba(251,191,36,0.8)]" },
+            "text-green-400": { bg: "bg-green-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(74,222,128,0.3),inset_0_0_20px_rgba(74,222,128,0.1)]", border: "border-green-400", dropShadow: "drop-shadow-[0_0_12px_rgba(74,222,128,0.8)]" },
+            "text-rose-400": { bg: "bg-rose-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(251,113,133,0.3),inset_0_0_20px_rgba(251,113,133,0.1)]", border: "border-rose-400", dropShadow: "drop-shadow-[0_0_12px_rgba(251,113,133,0.8)]" },
+            "text-purple-400": { bg: "bg-purple-400/10", shadow: "shadow-[0_10px_30px_-5px_rgba(192,132,252,0.3),inset_0_0_20px_rgba(192,132,252,0.1)]", border: "border-purple-400", dropShadow: "drop-shadow-[0_0_12px_rgba(192,132,252,0.8)]" },
+            "text-red-500": { bg: "bg-red-500/10", shadow: "shadow-[0_10px_30px_-5px_rgba(239,68,68,0.3),inset_0_0_20px_rgba(239,68,68,0.1)]", border: "border-red-500", dropShadow: "drop-shadow-[0_0_12px_rgba(239,68,68,0.8)]" },
+          };
+          const activeStyle = colorMap[item.iconColor] || colorMap["text-amber-400"];
+
           return (
             <div
               key={item.href}
-              className="relative"
+              className="relative perspective-[1000px]"
               onMouseEnter={() => hasSubmenu && handleMouseEnter(item.href)}
               onMouseLeave={() => hasSubmenu && handleMouseLeave()}
             >
               <Link
                 href={item.href}
                 title={isCollapsed ? item.label : undefined}
-                className={`relative flex items-center gap-3 px-3 py-2.5 md:px-4 md:py-3 rounded-xl transition-all duration-250 ${
+                className={`relative flex items-center gap-3 px-3 py-2.5 md:px-4 md:py-3 rounded-2xl transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
                   isActive
-                    ? "bg-slate-800 text-white font-semibold md:border-l-2 md:border-b-0 border-b-2 border-[#D4AF37] shadow-inner"
-                    : "hover:bg-slate-800/60 hover:text-white text-slate-400"
+                    ? `text-white font-bold md:border-l-[3px] md:border-b-0 border-b-[3px] ${activeStyle.border} ${activeStyle.bg} ${activeStyle.shadow} scale-[1.04] md:translate-x-1 z-10`
+                    : "hover:bg-slate-800/40 hover:text-white text-slate-400 hover:shadow-lg"
                 } justify-center md:justify-start ${isCollapsed ? "md:justify-center md:px-0" : ""}`}
+                style={isActive ? { transformStyle: 'preserve-3d', transform: 'translateZ(10px)' } : {}}
               >
-                <Icon size={20} className={`${item.iconColor} shrink-0 transition-transform duration-200 hover:scale-110`} />
+                <Icon size={20} className={`${item.iconColor} shrink-0 transition-all duration-500 ${isActive ? `${activeStyle.dropShadow} scale-110` : 'hover:scale-110'}`} />
                 
-                <span className={`font-medium text-sm whitespace-nowrap flex-1 hidden md:block ${isCollapsed ? 'md:hidden' : ''}`}>
+                <span className={`font-medium text-sm whitespace-nowrap flex-1 hidden md:block transition-all duration-500 ${isActive ? 'tracking-wide' : ''} ${isCollapsed ? 'md:hidden' : ''}`}>
                   {item.label}
                 </span>
                 
