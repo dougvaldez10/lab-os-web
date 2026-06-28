@@ -21,6 +21,7 @@ async function checkAdminAccess() {
   if (!user || (!isSuperAdmin && !isAdminRole && !isExplicitAdmin)) {
     throw new Error('No autorizado');
   }
+  return user;
 }
 
 export async function updateAdminCase(internalId, payload) {
@@ -92,3 +93,103 @@ export async function deleteAdminCase(internalId) {
     return { success: false, error: err.message };
   }
 }
+
+export async function cancelarCaso({ caso_id, motivo }) {
+  try {
+    const user = await checkAdminAccess();
+    
+    if (!motivo || motivo.trim().length < 5) {
+      return { success: false, error: 'El motivo es obligatorio (mínimo 5 caracteres).' };
+    }
+
+    const supabase = getAdminClient();
+
+    // 1. Obtener información actual del caso
+    const { data: caso, error: errCaso } = await supabase
+      .from('casos_master')
+      .select('id, codigo, cliente_id, total_caso, saldo_pendiente, estado')
+      .eq('id', caso_id)
+      .single();
+
+    if (errCaso || !caso) {
+      return { success: false, error: 'Caso no encontrado.' };
+    }
+
+    if (caso.estado === 'Cancelado') {
+      return { success: false, error: 'El caso ya se encuentra cancelado.' };
+    }
+
+    // 2. Calcular lo pagado
+    const totalCaso = Number(caso.total_caso) || 0;
+    const saldoPendiente = Number(caso.saldo_pendiente) || 0;
+    const montoPagado = totalCaso - saldoPendiente;
+
+    // 3. Si hay saldo pagado, lo sumamos al saldo a favor de la clínica
+    if (montoPagado > 0) {
+      const { data: cliente, error: getCliErr } = await supabase
+        .from('clientes')
+        .select('saldo_favor')
+        .eq('id', caso.cliente_id)
+        .single();
+
+      if (!getCliErr && cliente) {
+        const nuevoSaldoFavor = (Number(cliente.saldo_favor) || 0) + montoPagado;
+        
+        await supabase
+          .from('clientes')
+          .update({ saldo_favor: nuevoSaldoFavor })
+          .eq('id', caso.cliente_id);
+          
+        // Registrar el abono al saldo a favor por cancelación en pagos_historico
+        await supabase
+          .from('pagos_historico')
+          .insert({
+            cliente_id: caso.cliente_id,
+            id_caso: caso_id,
+            monto_abono: montoPagado,
+            metodo_pago: 'Saldo a Favor',
+            creado_por: user.username || 'Sistema',
+            notas: `Monto transferido a saldo a favor por cancelación del caso. Motivo: ${motivo.trim()}`,
+            motivo: motivo.trim()
+          });
+      }
+    }
+
+    // 4. Actualizar casos_master a Cancelado y limpiar deuda
+    // Usamos estado_pago = 'Pendiente' debido al CHECK constraint en la base de datos
+    const { error: errUpdate } = await supabase
+      .from('casos_master')
+      .update({
+        estado: 'Cancelado',
+        saldo_pendiente: 0,
+        estado_pago: 'Pendiente' 
+      })
+      .eq('id', caso_id);
+
+    if (errUpdate) throw errUpdate;
+
+    // 5. Registrar auditoría general
+    await supabase
+      .from('pagos_historico')
+      .insert({
+        cliente_id: caso.cliente_id,
+        id_caso: caso_id,
+        monto_abono: 0,
+        tipo_movimiento: 'auditoria',
+        metodo_pago: 'Cancelación',
+        creado_por: user.username || 'Sistema',
+        notas: `Caso cancelado. Motivo: ${motivo.trim()}`,
+        motivo: motivo.trim()
+      });
+
+    revalidatePath('/');
+    revalidatePath('/admin/facturacion');
+    
+    return { success: true };
+
+  } catch (err) {
+    console.error('cancelarCaso error:', err);
+    return { success: false, error: err.message };
+  }
+}
+

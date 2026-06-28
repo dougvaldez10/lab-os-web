@@ -38,11 +38,15 @@ import {
   registerGlobalPayment,
   applyCustomDistribution,
   getPendingFacturacionCases,
-  markCaseAsSent
+  markCaseAsSent,
+  revertirPago,
+  registrarPromesaPago
 } from "@/app/actions/billing";
+import { cancelarCaso } from "@/app/actions/admin-cases";
 import { getAllClinics, getClients } from "@/app/actions/clients";
 import { toggleCaseIVA, updateCaseDiscount, getCaseDetailsForEdit } from "@/app/actions/cases";
-import { generateReceipt } from "@/app/actions/receipts";
+import { saveReceiptData, getReceiptByCaseId } from "@/app/actions/receipts";
+import { printThermalReceipt } from "@/components/ThermalReceipt";
 import { getAuditAlerts, logShadowAudit, markShadowAuditAsSaved } from "@/app/actions/audit";
 import EditCaseModal from "./EditCaseModal";
 import NewCaseModal from "@/components/NewCaseModal";
@@ -60,6 +64,21 @@ export default function BillingPanel() {
   const [allClinics, setAllClinics] = useState([]);
   const [doctores, setDoctores] = useState([]);
   const [cases, setCases] = useState([]);
+  const [cobrosSemana, setCobrosSemana] = useState({ porCobrar: [], proximamente: [] });
+  const [deudaGeneral, setDeudaGeneral] = useState([]);
+  const [cxcSubTab, setCxcSubTab] = useState("semana"); // "semana" | "general"
+
+  const [revertModalCase, setRevertModalCase] = useState(null);
+  const [motivoReversion, setMotivoReversion] = useState("");
+  const [submittingReversion, setSubmittingReversion] = useState(false);
+
+  const [cancelModalCase, setCancelModalCase] = useState(null);
+  const [motivoCancelacion, setMotivoCancelacion] = useState("");
+  const [submittingCancelacion, setSubmittingCancelacion] = useState(false);
+
+  const [promesaModalCase, setPromesaModalCase] = useState(null);
+  const [fechaPromesa, setFechaPromesa] = useState("");
+  const [submittingPromesa, setSubmittingPromesa] = useState(false);
   const [selectedClinic, setSelectedClinic] = useState(null); // Level 2 selection
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -174,6 +193,8 @@ export default function BillingPanel() {
         if (res.success) {
           setClinics(res.clinics || []);
           setCases(res.cases || []);
+          setCobrosSemana(res.cobrosSemana || { porCobrar: [], proximamente: [] });
+          setDeudaGeneral(res.deudaGeneral || []);
         } else {
           toast.error("Error al cargar cuentas por cobrar: " + res.error);
         }
@@ -205,6 +226,91 @@ export default function BillingPanel() {
   const handleOpenEdit = (c) => {
     setEditModalCase(c);
   };
+
+  const handleRevertirPago = async (e) => {
+    e.preventDefault();
+    if (!motivoReversion || motivoReversion.trim().length < 5) {
+      toast.error("El motivo debe tener al menos 5 caracteres.");
+      return;
+    }
+    setSubmittingReversion(true);
+    const toastId = toast.loading("Revertiendo pago...");
+    try {
+      const res = await revertirPago({ caso_id: revertModalCase.id, motivo: motivoReversion });
+      if (res.success) {
+        toast.success("Pago revertido con éxito", { id: toastId });
+        setRevertModalCase(null);
+        setMotivoReversion("");
+        fetchData();
+      } else {
+        toast.error(res.error || "No se pudo revertir el pago", { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Error al revertir pago", { id: toastId });
+    } finally {
+      setSubmittingReversion(false);
+    }
+  };
+
+  const handleCancelarCaso = async (e) => {
+    e.preventDefault();
+    if (!motivoCancelacion || motivoCancelacion.trim().length < 5) {
+      toast.error("El motivo debe tener al menos 5 caracteres.");
+      return;
+    }
+    setSubmittingCancelacion(true);
+    const toastId = toast.loading("Cancelando caso...");
+    try {
+      const res = await cancelarCaso({ caso_id: cancelModalCase.id, motivo: motivoCancelacion });
+      if (res.success) {
+        toast.success("Caso cancelado con éxito", { id: toastId });
+        setCancelModalCase(null);
+        setMotivoCancelacion("");
+        fetchData();
+      } else {
+        toast.error(res.error || "No se pudo cancelar el caso", { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Error al cancelar caso", { id: toastId });
+    } finally {
+      setSubmittingCancelacion(false);
+    }
+  };
+
+  const handleRegistrarPromesa = async (e) => {
+    e.preventDefault();
+    if (!fechaPromesa) {
+      toast.error("Seleccione una fecha válida");
+      return;
+    }
+    setSubmittingPromesa(true);
+    const toastId = toast.loading("Registrando promesa...");
+    try {
+      const res = await registrarPromesaPago({ caso_id: promesaModalCase.id, fecha_promesa: fechaPromesa });
+      if (res.success) {
+        toast.success("Promesa registrada", { id: toastId });
+        setPromesaModalCase(null);
+        setFechaPromesa("");
+        fetchData();
+      } else {
+        toast.error(res.error || "Error al registrar promesa", { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Error de red", { id: toastId });
+    } finally {
+      setSubmittingPromesa(false);
+    }
+  };
+
+  const handlePrintReceipt = async (caso) => {
+    const res = await getReceiptByCaseId(caso.id);
+    if (res.success) {
+      printThermalReceipt(res.receiptData);
+    } else {
+      toast.error("No se pudo obtener el recibo");
+    }
+  };
+
 
   const handleToggleIVA = async (c, isChecked) => {
     const toastId = toast.loading(isChecked ? "Aplicando IVA..." : "Removiendo IVA...");
@@ -978,6 +1084,22 @@ export default function BillingPanel() {
                 transition={{ duration: 0.2 }}
                 className="h-full flex flex-col"
               >
+                {/* Nuevos Sub-Tabs de CxC */}
+                <div className="flex gap-2 mb-4">
+                  <button 
+                    onClick={() => setCxcSubTab("semana")}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${cxcSubTab === "semana" ? "bg-slate-800 text-white shadow-md" : "bg-white text-slate-500 hover:bg-slate-50 border border-slate-200"}`}
+                  >
+                    Cobros de esta semana
+                  </button>
+                  <button 
+                    onClick={() => setCxcSubTab("general")}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${cxcSubTab === "general" ? "bg-slate-800 text-white shadow-md" : "bg-white text-slate-500 hover:bg-slate-50 border border-slate-200"}`}
+                  >
+                    Deuda General
+                  </button>
+                </div>
+
                 {/* CxC - Nivel 1: Resumen de Clínicas */}
                 {!selectedClinic ? (
                   <div className="flex-1 flex flex-col">
@@ -1187,7 +1309,19 @@ export default function BillingPanel() {
                                           className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded cursor-pointer border-slate-300" 
                                         />
                                       </td>
-                                      <td className="px-6 py-4 font-bold text-slate-800">
+                                      <td className="px-6 py-4 font-bold text-slate-800 flex items-center gap-2">
+                                        {(() => {
+                                          let color = "bg-rose-500"; // Rojo por defecto si no hay promesa o ya pasó
+                                          const hoy = new Date().toISOString().split("T")[0];
+                                          if (c.promesa_pago_fecha) {
+                                            if (c.promesa_pago_fecha > hoy) {
+                                              color = "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]";
+                                            } else if (c.promesa_pago_fecha === hoy) {
+                                              color = "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)] animate-pulse";
+                                            }
+                                          }
+                                          return <div title={c.promesa_pago_fecha ? `Promesa: ${c.promesa_pago_fecha}` : 'Sin promesa vigente'} className={`w-2.5 h-2.5 rounded-full ${color}`} />;
+                                        })()}
                                         #{c.codigo}
                                       </td>
                                       <td className="px-6 py-4 font-semibold text-slate-700">
@@ -1246,18 +1380,39 @@ export default function BillingPanel() {
                                       </td>
                                       <td className="px-6 py-4 text-right flex justify-end gap-2">
                                         <button
+                                          title="Promesa de Pago"
+                                          onClick={() => setPromesaModalCase(c)}
+                                          className="inline-flex items-center justify-center w-8 h-8 text-amber-500 hover:bg-amber-50 rounded-lg transition-all cursor-pointer"
+                                        >
+                                          <Calendar size={18} />
+                                        </button>
+                                        <button
                                           title="Ajustes de Cobro"
                                           onClick={() => openReceiptModal(c)}
-                                          className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-800 rounded-lg transition-all cursor-pointer"
+                                          className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 rounded-lg transition-all cursor-pointer"
                                         >
                                           <Edit size={18} />
                                         </button>
                                         <button
+                                          title="Imprimir Recibo"
+                                          onClick={() => handlePrintReceipt(c)}
+                                          className="inline-flex items-center justify-center w-8 h-8 text-slate-500 hover:bg-slate-50 rounded-lg transition-all cursor-pointer"
+                                        >
+                                          <FileText size={18} />
+                                        </button>
+                                        <button
                                           title="Registrar Abono"
                                           onClick={() => handleOpenAbono(c)}
-                                          className="inline-flex items-center justify-center w-8 h-8 text-emerald-600 hover:text-emerald-800 rounded-lg transition-all"
+                                          className="inline-flex items-center justify-center w-8 h-8 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
                                         >
                                           <PlusCircle size={18} />
+                                        </button>
+                                        <button
+                                          title="Cancelar Caso"
+                                          onClick={() => setCancelModalCase(c)}
+                                          className="inline-flex items-center justify-center w-8 h-8 text-rose-500 hover:bg-rose-50 rounded-lg transition-all cursor-pointer ml-2"
+                                        >
+                                          <AlertCircle size={18} />
                                         </button>
                                       </td>
                                     </tr>
@@ -1335,9 +1490,21 @@ export default function BillingPanel() {
                             return (
                               <>
                                 <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
-                                  <td className="px-6 py-4 font-bold text-slate-800">
-                                    #{c.codigo}
-                                  </td>
+                                      <td className="px-6 py-4 font-bold text-slate-800 flex items-center gap-2">
+                                        {(() => {
+                                          let color = "bg-rose-500"; // Rojo por defecto si no hay promesa o ya pasó
+                                          const hoy = new Date().toISOString().split("T")[0];
+                                          if (c.promesa_pago_fecha) {
+                                            if (c.promesa_pago_fecha > hoy) {
+                                              color = "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]";
+                                            } else if (c.promesa_pago_fecha === hoy) {
+                                              color = "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)] animate-pulse";
+                                            }
+                                          }
+                                          return <div title={c.promesa_pago_fecha ? `Promesa: ${c.promesa_pago_fecha}` : 'Sin promesa vigente'} className={`w-2.5 h-2.5 rounded-full ${color}`} />;
+                                        })()}
+                                        #{c.codigo}
+                                      </td>
                                   <td className="px-6 py-4 font-semibold text-slate-700 max-w-[200px] truncate">
                                     {c.clientes?.nombre || "N/A"}
                                   </td>
@@ -1398,6 +1565,14 @@ export default function BillingPanel() {
                                                 </div>
                                               </div>
                                             ))}
+                                          </div>
+                                          <div className="mt-4 flex justify-end">
+                                            <button 
+                                              onClick={() => setRevertModalCase(c)}
+                                              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-lg transition-colors border border-rose-200"
+                                            >
+                                              Revertir Último Abono
+                                            </button>
                                           </div>
                                         )}
                                       </div>
@@ -2151,6 +2326,69 @@ export default function BillingPanel() {
         onActionComplete={fetchData} 
         initialDepto="Facturación"
       />
+
+      {/* MODAL REVERTIR PAGO */}
+      <AnimatePresence>
+        {revertModalCase && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setRevertModalCase(null)} />
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100">
+              <button onClick={() => setRevertModalCase(null)} className="absolute top-4 right-4 text-slate-400 hover:bg-slate-100 p-1.5 rounded-lg transition-colors"><X size={18} /></button>
+              <div className="flex items-center gap-3 text-rose-600 mb-2"><AlertCircle size={24} /><h3 className="text-lg font-black tracking-tight">Revertir Último Abono</h3></div>
+              <p className="text-sm text-slate-500 mb-4">Vas a revertir el abono más reciente del caso <strong>#{revertModalCase.codigo}</strong>. Ingresa el motivo.</p>
+              <form onSubmit={handleRevertirPago}>
+                <div className="mb-4">
+                  <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Motivo de la Reversión</label>
+                  <textarea value={motivoReversion} onChange={(e) => setMotivoReversion(e.target.value)} required rows="3" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all" placeholder="Ej: Error al teclear el monto..."></textarea>
+                </div>
+                <div className="flex justify-end gap-3"><button type="button" onClick={() => setRevertModalCase(null)} className="px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">Cancelar</button><button type="submit" disabled={submittingReversion} className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-bold transition-all shadow-md flex items-center justify-center min-w-[120px]">{submittingReversion ? <RefreshCw size={16} className="animate-spin" /> : "Confirmar Reversión"}</button></div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL CANCELAR CASO */}
+      <AnimatePresence>
+        {cancelModalCase && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setCancelModalCase(null)} />
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100">
+              <button onClick={() => setCancelModalCase(null)} className="absolute top-4 right-4 text-slate-400 hover:bg-slate-100 p-1.5 rounded-lg transition-colors"><X size={18} /></button>
+              <div className="flex items-center gap-3 text-rose-600 mb-2"><AlertCircle size={24} /><h3 className="text-lg font-black tracking-tight">Cancelar Caso</h3></div>
+              <p className="text-sm text-slate-500 mb-4">El saldo pendiente quedará en cero. Si hay pagos previos, pasarán a Saldo a Favor. Ingresa el motivo.</p>
+              <form onSubmit={handleCancelarCaso}>
+                <div className="mb-4">
+                  <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Motivo de Cancelación</label>
+                  <textarea value={motivoCancelacion} onChange={(e) => setMotivoCancelacion(e.target.value)} required rows="3" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all" placeholder="Ej: Trabajo cancelado por la clínica..."></textarea>
+                </div>
+                <div className="flex justify-end gap-3"><button type="button" onClick={() => setCancelModalCase(null)} className="px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">Volver</button><button type="submit" disabled={submittingCancelacion} className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-bold transition-all shadow-md flex items-center justify-center min-w-[120px]">{submittingCancelacion ? <RefreshCw size={16} className="animate-spin" /> : "Confirmar Cancelación"}</button></div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL PROMESA DE PAGO */}
+      <AnimatePresence>
+        {promesaModalCase && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setPromesaModalCase(null)} />
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100">
+              <button onClick={() => setPromesaModalCase(null)} className="absolute top-4 right-4 text-slate-400 hover:bg-slate-100 p-1.5 rounded-lg transition-colors"><X size={18} /></button>
+              <div className="flex items-center gap-3 text-amber-500 mb-2"><Calendar size={24} /><h3 className="text-lg font-black tracking-tight">Registrar Promesa de Pago</h3></div>
+              <p className="text-sm text-slate-500 mb-4">Caso <strong>#{promesaModalCase.codigo}</strong>. Selecciona la nueva fecha acordada.</p>
+              <form onSubmit={handleRegistrarPromesa}>
+                <div className="mb-4">
+                  <input type="date" value={fechaPromesa} onChange={(e) => setFechaPromesa(e.target.value)} required className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none transition-all" />
+                </div>
+                <div className="flex justify-end gap-3"><button type="button" onClick={() => setPromesaModalCase(null)} className="px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">Cancelar</button><button type="submit" disabled={submittingPromesa} className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold transition-all shadow-md flex items-center justify-center min-w-[120px]">{submittingPromesa ? <RefreshCw size={16} className="animate-spin" /> : "Guardar Fecha"}</button></div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

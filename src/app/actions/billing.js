@@ -22,6 +22,140 @@ async function checkAdminAccess() {
   }
 }
 
+function calcularFechaCobro(fechaEnvioStr) {
+  const d = new Date(fechaEnvioStr + 'T12:00:00Z');
+  const diaSemana = d.getUTCDay(); // 0=Dom, 1=Lun...5=Vie, 6=Sab
+  const diasHastaLunesSig = diaSemana === 0 ? 1 : (8 - diaSemana);
+  d.setUTCDate(d.getUTCDate() + diasHastaLunesSig + 3); // lunes siguiente + 3 = jueves
+  return d.toISOString().split('T')[0];
+}
+
+function getSemanaActual() {
+  const hoy = new Date();
+  const dia = hoy.getDay();
+  const inicio = new Date(hoy);
+  inicio.setDate(hoy.getDate() - (dia === 0 ? 6 : dia - 1));
+  const fin = new Date(inicio);
+  fin.setDate(inicio.getDate() + 4);
+  return {
+    inicio: inicio.toISOString().split('T')[0],
+    fin: fin.toISOString().split('T')[0]
+  };
+}
+
+export async function revertirPago({ caso_id, motivo }) {
+  try {
+    const user = await getCurrentUser();
+    const puedeRevertir = 
+      user?.rol?.includes('lab_owner') || 
+      user?.rol?.includes('Administrativo') ||
+      user?.username?.toLowerCase() === 'admin' ||
+      user?.is_superadmin;
+    
+    if (!user || !puedeRevertir) {
+      return { success: false, error: 'No autorizado para revertir pagos.' };
+    }
+    if (!motivo || motivo.trim().length < 5) {
+      return { success: false, error: 'El motivo es obligatorio (mínimo 5 caracteres).' };
+    }
+
+    const supabase = getAdminClient();
+
+    // 1. Verificar que el caso existe y está Pagado
+    const { data: caso, error: errCaso } = await supabase
+      .from('casos_master')
+      .select('id, total_caso, estado_pago, saldo_pendiente, cliente_id')
+      .eq('id', caso_id)
+      .single();
+
+    if (errCaso || !caso) return { success: false, error: 'Caso no encontrado.' };
+    if (caso.estado_pago !== 'Pagado') return { success: false, error: 'El caso no está marcado como Pagado.' };
+
+    // 2. Verificar que no existe ya una reversión para este caso
+    const { data: reversionExistente } = await supabase
+      .from('pagos_historico')
+      .select('id')
+      .eq('id_caso', caso_id)
+      .eq('tipo_movimiento', 'reversion')
+      .limit(1)
+      .single();
+
+    if (reversionExistente) {
+      return { success: false, error: 'Este caso ya tiene una reversión registrada.' };
+    }
+
+    // 3. Obtener el abono más reciente (solo abonos directos, no globales FIFO)
+    const hace30Dias = new Date();
+    hace30Dias.setDate(hace30Dias.getDate() - 30);
+
+    const { data: ultimoAbono, error: errAbono } = await supabase
+      .from('pagos_historico')
+      .select('id, monto_abono, fecha_pago')
+      .eq('id_caso', caso_id)
+      .eq('tipo_movimiento', 'abono')
+      .gte('fecha_pago', hace30Dias.toISOString())
+      .order('fecha_pago', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (errAbono || !ultimoAbono) {
+      return { success: false, error: 'No se encontró un abono reciente (últimos 30 días) para este caso.' };
+    }
+
+    // 4. Insertar registro de reversión (monto negativo)
+    const { error: errInsert } = await supabase
+      .from('pagos_historico')
+      .insert({
+        id_caso: caso_id,
+        cliente_id: caso.cliente_id,
+        monto_abono: -(ultimoAbono.monto_abono),
+        tipo_movimiento: 'reversion',
+        referencia_reversion_id: ultimoAbono.id,
+        notas: motivo.trim(),
+        motivo: motivo.trim(),
+        creado_por: user.username || user.email || 'Sistema',
+        metodo_pago: 'Reversión'
+      });
+
+    if (errInsert) return { success: false, error: `Error al insertar reversión: ${errInsert.message}` };
+
+    // 5. Restaurar saldo y estado
+    const { error: errUpdate } = await supabase
+      .from('casos_master')
+      .update({
+        saldo_pendiente: caso.total_caso,
+        estado_pago: 'Pendiente'
+      })
+      .eq('id', caso_id);
+
+    if (errUpdate) return { success: false, error: `Error al restaurar saldo: ${errUpdate.message}` };
+
+    revalidatePath('/admin/facturacion');
+    return { success: true };
+
+  } catch (err) {
+    console.error('revertirPago error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function registrarPromesaPago({ caso_id, fecha_promesa }) {
+  try {
+    await checkAdminAccess();
+    const supabase = getAdminClient();
+    const { error } = await supabase
+      .from('casos_master')
+      .update({ promesa_pago_fecha: fecha_promesa })
+      .eq('id', caso_id);
+    if (error) throw error;
+    revalidatePath('/admin/facturacion');
+    return { success: true };
+  } catch (err) {
+    console.error('registrarPromesaPago error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
 /**
  * Registra un abono para un caso específico.
  * Lógica transaccional (cliente admin):
@@ -103,30 +237,25 @@ export async function registrarAbono({ id_caso, monto_abono, metodo_pago, admin_
 
 /**
  * Obtiene el resumen de CxC (Cuentas por Cobrar).
- * Retorna la lista de casos pendientes y las clínicas agrupadas con su deuda total.
+ * Retorna la lista de casos pendientes separada por categorías y las clínicas agrupadas.
  */
 export async function getBillingSummary() {
   try {
     await checkAdminAccess();
     const supabase = getAdminClient();
 
-    // Consultamos TODOS los casos en Facturación con saldo != 0
-    // (positivo = deuda, negativo = saldo a favor de la clínica)
     const { data: cases, error } = await supabase
       .from('casos_master')
-      .select('id, codigo, paciente, doctor, total_caso, saldo_pendiente, fecha_entrega, cliente_id, iva_aplicado, estado, clientes(nombre, saldo_favor)')
+      .select('id, codigo, paciente, doctor, total_caso, saldo_pendiente, fecha_entrega, fecha_envio_real, fecha_cobro, promesa_pago_fecha, cliente_id, iva_aplicado, estado, clientes(nombre, saldo_favor)')
       .eq('depto_actual', 'Facturación')
       .neq('saldo_pendiente', 0)
+      .neq('estado', 'Cancelado')
       .order('fecha_entrega', { ascending: true });
 
     if (error) throw error;
 
-    // Solo mostrar en CxC los casos que YA FUERON ENVIADOS (estado === 'Enviado')
     const sentCases = (cases || []).filter(c => c.estado === 'Enviado');
 
-    // Agrupamos en Javascript por cliente_id para la Vista de Clínicas (Resumen)
-    // total_deuda positivo = nos deben a nosotros
-    // total_deuda negativo = nosotros debemos (saldo a favor de la clínica)
     const clinicsMap = {};
     sentCases.forEach(c => {
       const cliId = c.cliente_id;
@@ -144,10 +273,41 @@ export async function getBillingSummary() {
       clinicsMap[cliId].casos_count += 1;
     });
 
-    // Ordenar: deudas mayores primero, saldos a favor al final
     const clinics = Object.values(clinicsMap).sort((a, b) => b.total_deuda - a.total_deuda);
 
-    return { success: true, cases: sentCases, clinics };
+    // Separar en Cobros de esta semana vs Deuda General
+    const semana = getSemanaActual();
+    const hoy = new Date().toISOString().split('T')[0];
+    
+    const cobrosSemana = {
+      porCobrar: [],
+      proximamente: []
+    };
+    const deudaGeneral = [];
+
+    sentCases.forEach(c => {
+      if (!c.fecha_cobro) {
+        deudaGeneral.push(c);
+      } else {
+        if (c.fecha_cobro >= semana.inicio && c.fecha_cobro <= semana.fin) {
+          if (c.fecha_cobro <= hoy) {
+            cobrosSemana.porCobrar.push(c);
+          } else {
+            cobrosSemana.proximamente.push(c);
+          }
+        } else {
+          deudaGeneral.push(c);
+        }
+      }
+    });
+
+    return { 
+      success: true, 
+      cases: sentCases, 
+      clinics,
+      cobrosSemana,
+      deudaGeneral
+    };
 
   } catch (err) {
     console.error("getBillingSummary error:", err);
@@ -188,20 +348,23 @@ export async function getPendingFacturacionCases() {
 }
 
 /**
- * Marca un caso como "Enviado", actualizando su fecha de envío (usando fecha_entrega temporalmente o limpiándola).
+ * Marca un caso como "Enviado", calculando su fecha de cobro y preservando la promesa original.
  */
 export async function markCaseAsSent(id_caso) {
   try {
     await checkAdminAccess();
     const supabase = getAdminClient();
 
-    // Set the current date as the send date (we use fecha_entrega so it flows nicely into the billing calculations)
-    // The user explicitly requested: "si se marca esto, el programa va a guardar esa fecha y la va a asignar como fecha de envio para que se calcule cuando se tendria que cobrar"
     const today = new Date().toISOString().split('T')[0];
+    const fechaCobro = calcularFechaCobro(today);
 
     const { error: errUpdate } = await supabase
       .from('casos_master')
-      .update({ fecha_entrega: today, estado: 'Enviado' })
+      .update({ 
+        fecha_envio_real: today,
+        fecha_cobro: fechaCobro,
+        estado: 'Enviado' 
+      })
       .eq('id', id_caso);
 
     if (errUpdate) throw errUpdate;
