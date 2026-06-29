@@ -1066,7 +1066,7 @@ export default function Home() {
 
 
   return (
-    <div className="min-h-screen bg-white sm:bg-slate-50 lg:bg-slate-100 flex flex-col font-sans transition-colors duration-300">
+    <div className="h-[100dvh] overflow-hidden bg-white sm:bg-slate-50 lg:bg-slate-100 flex flex-col font-sans transition-colors duration-300 relative">
       <Toaster position="bottom-center" />
       <NewCaseModal isOpen={isNewCaseModalOpen} onClose={() => setIsNewCaseModalOpen(false)} clients={clients} onActionComplete={fetchCases}/>
 
@@ -1208,61 +1208,9 @@ export default function Home() {
         </div>
       )}
 
-      <div className="absolute inset-0 glass-lines-bg z-0 pointer-events-none"></div>
-      <div className="absolute inset-0 bg-slate-50/15 backdrop-blur-[4px] z-10 pointer-events-none"></div>
-      
-      <div className="w-full flex-1 flex flex-col items-center relative z-20 pointer-events-none">
-        <main className="
-          flex-1 w-full flex flex-col pointer-events-auto
-          transition-all duration-300 relative bg-transparent
-          sm:max-w-[520px] sm:mx-auto sm:my-3 sm:min-h-[calc(100vh-1.5rem)]
-          lg:max-w-[680px] lg:my-6 lg:min-h-[calc(100vh-3rem)]
-        ">
-          
-          {/* Unified Sticky Glass Header */}
-          <div className="sticky top-0 z-40 w-full bg-white/70 backdrop-blur-md border-b border-white/40 shadow-sm flex flex-col pointer-events-auto">
-            {/* Header ΓÇö logo centrado, spinner a la derecha */}
-            <header className="px-5 py-4 flex items-center justify-center shrink-0 h-14 bg-transparent relative">
-              <h1
-              className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none"
-              onClick={() => setActiveDept("Producción")}
-              title="Volver a Inicio"
-            >
-              Lab OS
-            </h1>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
-              {isAdmin && (
-                <Link href="/admin" className="text-slate-500 hover:text-[#D4AF37] transition-colors" title="Administración">
-                  <Settings size={20} />
-                </Link>
-              )}
-              {loading && (
-                <RefreshCw size={14} className="animate-spin text-slate-300" />
-              )}
-            </div>
-          </header>
-
-          {/* Big Select Navigation */}
-          <div className="px-4 py-3 pb-4 shrink-0 bg-transparent w-full flex justify-center">
-             <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm pointer-events-auto w-full max-w-[320px]">
-               <button 
-                  onClick={() => setActiveDept("Producción")}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeDept === "Producción" ? "bg-slate-100 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-               >
-                  Producción
-               </button>
-               <button 
-                  onClick={() => setActiveDept("all")}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeDept === "all" ? "bg-slate-100 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-               >
-                  Monitor Global
-               </button>
-             </div>
-          </div>
-        </div>
-
-        {/* List Content */}
-        <div className="flex-1 w-full pb-24 relative z-10">
+      {/* LAYER 1: LA HOJA DE PAPEL (SCROLLING Y CONTENIDO) */}
+      <div className="absolute inset-0 overflow-y-auto overflow-x-hidden mobile-scroll z-0 glass-lines-bg">
+        <div style={{ paddingTop: '144px', paddingBottom: '100px' }} className="w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto flex flex-col relative z-10 px-0 sm:px-4 md:px-8">
            {loading && cases.length === 0 ? (
                <div className="p-10 text-center text-slate-400 font-medium text-sm">Cargando datos...</div>
            ) : (
@@ -1301,7 +1249,7 @@ export default function Home() {
                      <div key={grupo.id} className="mb-2">
                        <div 
                          onClick={() => toggleDept(grupo.id)}
-                         className="flex items-center justify-center py-3 px-4 cursor-pointer select-none group mb-2 mt-4 relative bg-slate-50 mx-4 rounded-2xl border border-slate-200 shadow-sm sticky top-[138px] z-30 pointer-events-auto transition-transform active:scale-[0.98]"
+                         className="flex items-center justify-center py-3 px-4 cursor-pointer select-none group mb-2 mt-4 relative bg-slate-50 mx-4 sm:mx-0 rounded-2xl border border-slate-200 shadow-sm sticky top-[144px] z-30 pointer-events-auto transition-transform active:scale-[0.98]"
                        >
                          <span className="text-sm font-bold text-slate-800 uppercase tracking-wide">{grupo.name.replace("Digital_", "")}</span>
                          <div className="absolute right-2">
@@ -1531,8 +1479,69 @@ export default function Home() {
                </div>
            )}
         </div>
+      </div>
 
-      </main>
+      {/* LAYER 2: EL VIDRIO OPACO (ZONA FUERA DEL HUECO) */}
+      <div className="absolute inset-0 z-10 pointer-events-none flex flex-col">
+        {/* Top glass (cubre Lab OS y el menú) */}
+        <div className="h-[144px] bg-slate-50/15 backdrop-blur-[4px] w-full transition-all duration-300 border-b border-slate-200" />
+        
+        {/* Middle section (El Hueco) */}
+        <div className="flex-1 flex relative w-full">
+          {/* Lado izquierdo */}
+          <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300 border-r border-slate-200 hidden sm:block" />
+          
+          {/* El Hueco en sí */}
+          <div className="w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto bg-transparent h-full sm:shadow-[inset_0_0_20px_rgba(0,0,0,0.02)] sm:px-4 md:px-8 flex flex-col relative pointer-events-none">
+             {/* Marco del hueco (Bordes laterales) */}
+             <div className="w-full flex-1 sm:border-x border-slate-200 relative z-30 pointer-events-none"></div>
+          </div>
+          
+          {/* Lado derecho */}
+          <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300 border-l border-slate-200 hidden sm:block" />
+        </div>
+      </div>
+
+      {/* LAYER 3: LOS PAPELES SOLIDOS (TÍTULOS Y BOTONES FLOTANTES) */}
+      <div className="absolute inset-0 z-20 pointer-events-none flex flex-col items-center">
+        {/* Header - Letras recortadas flotando */}
+        <header className="px-5 py-4 flex items-center justify-center shrink-0 h-[56px] w-full bg-transparent relative pointer-events-auto">
+          <h1
+            className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none"
+            onClick={() => setActiveDept("Producción")}
+            title="Volver a Inicio"
+          >
+            Lab OS
+          </h1>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
+            {isAdmin && (
+              <Link href="/admin" className="text-slate-500 hover:text-[#D4AF37] transition-colors" title="Administración">
+                <Settings size={20} />
+              </Link>
+            )}
+            {loading && (
+              <RefreshCw size={14} className="animate-spin text-slate-300" />
+            )}
+          </div>
+        </header>
+
+        {/* Big Select Navigation - Hoja flotando */}
+        <div className="px-4 py-3 pb-5 shrink-0 bg-transparent w-full flex justify-center pointer-events-auto h-[88px]">
+           <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm w-full max-w-[320px]">
+             <button 
+                onClick={() => setActiveDept("Producción")}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeDept === "Producción" ? "bg-slate-100 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+             >
+                Producción
+             </button>
+             <button 
+                onClick={() => setActiveDept("all")}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeDept === "all" ? "bg-slate-100 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+             >
+                Monitor Global
+             </button>
+           </div>
+        </div>
       </div>
 
       {/* Avatar de usuario ΓÇö fijo al pie de pantalla, centrado */}
