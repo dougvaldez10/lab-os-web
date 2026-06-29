@@ -1,85 +1,150 @@
-# 🦷 Lab OS — Documento de Contexto Maestro Actualizado
-**Versión:** Junio 2026 | **Estado:** 100% Web en Producción
+# 🦷 Lab OS — Contexto Maestro 2026
 
-Este documento es la **única fuente de verdad** actual del sistema Lab OS. **Reemplaza y anula** cualquier documento anterior. 
-> ⚠️ **AVISO CRÍTICO PARA IAs:** La aplicación de escritorio en Python (`trabajos_app.py`) y SQLite **HAN SIDO DEPRECADAS Y ABANDONADAS**. El sistema ha evolucionado y ahora es una aplicación **100% Web** en la nube.
+Sistema de gestión operativa para **Legion Dental Lab**.
+Desarrollado por Douglas Valdez. Repo: `dougvaldez10/lab-os-web`
 
----
+## Stack
+- **Frontend:** Next.js (App Router), Tailwind CSS
+- **Backend:** Supabase (PostgreSQL + RLS)
+- **Hosting:** Vercel — `https://os.legiondentallab.com`
+- **Regla de oro:** `src/lib/supabase.js` es cliente únicamente, NUNCA importar `next/headers`
+- **Operaciones privilegiadas:** siempre via Admin Client (Service Role Key) en Server Actions
 
-## 1. Descripción General del Proyecto
+## Arquitectura de seguridad
+- Ghost User (`autenticador@legion.com`) para lectura pública sin cuenta
+- RLS activo en `casos_master`
+- Lecturas via ghost cookie `lab_os_ghost`
+- Escrituras via Admin Client que bypassa RLS
 
-**Lab OS** es un sistema integral de gestión operativa y de producción para **Legion Dental Lab**. Controla todo el ciclo de vida de los trabajos dentales (prótesis, coronas, implantes, etc.), desde la recepción hasta la facturación y envío, midiendo tiempos de manufactura (SLA).
+## Schema real confirmado en BD
 
-### Tech Stack Actual (Herramientas Core)
-| Capa | Tecnología | Descripción / Propósito |
-|---|---|---|
-| **Frontend / Framework** | **Next.js 16 (App Router)** | Framework principal. Renderizado híbrido (SSR/CSR). |
-| **Estilos e UI** | **Tailwind CSS + Framer Motion** | Utilidades CSS para diseño responsive y animaciones fluidas. |
-| **Componentes UI** | **Lucide-React & Sonner** | Íconos limpios y sistema de notificaciones (Toasts). |
-| **Backend / Base de Datos** | **Supabase (PostgreSQL)** | Base de datos relacional en la nube. Maneja la persistencia, FKs y realtime. |
-| **Hosting & CI/CD** | **Vercel** | Alojamiento de la aplicación web. Despliegues automáticos desde la rama `main` de GitHub. |
+### `casos_master` — 24 columnas
+```
+id, codigo, cliente_id, paciente, total_caso, estado, edad, color,
+comentarios, fecha_ingreso, fecha_entrega, hora_entrega, doctor, tipo,
+depto_actual, usuario_id, folder_path_base, operador_actual, hora_inicio,
+estado_pago, saldo_pendiente, iva_aplicado, descuento, laboratorio_id,
+fecha_envio_real, fecha_cobro, promesa_pago_fecha
+```
+- `total_caso` — valor original del caso, nunca se modifica
+- `saldo_pendiente` — se resta con cada abono
+- `estado_pago` — CHECK constraint: solo `'Pendiente'` o `'Pagado'`
+- `estado` — valores en producción: `'Pendiente'`, `'En Proceso'`, `'En Pausa'`, `'Terminado'`, `'Finalizado'`, `'Enviado'`, `'Cancelado'`
+- `fecha_envio_real` — se llena al marcar enviado (no sobreescribe `fecha_entrega`)
+- `fecha_cobro` — jueves de la semana siguiente al envío (calculado automáticamente)
+- `promesa_pago_fecha` — fecha acordada con el cliente para pagar
 
----
+### `pagos_historico` — 12 columnas
+```
+id (BIGINT), id_caso, cliente_id, monto_abono, metodo_pago, fecha_pago,
+creado_por, comprobante_url, notas, tipo_movimiento, referencia_reversion_id, motivo
+```
+- `tipo_movimiento` — `'abono'` (default) o `'reversion'`
+- `referencia_reversion_id` — BIGINT FK a `pagos_historico.id`
+- `id` es BIGINT (no UUID) — cualquier FK debe ser BIGINT
 
-## 2. Zonas de la Aplicación Web
+### `casos_detalle` — 8 columnas
+```
+id, caso_id, producto, dientes, unidades, precio_unit, subtotal, laboratorio_id
+```
+- Inmutable después de creación — fotografía del momento de creación
 
-El sistema web se divide estructuralmente en dos áreas principales para separar la operación técnica de la administración del laboratorio:
+### `clientes` — 16 columnas
+```
+id, nombre, responsable, rfc, datos_facturacion, tel_fijo, tel_celular,
+tel_whatsapp, direccion, colonia, cp, ciudad, email, usuario_id,
+laboratorio_id, saldo_favor
+```
+- `saldo_favor` — saldo a favor del cliente, se suma al cancelar casos con abonos
 
-### A) Área de Producción (Ruta raíz: `/`)
-Es la vista diseñada para los técnicos de laboratorio en sus estaciones de trabajo.
-*   **Pizarrón de Trabajo:** Los técnicos ven las tarjetas de los casos filtrados por el departamento en el que se encuentran.
-*   **Operación de Tiempos:** Los técnicos usan botones para **Iniciar**, **Pausar** y **Terminar** un caso.
-*   **Sistema SLA (Semáforo):** Un cronómetro visual que pinta el borde de la tarjeta del caso (Verde, Amarillo, Rojo) basándose en los minutos permitidos por cada departamento.
-*   **Realtime:** La pantalla reacciona a los cambios en la base de datos en tiempo real mediante WebSockets de Supabase.
+### `recibos` — 10 columnas
+```
+id, caso_id, subtotal, descuento_tipo, descuento_valor, iva_aplicado,
+monto_iva, total, created_at, laboratorio_id
+```
 
-### B) Área de Administración (Ruta: `/admin`)
-Es el centro de mando para los gerentes y administradores del laboratorio.
-*   **Pizarrón de "Casos en Curso":** Una tabla de datos completa donde los administradores pueden buscar, filtrar y visualizar todos los casos activos sin importar el departamento.
-*   **Creación de Casos ("Nuevo Trabajo"):** Un Modal avanzado con:
-    *   Búsqueda de clínicas y doctores en vivo.
-    *   **Odontograma interactivo** (FDI de 32 piezas).
-    *   Selección de Materiales (Zirconia, Disilicato, etc.) y Productos (Corona, Carilla, etc.).
-    *   Enrutamiento automático dependiendo si es un protocolo **Físico (Análogo)** o **Digital**.
-*   **Edición y Borrado:** Los administradores pueden editar cualquier campo del caso maestro (estado, depto_actual, fechas, paciente). Tienen el poder de hacer un **Soft Edit** o un **Borrado Permanente** (Cascade delete) del caso.
+### `casos_tiempos_historicos` — 9 columnas
+```
+id, id_caso, departamento, hora_llegada, hora_inicio, hora_termino,
+minutos_totales, laboratorio_id, departamento_siguiente
+```
 
----
+### `usuarios` — roles reales
+- El campo `rol` es un string con departamentos separados por coma
+- Valores de control de acceso: `lab_owner`, `Administrativo`
+- NO existen roles `'admin'`, `'finanzas_admin'` como entidades separadas
+- Control de acceso: `user?.rol?.includes('lab_owner') || user?.rol?.includes('Administrativo')`
 
-## 3. Base de Datos en Supabase (PostgreSQL)
+## Flujos de producción
 
-El sistema funciona con un esquema relacional estricto. Las tablas principales son:
+### Flujo Digital
+`Recepción → Digital_Escaneo → Digital_Diseno → Digital_Fresado → [Sinterizado si Zirconia] → Ajuste → Terminado → Inspección → Recibo/Factura → Empaquetado → Envío → Facturación`
 
-1.  `casos_master`: Tabla central. Guarda la metadata del caso (`id` interno numérico, `codigo` de la orden, `paciente`, `depto_actual`, `estado`, `fecha_entrega`).
-2.  `casos_detalle`: Qué se va a fabricar. Relacionada a `casos_master`. (Guarda las unidades, producto y dientes afectados).
-3.  `casos_tiempos_historicos`: El log de auditoría y tiempos. Cada vez que un caso entra a un departamento o un técnico lo inicia/pausa, se registra aquí. Vinculado a `casos_master` por la llave foránea `id_caso` (numérica).
-4.  `cuenta_corriente_clinica`: Registros financieros.
-5.  `clientes`, `doctores`, `productos`: Catálogos maestros de información.
+### Flujo Análogo
+`Recepción → Yesos → Digital_Escaneo → Digital_Diseno → Digital_Fresado → Sinterizado → Ajuste → Terminado → Inspección → Recibo/Factura → Empaquetado → Envío → Facturación`
 
-### Autenticación y Seguridad (RLS)
-*   Las consultas de solo lectura en el área de producción a veces utilizan un enfoque de **"Ghost User"** (autenticador) para facilitar la visualización en pantallas sin login obligatorio de cada usuario, manejado vía Cookies (`lab_os_ghost`).
-*   **Mutaciones Server-Side:** Las operaciones de creación, actualización y borrado (ej. `deleteAdminCase`, `updateAdminCase`, `createCase`) se ejecutan a través de **Server Actions** de Next.js.
-*   Estas Server Actions utilizan el `SUPABASE_SERVICE_ROLE_KEY` (llave secreta de Vercel) para crear un **Admin Client** que sobrepasa el Row Level Security (RLS) de forma segura desde el servidor, garantizando que operaciones complejas no sean bloqueadas por políticas de lectura/escritura limitadas.
+## Módulos implementados
 
----
+### Módulo Financiero (`billing.js`)
+- `revertirPago({ caso_id, motivo })` — reversión total del último abono directo (30 días), inserta registro negativo en `pagos_historico`, solo `lab_owner` o `Administrativo`
+- `calcularFechaCobro(fechaEnvioStr)` — calcula el jueves de la semana siguiente
+- `markCaseAsSent(id_caso)` — llena `fecha_envio_real`, `fecha_cobro`, `estado='Enviado'`. NO toca `fecha_entrega`
+- `getBillingSummary()` — retorna `cobrosSemana.porCobrar`, `cobrosSemana.proximamente`, `deudaGeneral`
+- `registrarPromesaPago({ caso_id, fecha_promesa })` — actualiza `promesa_pago_fecha`
 
-## 4. Flujos de Trabajo (Workflow)
+### Módulo Recibos (`receipts.js`)
+- Usa Admin Client (ya corregido)
+- `saveReceiptData(casoId, payload)` — guarda en BD sin mover estado del caso
+- `getReceiptByCaseId(casoId)` — para reimpresión desde historial
+- Componente `ThermalReceipt.js` — impresión térmica 80mm con `@media print`
 
-El campo más crítico de la BD es `depto_actual`. El campo `estado` ('Pendiente', 'En Proceso', 'En Pausa', 'Terminado') representa qué está pasando *dentro* de ese departamento.
+### Módulo Cancelación (`admin-cases.js`)
+- `cancelarCaso({ caso_id, motivo })` — marca `estado='Cancelado'`, `estado_pago='Pendiente'` (por CHECK constraint), transfiere abonos previos a `clientes.saldo_favor`
 
-**Ruta Digital:**
-`Recepción` → `Digital_Diseno` → `Digital_Fresado` → `Sinterizado` (solo si es Zirconia) → `Ajuste` → `Terminado` → `Inspección` → `Empaquetado` → `Envío` → `Facturación`.
+## Reglas de negocio financieras
+- Semana laboral: lunes a viernes
+- Caso enviado → `fecha_cobro` = jueves de la semana siguiente
+- Vista CxC tiene sub-tabs: "Cobros de esta semana" y "Deuda General"
+- "Cobros de esta semana" filtra clínicas que tienen `fecha_cobro` en la semana actual
+- Dentro de cada clínica: zona "Por cobrar" (`fecha_cobro <= hoy`) y "Próximamente" (`fecha_cobro > hoy`)
+- Semáforo: 🟢 promesa futura vigente / 🟡 promesa vence hoy / 🔴 sin promesa o vencida
+- Reversión: solo abonos directos (`id_caso IS NOT NULL`), máximo 30 días, no reversible dos veces
+- Cancelación: `estado_pago` queda en `'Pendiente'` (CHECK constraint no permite `'Cancelado'`)
 
-**Ruta Análoga (Física):**
-Igual que la digital, pero al entrar desde Recepción, debe pasar primero por `Yesos` → `Digital_Escaneo` antes de entrar a Diseño.
+## Features diseñados — pendientes de implementar
 
----
+### Buscador global Ctrl+L
+- Atajo `Ctrl+L` → overlay con `backdrop-filter: blur(8px)`
+- Busca por: folio, paciente, doctor, nombre de clínica
+- Resultados agrupados: En producción / Pendiente envío / Pendiente pago / Histórico (colapsado)
+- Clic en resultado → redirige a página correspondiente ya filtrada
+- Accesible para todos los roles
 
-## 5. Detalles Técnicos Críticos Recientes (Aviso para la IA)
+### Screensaver / modo idle
+- Activa `Fullscreen API` a los 5 minutos de inactividad
+- Ciclo: 5 minutos reloj + fecha + clima → 8 segundos notificaciones/métricas → repite
+- Estilo split-flap (efecto tablero de aeropuerto) en todos los elementos
+- Métricas de productividad: opcionales, activables desde sección Configuración
+- `mousemove` o `keydown` → cierra fullscreen y regresa a Lab OS
 
-1.  **Borrado en Cascada (Cascade Delete):** Debido a que la base de datos de Supabase protege la integridad referencial, para borrar un `casos_master` en el panel de `/admin`, el servidor ejecuta una limpieza manual agresiva previa en `casos_detalle`, `cuenta_corriente_clinica` y `casos_tiempos_historicos`.
-    *   **Nota técnica:** En `casos_tiempos_historicos`, la columna de relación foránea se llama **`id_caso`** (tipo entero, enlaza al `id` interno del caso).
-2.  **Despliegues en Vercel (¡REGLA DE ORO PARA LA IA!):** El usuario **NUNCA** prueba en `localhost`. **TODO el testeo lo hace en la URL de producción en vivo (`os.legiondentallab.com`)**. Por lo tanto, si tú (la IA) haces un cambio en el código para arreglar un bug o añadir una función, **DEBES HACER `git add .`, `git commit` y `git push` INMEDIATAMENTE**. Si no subes el código a GitHub, Vercel no lo compilará y el usuario nunca verá los cambios (y pensará que no arreglaste nada). ¡Asegúrate siempre de pushear tus cambios!
-3.  **UI/UX Premium:** La estética es clave en Lab OS. Se exige el uso de paletas de colores armoniosas (ej. detalles en dorado `#D4AF37`), esquinas redondeadas modernas (`rounded-xl`, `rounded-2xl`), *glassmorphism* y micro-animaciones (con Framer Motion o utilidades de Tailwind) para mantener una calidad Premium.
+### Cobro en campo
+- Usuario con rol `Representante` ve saldo del cliente desde móvil
+- Selecciona casos a pagar, registra monto → notificación al admin via Supabase Realtime
+- Admin confirma y aplica distribución
+- Tabla nueva: `cobros_propuestos` con estados: `propuesto | confirmado | aplicado | rechazado`
 
----
-**Fin del Contexto**
-Si eres un asistente IA leyendo esto, asegúrate de ignorar cualquier código viejo de Python/SQLite o arquitecturas que no incluyan Next.js y Supabase Web.
+### Portal del dentista (horizonte futuro)
+- Dashboard por clínica: casos en tiempo real, saldo, deuda, historial clínico
+- Archivos por paciente (STL, PLY, radiografías)
+- Pagos en línea via Stripe
+- El buscador Ctrl+L y la vista CxC son la base de esto
+
+## Secciones pendientes de crear
+- **Métricas** — ya existe en el sistema, pendiente definir KPIs con el equipo
+- **Configuración** — nueva sección para opciones del screensaver y otras preferencias del sistema
+
+## Principios de desarrollo
+- **No borrar datos** — reversiones y cancelaciones usan registros de auditoría y flags de estado
+- **Admin Client obligatorio** en todas las Server Actions que escriben a la BD
+- **Casos cancelados** deben filtrarse con `.neq('estado', 'Cancelado')` en todas las queries activas
+- **Upfront design** — diseñar completamente antes de implementar
