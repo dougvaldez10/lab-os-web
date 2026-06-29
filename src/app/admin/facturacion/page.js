@@ -853,6 +853,144 @@ export default function BillingPanel() {
   // Calcular total de casos pendientes
   const totalPendientes = pendingCases.reduce((acc, c) => acc + (Number(c.saldo_pendiente) || 0), 0);
 
+  let currentTableHeader = null;
+  let currentTableFooter = null;
+  let currentSubHeader = null;
+
+  if (activeTab === "pendientes") {
+    currentTableHeader = (
+      <div className="grid grid-cols-[100px_minmax(150px,2fr)_minmax(200px,3fr)_180px_150px_150px] gap-4 px-6 py-4 items-center">
+        <div className="font-bold">Folio</div>
+        <div className="font-bold">Clínica / Paciente</div>
+        <div className="font-bold">Descripción</div>
+        <div className="font-bold">Llegada a Facturación</div>
+        <div className="font-bold">Saldo Pendiente</div>
+        <div className="font-bold text-center">Acciones</div>
+      </div>
+    );
+    currentTableFooter = pendingCases.length > 0 ? (
+      <div className="bg-slate-50/80 px-6 py-4 flex justify-between items-center shrink-0 rounded-b-2xl">
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider cursor-help" title="Total Acumulado Sin Enviar">
+          Total:
+        </span>
+        <span className="text-lg font-black text-rose-600">
+          ${totalPendientes.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+        </span>
+      </div>
+    ) : null;
+  } else if (activeTab === "history") {
+    currentSubHeader = (
+      <div className="mb-4 relative max-w-md shrink-0 pointer-events-auto">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search size={18} className="text-slate-400" />
+        </div>
+        <input
+          type="text"
+          placeholder="Buscar por folio, paciente o clínica..."
+          value={historySearchTerm}
+          onChange={(e) => setHistorySearchTerm(e.target.value)}
+          className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none shadow-sm transition-all"
+        />
+      </div>
+    );
+    currentTableHeader = (
+      <div className="grid grid-cols-[100px_minmax(150px,1.5fr)_minmax(150px,1.5fr)_150px_100px_150px_100px] gap-4 px-6 py-4 items-center">
+        <div className="font-bold">Folio</div>
+        <div className="font-bold">Clínica</div>
+        <div className="font-bold">Paciente</div>
+        <div className="font-bold">Fecha Entrega</div>
+        <div className="font-bold">Total</div>
+        <div className="font-bold">Estado Pago</div>
+        <div className="font-bold text-right">Detalle</div>
+      </div>
+    );
+  } else if (activeTab === "cxc") {
+    if (!selectedClinic) {
+      currentSubHeader = (
+        <div className="mb-4 relative max-w-md shrink-0 pointer-events-auto">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={18} className="text-slate-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Buscar clínica con deuda..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none shadow-sm transition-all"
+          />
+        </div>
+      );
+      currentTableHeader = (
+        <div className="grid grid-cols-[minmax(250px,2fr)_150px_200px_80px] gap-4 px-6 py-4 items-center">
+          <div className="font-bold">Clínica</div>
+          <div className="font-bold">Casos</div>
+          <div className="font-bold">Balance</div>
+          <div className="font-bold text-right">Detalle</div>
+        </div>
+      );
+      currentTableFooter = filteredClinics.length > 0 ? (
+        <div className="bg-slate-50/80 px-6 py-4 flex justify-between items-center shrink-0 rounded-b-2xl">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            Total General Cuentas por Cobrar:
+          </span>
+          <span className="text-lg font-black text-rose-600">
+            ${totalCxC.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+      ) : null;
+    } else {
+      const currentClinicData = allClinics.find(cl => cl.id === selectedClinic.id) || selectedClinic;
+      currentSubHeader = (
+        <div className="mb-4 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center pointer-events-auto">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setSelectedClinic(null);
+                setWalletBalance(0);
+                setCustomAllocations({});
+              }}
+              className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#D4AF37] text-white flex items-center justify-center font-black text-lg shadow-sm">
+                {selectedClinic.nombre.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">{selectedClinic.nombre}</h3>
+                <p className="text-xs text-slate-500">Detalle de cuenta corriente</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm w-full md:w-auto">
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-slate-400 uppercase">Cartera / Saldo</span>
+              <span className={`text-lg font-black ${Number(currentClinicData?.saldo_favor) > 0 ? 'text-emerald-600' : 'text-slate-700'}`}>
+                ${Number(currentClinicData?.saldo_favor || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+      currentTableHeader = (
+        <div className="grid grid-cols-[85px_120px_minmax(150px,2fr)_120px_100px_100px_150px_120px_200px] gap-4 px-6 py-4 items-center">
+          <div className="font-bold text-center">Asignar</div>
+          <div className="font-bold">Folio</div>
+          <div className="font-bold">Paciente</div>
+          <div className="font-bold">Fecha Entrega</div>
+          <div className="font-bold text-center">IVA (8%)</div>
+          <div className="font-bold">Total</div>
+          <div className="font-bold">Saldo Pendiente</div>
+          <div className="font-bold">Abonar ($)</div>
+          <div className="font-bold text-right">Acción</div>
+        </div>
+      );
+      currentTableFooter = null;
+    }
+  }
+
   return (
     <>
       <GlassLayout
@@ -861,6 +999,10 @@ export default function BillingPanel() {
         icon={<Wallet size={24} className="text-[#D4AF37]" />}
         iconBg="bg-[#D4AF37]/10 border-[#D4AF37]/20"
         scrollbarClass="facturacion-scroll"
+        scrollbarColor="#D4AF37"
+        subHeader={currentSubHeader}
+        tableHeader={currentTableHeader}
+        tableFooter={currentTableFooter}
         headerActions={
           <>
             {activeTab === "cxc" && (
@@ -948,53 +1090,40 @@ export default function BillingPanel() {
               >
                 <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm md:overflow-visible overflow-hidden flex flex-col">
                   <div className="md:overflow-visible overflow-x-auto flex-1">
-                    <table className="w-full text-left text-sm whitespace-nowrap">
-                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-10">
-                        <tr>
-                          <th className="px-6 py-4">Folio</th>
-                          <th className="px-6 py-4">Clínica / Paciente</th>
-                          <th className="px-6 py-4">Descripción</th>
-                          <th className="px-6 py-4">Llegada a Facturación</th>
-                          <th className="px-6 py-4">Saldo Pendiente</th>
-                          <th className="px-6 py-4 text-center">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
+                    <div className="flex flex-col divide-y divide-slate-100 min-w-[800px]">
                         {pendingCases.length === 0 ? (
-                          <tr>
-                            <td colSpan="6" className="px-6 py-8 text-center text-slate-400">
-                              No hay casos pendientes sin enviar.
-                            </td>
-                          </tr>
+                          <div className="px-6 py-8 text-center text-slate-400">
+                            No hay casos pendientes sin enviar.
+                          </div>
                         ) : (
                           pendingCases.map((c) => {
                             const isSent = sentCaseId === c.id;
                             const isSending = sendingCaseId === c.id;
                             return (
-                              <tr
+                              <div
                                 key={c.id}
-                                className={`transition-all duration-500 ${
+                                className={`grid grid-cols-[100px_minmax(150px,2fr)_minmax(200px,3fr)_180px_150px_150px] gap-4 px-6 py-4 items-center text-sm transition-all duration-500 ${
                                   isSent
                                     ? "bg-emerald-50 scale-[0.99] opacity-60"
                                     : "hover:bg-slate-50/50"
                                 }`}
                               >
-                                <td className="px-6 py-4 font-bold text-slate-800">
+                                <div className="font-bold text-slate-800">
                                   #{c.codigo}
-                                </td>
-                                <td className="px-6 py-4">
+                                </div>
+                                <div>
                                   <div className="font-semibold text-slate-800">{c.clientes?.nombre || "N/A"}</div>
                                   <div className="text-xs text-slate-500 mt-0.5">{c.paciente}</div>
-                                </td>
-                                <td className="px-6 py-4">
+                                </div>
+                                <div>
                                   {c.casos_detalle?.map((d, i) => (
                                     <div key={i} className="text-xs font-medium text-slate-600">
                                       <span className="font-bold text-slate-800">{d.unidades}x</span> {d.producto} {d.material && `(${d.material})`}
                                     </div>
                                   ))}
                                   {(!c.casos_detalle || c.casos_detalle.length === 0) && <span className="text-slate-400 text-xs">Sin detalles</span>}
-                                </td>
-                                <td className="px-6 py-4 text-slate-600 text-xs font-medium">
+                                </div>
+                                <div className="text-slate-600 text-xs font-medium">
                                   {isSent ? (
                                     <span className="flex items-center gap-1.5 text-emerald-600 font-bold">
                                       <CheckCircle2 size={14} className="text-emerald-500" /> Enviado
@@ -1009,14 +1138,14 @@ export default function BillingPanel() {
                                       <AlertCircle size={12} /> Esperando Envío
                                     </span>
                                   )}
-                                </td>
-                                <td className="px-6 py-4">
+                                </div>
+                                <div>
                                   <span className="inline-flex items-center gap-1 font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-2.5 py-1 text-xs">
                                     <DollarSign size={12} className="text-rose-500" />
                                     {Number(c.saldo_pendiente).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                   </span>
-                                </td>
-                                <td className="px-6 py-4 text-center">
+                                </div>
+                                <div className="text-center">
                                   <div className="flex items-center justify-center gap-2">
                                      <button
                                        onClick={() => {
@@ -1047,26 +1176,15 @@ export default function BillingPanel() {
                                       {isSent ? "Enviado" : "Enviar"}
                                     </button>
                                   </div>
-                                </td>
-                              </tr>
+                                </div>
+                              </div>
                             );
                           })
                         )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {pendingCases.length > 0 && (
-                    <div className="bg-slate-50/80 px-6 py-4 border-t border-slate-200 flex justify-between items-center shrink-0">
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider cursor-help" title="Total Acumulado Sin Enviar">
-                        Total:
-                      </span>
-                      <span className="text-lg font-black text-rose-600">
-                        ${totalPendientes.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                      </span>
+                      </div>
                     </div>
-                  )}
-                </div>
+
+                  </div>
               </motion.div>
             )}
 
@@ -1099,21 +1217,7 @@ export default function BillingPanel() {
                 {/* CxC - Nivel 1: Resumen de Clínicas */}
                 {!selectedClinic ? (
                   <div className="flex-1 flex flex-col">
-                    {/* Buscador */}
-                    <div className="mb-4 shrink-0">
-                      <div className="relative flex-1 max-w-md">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Search size={18} className="text-slate-400" />
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="Buscar clínica con deuda..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none shadow-sm transition-all"
-                        />
-                      </div>
-                    </div>
+
 
                     {filteredClinics.length === 0 ? (
                       <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
@@ -1126,30 +1230,21 @@ export default function BillingPanel() {
                     ) : (
                       <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm md:overflow-visible overflow-hidden flex flex-col">
                         <div className="md:overflow-visible overflow-x-auto flex-1">
-                          <table className="w-full text-left text-sm whitespace-nowrap">
-                            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0">
-                              <tr>
-                                <th className="px-6 py-4">Clínica</th>
-                                <th className="px-6 py-4">Casos</th>
-                                <th className="px-6 py-4">Balance</th>
-                                <th className="px-6 py-4 text-right">Detalle</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
+                          <div className="flex flex-col divide-y divide-slate-100 min-w-[600px]">
                               {filteredClinics.map((cli) => (
-                                <tr key={cli.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer group" onClick={() => handleSelectClinic(cli)}>
-                                  <td className="px-6 py-4 font-bold text-slate-800 flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-amber-100 text-[#D4AF37] flex items-center justify-center font-black group-hover:bg-[#D4AF37] group-hover:text-white transition-colors">
+                                <div key={cli.id} className="grid grid-cols-[minmax(250px,2fr)_150px_200px_80px] gap-4 px-6 py-4 items-center hover:bg-slate-50/50 transition-colors cursor-pointer group text-sm" onClick={() => handleSelectClinic(cli)}>
+                                  <div className="font-bold text-slate-800 flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-amber-100 text-[#D4AF37] flex items-center justify-center font-black group-hover:bg-[#D4AF37] group-hover:text-white transition-colors shrink-0">
                                       {cli.nombre.charAt(0).toUpperCase()}
                                     </div>
-                                    <span className="group-hover:text-[#D4AF37] group-hover:translate-x-1.5 transition-all duration-200 inline-block">{cli.nombre}</span>
-                                  </td>
-                                  <td className="px-6 py-4 text-slate-600 font-medium">
+                                    <span className="group-hover:text-[#D4AF37] group-hover:translate-x-1.5 transition-all duration-200 inline-block truncate">{cli.nombre}</span>
+                                  </div>
+                                  <div className="text-slate-600 font-medium">
                                     <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-xs font-semibold">
                                       {cli.casos_count} {cli.casos_count === 1 ? 'caso' : 'casos'}
                                     </span>
-                                  </td>
-                                  <td className="px-6 py-4">
+                                  </div>
+                                  <div>
                                     {cli.total_deuda < 0 ? (
                                       <span className="font-black text-emerald-600">
                                         ${Math.abs(cli.total_deuda).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1159,56 +1254,25 @@ export default function BillingPanel() {
                                         ${cli.total_deuda.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                       </span>
                                     )}
-                                  </td>
-                                  <td className="px-6 py-4 text-right">
+                                  </div>
+                                  <div className="text-right">
                                     <button className="p-1.5 bg-slate-50 group-hover:bg-amber-50 text-slate-400 group-hover:text-[#D4AF37] rounded-lg transition-all group-hover:translate-x-0.5 inline-flex">
                                       <ChevronRight size={18} />
                                     </button>
-                                  </td>
-                                </tr>
+                                  </div>
+                                </div>
                               ))}
-                            </tbody>
-                          </table>
+                          </div>
                         </div>
                         
                         {/* Resumen General de Cuentas por Cobrar */}
-                        <div className="bg-slate-50/80 px-6 py-4 border-t border-slate-200 flex justify-between items-center shrink-0">
-                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider cursor-help" title="Total General Pendiente (Con y Sin IVA)">
-                            Total:
-                          </span>
-                          <span className={`text-lg font-black ${totalGeneral < 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            ${totalGeneral.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                        </div>
                       </div>
                     )}
                   </div>
                 ) : (
                   /* CxC - Nivel 2: Detalle de Casos de la Clínica */
                   <div className="flex-1 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    {/* Breadcrumbs / Header */}
-                    <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
-                      <div className="flex items-center gap-2 text-xs md:text-sm">
-                        <button 
-                          onClick={handleBackToClinics}
-                          className="text-slate-500 hover:text-[#D4AF37] font-semibold transition-colors flex items-center gap-1"
-                        >
-                          Facturación
-                        </button>
-                        <ChevronRight size={14} className="text-slate-400" />
-                        <span className="text-slate-800 font-bold max-w-[200px] truncate">
-                          {selectedClinic.nombre}
-                        </span>
-                      </div>
 
-                      <button 
-                        onClick={handleBackToClinics}
-                        className="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm transition-colors"
-                      >
-                        <ArrowLeft size={14} />
-                        Volver
-                      </button>
-                    </div>
 
                     {/* Cartera / Saldo a Favor de la clínica */}
                     {(() => {
@@ -1269,43 +1333,27 @@ export default function BillingPanel() {
                         const walletBalance = Number(currentClinicData?.saldo_favor) || 0;
 
                         return (
-                          <table className="w-full text-left text-sm whitespace-nowrap">
-                            <thead className="bg-slate-50/50 border-b border-slate-200 text-slate-500 font-bold sticky top-0">
-                              <tr>
-                                <th className="py-4 text-center w-[85px]">Asignar</th>
-                                <th className="px-6 py-4">Folio</th>
-                                <th className="px-6 py-4">Paciente</th>
-                                <th className="px-6 py-4">Fecha Entrega</th>
-                                <th className="px-6 py-4 text-center">IVA (8%)</th>
-                                <th className="px-6 py-4">Total</th>
-                                <th className="px-6 py-4">Saldo Pendiente</th>
-                                <th className="px-6 py-4">Abonar ($)</th>
-                                <th className="px-6 py-4 text-right">Acción</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
+                          <div className="flex flex-col divide-y divide-slate-100 min-w-[1000px]">
                               {sortedSelectedClinicCases.length === 0 ? (
-                                <tr>
-                                  <td colSpan="9" className="px-6 py-8 text-center text-slate-400">
-                                    No hay casos con saldo pendiente para esta clínica.
-                                  </td>
-                                </tr>
+                                <div className="px-6 py-8 text-center text-slate-400">
+                                  No hay casos con saldo pendiente para esta clínica.
+                                </div>
                               ) : (
                                 sortedSelectedClinicCases.map((c) => {
                                   const isAllocated = customAllocations[c.id] !== undefined;
                                   const allocatedAmount = customAllocations[c.id] !== undefined ? customAllocations[c.id] : "";
 
                                   return (
-                                    <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
-                                      <td className="py-4 text-center w-[85px]">
+                                    <div key={c.id} className="grid grid-cols-[85px_120px_minmax(150px,2fr)_120px_100px_100px_150px_120px_200px] gap-4 px-6 py-4 items-center hover:bg-slate-50/50 transition-colors text-sm">
+                                      <div className="text-center w-full">
                                         <input 
                                           type="checkbox" 
                                           checked={isAllocated} 
                                           onChange={() => handleToggleCaseSelection(c.id, Number(c.saldo_pendiente), walletBalance)} 
                                           className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded cursor-pointer border-slate-300" 
                                         />
-                                      </td>
-                                      <td className="px-6 py-4 font-bold text-slate-800 flex items-center gap-2">
+                                      </div>
+                                      <div className="font-bold text-slate-800 flex items-center gap-2">
                                         {(() => {
                                           let color = "bg-rose-500"; // Rojo por defecto si no hay promesa o ya pasó
                                           const hoy = new Date().toISOString().split("T")[0];
@@ -1319,11 +1367,11 @@ export default function BillingPanel() {
                                           return <div title={c.promesa_pago_fecha ? `Promesa: ${c.promesa_pago_fecha}` : 'Sin promesa vigente'} className={`w-2.5 h-2.5 rounded-full ${color}`} />;
                                         })()}
                                         #{c.codigo}
-                                      </td>
-                                      <td className="px-6 py-4 font-semibold text-slate-700">
+                                      </div>
+                                      <div className="font-semibold text-slate-700 truncate">
                                         {c.paciente}
-                                      </td>
-                                      <td className="px-6 py-4 text-slate-600 text-xs">
+                                      </div>
+                                      <div className="text-slate-600 text-xs">
                                         {c.fecha_entrega ? (
                                           <span className="flex items-center gap-1">
                                             <Calendar size={12} className="text-slate-400" />
@@ -1332,23 +1380,23 @@ export default function BillingPanel() {
                                         ) : (
                                           <span className="text-slate-400">—</span>
                                         )}
-                                      </td>
-                                      <td className="px-6 py-4 text-center">
+                                      </div>
+                                      <div className="text-center">
                                         <input 
                                           type="checkbox" 
                                           checked={c.iva_aplicado || false} 
                                           onChange={(e) => handleToggleIVA(c, e.target.checked)} 
                                           className="w-4 h-4 text-[#D4AF37] focus:ring-[#D4AF37] rounded cursor-pointer border-slate-300" 
                                         />
-                                      </td>
-                                      <td className="px-6 py-4 font-medium text-slate-600">
+                                      </div>
+                                      <div className="font-medium text-slate-600">
                                         ${c.total_caso
                                           ? (c.iva_aplicado
                                               ? (Number(c.total_caso) / 1.08).toFixed(2)
                                               : Number(c.total_caso).toFixed(2))
                                           : "0.00"}
-                                      </td>
-                                      <td className="px-6 py-4">
+                                      </div>
+                                      <div>
                                         {Number(c.saldo_pendiente) < 0 ? (
                                           <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1 text-xs">
                                             <DollarSign size={12} className="text-emerald-500" />
@@ -1360,8 +1408,8 @@ export default function BillingPanel() {
                                             {Number(c.saldo_pendiente).toFixed(2)}
                                           </span>
                                         )}
-                                      </td>
-                                      <td className="px-6 py-4">
+                                      </div>
+                                      <div>
                                         <input 
                                           type="number" 
                                           step="0.01"
@@ -1373,8 +1421,8 @@ export default function BillingPanel() {
                                           onChange={(e) => handleUpdateAllocationAmount(c.id, e.target.value, Number(c.saldo_pendiente))}
                                           className="w-24 bg-white disabled:bg-slate-50 border border-slate-200 disabled:border-slate-100 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
                                         />
-                                      </td>
-                                      <td className="px-6 py-4 text-right flex justify-end gap-2">
+                                      </div>
+                                      <div className="text-right flex justify-end gap-2">
                                         <button
                                           title="Promesa de Pago"
                                           onClick={() => setPromesaModalCase(c)}
@@ -1410,26 +1458,17 @@ export default function BillingPanel() {
                                         >
                                           <AlertCircle size={18} />
                                         </button>
-                                      </td>
-                                    </tr>
+                                      </div>
+                                    </div>
                                   );
                                 })
                               )}
-                            </tbody>
-                          </table>
+                          </div>
                         );
                       })()}
                     </div>
 
-                    {/* Resumen final en pie de tabla */}
-                    <div className="bg-slate-50/80 px-6 py-4 border-t border-slate-200 flex justify-between items-center shrink-0">
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        {selectedClinic.total_deuda < 0 ? 'Saldo a Favor Clínica:' : 'Total Acumulado Clínica:'}
-                      </span>
-                      <span className={`text-lg font-black ${selectedClinic.total_deuda < 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        ${Math.abs(selectedClinic.total_deuda).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                    </div>
+
                   </div>
                 )}
               </motion.div>
@@ -1445,48 +1484,20 @@ export default function BillingPanel() {
                 transition={{ duration: 0.2 }}
                 className="h-full flex flex-col"
               >
-                {/* Buscador */}
-                <div className="mb-4 relative max-w-md shrink-0">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search size={18} className="text-slate-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Buscar por folio, paciente o clínica..."
-                    value={historySearchTerm}
-                    onChange={(e) => setHistorySearchTerm(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none shadow-sm transition-all"
-                  />
-                </div>
-
                 <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm md:overflow-visible overflow-hidden flex flex-col">
                   <div className="md:overflow-visible overflow-x-auto flex-1">
-                    <table className="w-full text-left text-sm whitespace-nowrap">
-                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0">
-                        <tr>
-                          <th className="px-6 py-4">Folio</th>
-                          <th className="px-6 py-4">Clínica</th>
-                          <th className="px-6 py-4">Paciente</th>
-                          <th className="px-6 py-4">Fecha Entrega</th>
-                          <th className="px-6 py-4">Total</th>
-                          <th className="px-6 py-4">Estado Pago</th>
-                          <th className="px-6 py-4 text-right">Detalle</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
+                    <div className="flex flex-col divide-y divide-slate-100 min-w-[800px]">
                         {filteredHistory.length === 0 ? (
-                          <tr>
-                            <td colSpan="7" className="px-6 py-8 text-center text-slate-400">
-                              No se encontraron registros de casos pagados.
-                            </td>
-                          </tr>
+                          <div className="px-6 py-8 text-center text-slate-400">
+                            No se encontraron registros de casos pagados.
+                          </div>
                         ) : (
                           filteredHistory.map((c) => {
                             const isExpanded = expandedCaseId === c.id;
                             return (
-                              <>
-                                <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
-                                      <td className="px-6 py-4 font-bold text-slate-800 flex items-center gap-2">
+                              <div key={c.id} className="flex flex-col">
+                                <div className="grid grid-cols-[100px_minmax(150px,1.5fr)_minmax(150px,1.5fr)_150px_100px_150px_100px] gap-4 px-6 py-4 items-center hover:bg-slate-50/50 transition-colors text-sm">
+                                      <div className="font-bold text-slate-800 flex items-center gap-2">
                                         {(() => {
                                           let color = "bg-rose-500"; // Rojo por defecto si no hay promesa o ya pasó
                                           const hoy = new Date().toISOString().split("T")[0];
@@ -1500,38 +1511,38 @@ export default function BillingPanel() {
                                           return <div title={c.promesa_pago_fecha ? `Promesa: ${c.promesa_pago_fecha}` : 'Sin promesa vigente'} className={`w-2.5 h-2.5 rounded-full ${color}`} />;
                                         })()}
                                         #{c.codigo}
-                                      </td>
-                                  <td className="px-6 py-4 font-semibold text-slate-700 max-w-[200px] truncate">
+                                      </div>
+                                  <div className="font-semibold text-slate-700 max-w-[200px] truncate">
                                     {c.clientes?.nombre || "N/A"}
-                                  </td>
-                                  <td className="px-6 py-4 text-slate-700 font-medium">
+                                  </div>
+                                  <div className="text-slate-700 font-medium">
                                     {c.paciente}
-                                  </td>
-                                  <td className="px-6 py-4 text-slate-500 text-xs">
+                                  </div>
+                                  <div className="text-slate-500 text-xs">
                                     {c.fecha_entrega || "—"}
-                                  </td>
-                                  <td className="px-6 py-4 font-bold text-slate-800">
+                                  </div>
+                                  <div className="font-bold text-slate-800">
                                     ${Number(c.total_caso).toFixed(2)}
-                                  </td>
-                                  <td className="px-6 py-4">
+                                  </div>
+                                  <div>
                                     <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2.5 py-0.5 text-[10px]">
                                       Pagado
                                     </span>
-                                  </td>
-                                  <td className="px-6 py-4 text-right">
+                                  </div>
+                                  <div className="text-right">
                                     <button
                                       onClick={() => setExpandedCaseId(isExpanded ? null : c.id)}
                                       className="text-xs font-bold text-slate-500 hover:text-[#D4AF37] px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg transition-colors"
                                     >
                                       {isExpanded ? "Ocultar Abonos" : "Ver Abonos"}
                                     </button>
-                                  </td>
-                                </tr>
+                                  </div>
+                                </div>
                                 
                                 {/* Desglose de Abonos Expandible */}
                                 {isExpanded && (
-                                  <tr className="bg-slate-50/50">
-                                    <td colSpan="7" className="px-6 py-4">
+                                  <div className="col-span-7 bg-slate-50/50 w-full p-0 border-b border-slate-100">
+                                    <div className="w-full p-6">
                                       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-inner max-w-3xl">
                                         <h4 className="text-xs uppercase font-bold text-slate-400 tracking-wider mb-3">Historial de abonos registrados:</h4>
                                         {(!c.pagos || c.pagos.length === 0) ? (
@@ -1574,17 +1585,16 @@ export default function BillingPanel() {
                                           </>
                                         )}
                                       </div>
-                                    </td>
-                                  </tr>
+                                    </div>
+                                  </div>
                                 )}
-                              </>
+                              </div>
                             );
                           })
                         )}
-                      </tbody>
-                    </table>
+                      </div>
+                    </div>
                   </div>
-                </div>
               </motion.div>
             )}
 
