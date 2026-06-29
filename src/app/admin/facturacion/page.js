@@ -933,8 +933,8 @@ export default function BillingPanel() {
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
             Total General Cuentas por Cobrar:
           </span>
-          <span className="text-lg font-black text-rose-600">
-            ${totalCxC.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <span className={`text-lg font-black ${totalGeneral < 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            ${totalGeneral.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         </div>
       ) : null;
