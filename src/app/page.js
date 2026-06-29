@@ -780,6 +780,16 @@ export default function Home() {
       if (Array.isArray(data) && data.length > 0) {
         // Respuesta vílida
         setCases(data);
+        // Auto-collapse logic
+        const newExpandedState = {};
+        departments.forEach(dept => {
+          const hasCases = data.some(c => c.dept === dept.id);
+          // Only true means it is HIDDEN (collapsed). So if hasCases is false, hide it (true)
+          if (!hasCases) {
+            newExpandedState[dept.id] = true;
+          }
+        });
+        setExpandedDepts(newExpandedState);
       } else if (retryOnAuth) {
         // Token probablemente expirado ΓåÆ refrescar y reintentar UNA vez
         await refreshGhostToken();
@@ -1210,7 +1220,7 @@ export default function Home() {
         ">
           
           {/* Header ΓÇö logo centrado, spinner a la derecha */}
-          <header className="px-5 py-4 flex items-center justify-center relative shrink-0 h-14 z-20">
+          <header className="px-5 py-4 flex items-center justify-center sticky top-0 shrink-0 h-14 z-50 pointer-events-auto bg-slate-50/80 backdrop-blur-md border-b border-white/20 shadow-sm">
             <h1
             className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none"
             onClick={() => setActiveDept("Producción")}
@@ -1231,19 +1241,20 @@ export default function Home() {
         </header>
 
         {/* Big Select Navigation */}
-        <div className="px-4 py-2 shrink-0 z-20 pointer-events-auto">
-           <div className="relative">
-             <select 
-                value={activeDept}
-                onChange={(e) => setActiveDept(e.target.value)}
-                className="w-full bg-white/90 backdrop-blur-sm border border-white/40 rounded-full px-4 py-3 text-slate-900 text-center font-bold focus:ring-2 focus:ring-blue-500 outline-none appearance-none shadow-sm text-[15px] transition-all hover:bg-white"
+        <div className="px-4 py-3 shrink-0 z-40 pointer-events-auto sticky top-14 bg-slate-50/80 backdrop-blur-md border-b border-white/20 shadow-sm mb-2">
+           <div className="flex bg-slate-200/70 p-1 rounded-2xl w-full shadow-inner">
+             <button 
+                onClick={() => setActiveDept("Producción")}
+                className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${activeDept === "Producción" ? "bg-white text-[#0062cc] shadow-md" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
              >
-                <option value="Producción">Producción</option>
-                <option value="all">TODAS (Monitor Global)</option>
-             </select>
-             <div className="absolute right-4 top-4 text-slate-400 pointer-events-none">
-                <ChevronDown size={20} />
-             </div>
+                Producción
+             </button>
+             <button 
+                onClick={() => setActiveDept("all")}
+                className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${activeDept === "all" ? "bg-white text-[#0062cc] shadow-md" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+             >
+                Monitor Global
+             </button>
            </div>
         </div>
 
@@ -1287,7 +1298,7 @@ export default function Home() {
                      <div key={grupo.id} className="mb-2">
                        <div 
                          onClick={() => toggleDept(grupo.id)}
-                         className="flex items-center justify-center py-4 px-2 cursor-pointer select-none group border-b-2 border-slate-100 hover:border-[#D4AF37] transition-colors mb-4 mt-6 relative"
+                         className="flex items-center justify-center py-3 px-4 cursor-pointer select-none group mb-2 mt-4 relative bg-white/70 backdrop-blur-md mx-4 rounded-2xl border border-white/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] sticky top-[115px] z-30 pointer-events-auto transition-transform active:scale-[0.98]"
                        >
                          <span className="text-[15px] font-black text-slate-900 uppercase tracking-widest">{grupo.name.replace("Digital_", "")}</span>
                          <div className="absolute right-2">
