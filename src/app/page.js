@@ -1484,21 +1484,21 @@ export default function Home() {
       {/* LAYER 2: EL VIDRIO OPACO (ZONA FUERA DEL HUECO) */}
       <div className="absolute inset-0 z-10 pointer-events-none flex flex-col">
         {/* Top glass (cubre Lab OS y el menú) */}
-        <div className="h-[144px] bg-slate-50/15 backdrop-blur-[4px] w-full transition-all duration-300 border-b border-slate-200" />
+        <div className="h-[144px] bg-slate-50/15 backdrop-blur-[4px] w-full transition-all duration-300" />
         
         {/* Middle section (El Hueco) */}
         <div className="flex-1 flex relative w-full">
           {/* Lado izquierdo */}
-          <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300 border-r border-slate-200 hidden sm:block" />
+          <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300 hidden sm:block" />
           
           {/* El Hueco en sí */}
           <div className="w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto bg-transparent h-full sm:shadow-[inset_0_0_20px_rgba(0,0,0,0.02)] sm:px-4 md:px-8 flex flex-col relative pointer-events-none">
-             {/* Marco del hueco (Bordes laterales) */}
-             <div className="w-full flex-1 sm:border-x border-slate-200 relative z-30 pointer-events-none"></div>
+             {/* Marco del hueco sin borde visible, solo el espacio libre */}
+             <div className="w-full flex-1 relative z-30 pointer-events-none"></div>
           </div>
           
           {/* Lado derecho */}
-          <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300 border-l border-slate-200 hidden sm:block" />
+          <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300 hidden sm:block" />
         </div>
       </div>
 
