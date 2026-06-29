@@ -1066,7 +1066,7 @@ export default function Home() {
 
 
   return (
-    <div className="min-h-screen bg-white sm:bg-slate-50 lg:bg-slate-100 flex flex-col font-sans transition-colors duration-300">
+    <div className="h-[100dvh] overflow-hidden bg-white sm:bg-slate-50 lg:bg-slate-100 flex flex-col font-sans transition-colors duration-300">
       <Toaster position="bottom-center" />
       <NewCaseModal isOpen={isNewCaseModalOpen} onClose={() => setIsNewCaseModalOpen(false)} clients={clients} onActionComplete={fetchCases}/>
 
@@ -1215,12 +1215,12 @@ export default function Home() {
         <main className="
           flex-1 w-full flex flex-col overflow-hidden pointer-events-auto
           transition-all duration-300 relative bg-transparent
-          sm:max-w-[520px] sm:mx-auto sm:my-3 sm:min-h-[calc(100vh-1.5rem)]
-          lg:max-w-[680px] lg:my-6 lg:min-h-[calc(100vh-3rem)]
+          sm:max-w-[520px] sm:mx-auto
+          lg:max-w-[680px]
         ">
           
           {/* Header ΓÇö logo centrado, spinner a la derecha */}
-          <header className="px-5 py-4 flex items-center justify-center sticky top-0 shrink-0 h-14 z-50 pointer-events-auto bg-slate-50/80 backdrop-blur-md border-b border-white/20 shadow-sm">
+          <header className="px-5 py-4 flex items-center justify-center shrink-0 h-14 z-50 pointer-events-auto bg-transparent relative">
             <h1
             className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none"
             onClick={() => setActiveDept("Producción")}
@@ -1241,8 +1241,8 @@ export default function Home() {
         </header>
 
         {/* Big Select Navigation */}
-        <div className="px-4 py-3 shrink-0 z-40 pointer-events-auto sticky top-14 bg-slate-50/80 backdrop-blur-md border-b border-white/20 shadow-sm mb-2">
-           <div className="flex bg-slate-200/70 p-1 rounded-2xl w-full shadow-inner">
+        <div className="px-4 py-3 shrink-0 z-40 pointer-events-auto bg-transparent mb-2 relative">
+           <div className="flex bg-slate-200/70 p-1 rounded-2xl w-full shadow-inner backdrop-blur-md border border-white/50">
              <button 
                 onClick={() => setActiveDept("Producción")}
                 className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${activeDept === "Producción" ? "bg-white text-[#0062cc] shadow-md" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
@@ -1298,7 +1298,7 @@ export default function Home() {
                      <div key={grupo.id} className="mb-2">
                        <div 
                          onClick={() => toggleDept(grupo.id)}
-                         className="flex items-center justify-center py-3 px-4 cursor-pointer select-none group mb-2 mt-4 relative bg-white/70 backdrop-blur-md mx-4 rounded-2xl border border-white/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] sticky top-[134px] z-30 pointer-events-auto transition-transform active:scale-[0.98]"
+                         className="flex items-center justify-center py-3 px-4 cursor-pointer select-none group mb-2 mt-4 relative bg-white/70 backdrop-blur-md mx-4 rounded-2xl border border-white/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] sticky top-0 z-30 pointer-events-auto transition-transform active:scale-[0.98]"
                        >
                          <span className="text-[15px] font-black text-slate-900 uppercase tracking-widest">{grupo.name.replace("Digital_", "")}</span>
                          <div className="absolute right-2">
