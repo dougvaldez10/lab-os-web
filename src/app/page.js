@@ -1210,6 +1210,9 @@ export default function Home() {
 
       {/* LAYER 1: LA HOJA DE PAPEL (SCROLLING Y CONTENIDO) */}
       <div className="absolute inset-0 overflow-y-auto overflow-x-hidden mobile-scroll z-0 glass-lines-bg">
+        {/* NUEVO VIDRIO GLOBAL (Debajo de las tarjetas, sobre el papel) */}
+        <div className="fixed inset-0 bg-slate-50/15 backdrop-blur-[4px] pointer-events-none z-0"></div>
+        
         <div style={{ paddingTop: '144px', paddingBottom: '100px' }} className="w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto flex flex-col relative z-10 px-0 sm:px-4 md:px-8">
            {loading && cases.length === 0 ? (
                <div className="p-10 text-center text-slate-400 font-medium text-sm">Cargando datos...</div>
