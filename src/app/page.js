@@ -1243,17 +1243,17 @@ export default function Home() {
           </header>
 
           {/* Big Select Navigation */}
-          <div className="px-4 py-3 pb-4 shrink-0 bg-transparent w-full">
-             <div className="flex bg-slate-200/70 p-1 rounded-2xl w-full shadow-inner backdrop-blur-sm border border-white/50">
+          <div className="px-4 py-3 pb-4 shrink-0 bg-transparent w-full flex justify-center">
+             <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm pointer-events-auto w-full max-w-[320px]">
                <button 
                   onClick={() => setActiveDept("Producción")}
-                  className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${activeDept === "Producción" ? "bg-white text-[#0062cc] shadow-md" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeDept === "Producción" ? "bg-slate-100 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                >
                   Producción
                </button>
                <button 
                   onClick={() => setActiveDept("all")}
-                  className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${activeDept === "all" ? "bg-white text-[#0062cc] shadow-md" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeDept === "all" ? "bg-slate-100 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                >
                   Monitor Global
                </button>
@@ -1301,9 +1301,9 @@ export default function Home() {
                      <div key={grupo.id} className="mb-2">
                        <div 
                          onClick={() => toggleDept(grupo.id)}
-                         className="flex items-center justify-center py-3 px-4 cursor-pointer select-none group mb-2 mt-4 relative bg-white/70 backdrop-blur-md mx-4 rounded-2xl border border-white/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] sticky top-[138px] z-30 pointer-events-auto transition-transform active:scale-[0.98]"
+                         className="flex items-center justify-center py-3 px-4 cursor-pointer select-none group mb-2 mt-4 relative bg-slate-50 mx-4 rounded-2xl border border-slate-200 shadow-sm sticky top-[138px] z-30 pointer-events-auto transition-transform active:scale-[0.98]"
                        >
-                         <span className="text-[15px] font-black text-slate-900 uppercase tracking-widest">{grupo.name.replace("Digital_", "")}</span>
+                         <span className="text-sm font-bold text-slate-800 uppercase tracking-wide">{grupo.name.replace("Digital_", "")}</span>
                          <div className="absolute right-2">
                            {collapsed ? <ChevronDown size={20} className="text-slate-300 group-hover:text-[#D4AF37] transition-colors" /> : <ChevronUp size={20} className="text-slate-300 group-hover:text-[#D4AF37] transition-colors" />}
                          </div>
