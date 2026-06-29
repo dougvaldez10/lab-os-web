@@ -1298,7 +1298,7 @@ export default function Home() {
                      <div key={grupo.id} className="mb-2">
                        <div 
                          onClick={() => toggleDept(grupo.id)}
-                         className="flex items-center justify-center py-3 px-4 cursor-pointer select-none group mb-2 mt-4 relative bg-white/70 backdrop-blur-md mx-4 rounded-2xl border border-white/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] sticky top-0 z-30 pointer-events-auto transition-transform active:scale-[0.98]"
+                         className="flex items-center justify-center py-3 px-4 cursor-pointer select-none group mb-2 mt-4 relative bg-white/70 backdrop-blur-md mx-4 rounded-2xl border border-white/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] sticky top-[134px] z-30 pointer-events-auto transition-transform active:scale-[0.98]"
                        >
                          <span className="text-[15px] font-black text-slate-900 uppercase tracking-widest">{grupo.name.replace("Digital_", "")}</span>
                          <div className="absolute right-2">
