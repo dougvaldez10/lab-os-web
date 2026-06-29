@@ -293,7 +293,7 @@ function StackedCases({ cases, onRefresh, operatorName }) {
   const STACK_PREVIEW = Math.min(cases.length, 3);
 
   return (
-    <div className="px-4 mb-2">
+    <div className="px-4 sm:px-0 mb-2">
       {/* Header de sección */}
       <div className="flex items-center gap-2 mb-3 mt-6">
         <div className="flex-1 h-px bg-amber-200/80" />
@@ -1213,7 +1213,7 @@ export default function Home() {
         {/* NUEVO VIDRIO GLOBAL (Debajo de las tarjetas, sobre el papel) */}
         <div className="fixed inset-0 bg-slate-50/15 backdrop-blur-[4px] pointer-events-none z-0"></div>
         
-        <div style={{ paddingTop: '144px', paddingBottom: '100px' }} className="w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto flex flex-col relative z-10 px-0 sm:px-4 md:px-8">
+        <div style={{ paddingTop: '144px', paddingBottom: '100px' }} className="w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto flex flex-col relative z-10 px-0">
            {loading && cases.length === 0 ? (
                <div className="p-10 text-center text-slate-400 font-medium text-sm">Cargando datos...</div>
            ) : (
@@ -1297,7 +1297,7 @@ export default function Home() {
                                   const isReadOnly = activeDept === "all";
 
                                   return (
-                                      <li key={c.internal_id} className={`flex flex-col transition-all bg-white/90 backdrop-blur-md rounded-[2rem] mx-4 mb-4 overflow-hidden border ${shadowClass}`}>
+                                      <li key={c.internal_id} className={`flex flex-col transition-all bg-white/90 backdrop-blur-md rounded-[2rem] mx-4 sm:mx-0 mb-4 overflow-hidden border ${shadowClass}`}>
                                         <div className="flex items-start px-5 pt-4 pb-3 min-w-0">
                                           {/* Izquierda: Codigo, Fecha/Hora, Paciente */}
                                           <div className="flex-1 flex flex-col min-w-0 pr-4 gap-1.5">
@@ -1495,7 +1495,7 @@ export default function Home() {
           <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300 hidden sm:block" />
           
           {/* El Hueco en sí */}
-          <div className="w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto bg-transparent h-full sm:shadow-[inset_0_0_20px_rgba(0,0,0,0.02)] sm:px-4 md:px-8 flex flex-col relative pointer-events-none">
+          <div className="w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto bg-transparent h-full sm:shadow-[inset_0_0_20px_rgba(0,0,0,0.02)] px-0 flex flex-col relative pointer-events-none">
              {/* Marco del hueco sin borde visible, solo el espacio libre */}
              <div className="w-full flex-1 relative z-30 pointer-events-none"></div>
           </div>
