@@ -700,6 +700,26 @@ function LoginScreen({ onLoginSuccess }) {
 }
 
 export default function Home() {
+  const globalStyles = (
+    <style dangerouslySetInnerHTML={{__html: `
+      .glass-lines-bg {
+        background-image: repeating-linear-gradient(
+          to bottom,
+          transparent,
+          transparent 39px,
+          rgba(0, 0, 0, 0.03) 40px
+        );
+        background-size: 100% 40px;
+      }
+      .mobile-scroll {
+        scrollbar-width: none;
+      }
+      .mobile-scroll::-webkit-scrollbar {
+        display: none;
+      }
+    `}} />
+  );
+
   const [activeDept, setActiveDept] = useState("Producción");
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1178,16 +1198,20 @@ export default function Home() {
         </div>
       )}
 
-      <main className="
-        flex-1 w-full bg-white flex flex-col overflow-hidden
-        transition-all duration-300 relative
-        sm:max-w-[520px] sm:mx-auto sm:my-3 sm:rounded-2xl sm:shadow-lg sm:ring-1 sm:ring-slate-200/60 sm:min-h-[calc(100vh-1.5rem)]
-        lg:max-w-[680px] lg:my-6 lg:shadow-2xl lg:ring-slate-200/80 lg:min-h-[calc(100vh-3rem)]
-      ">
-        
-        {/* Header ΓÇö logo centrado, spinner a la derecha */}
-        <header className="px-5 py-4 border-b border-slate-100 flex items-center justify-center relative shrink-0 h-14 bg-white z-20">
-          <h1
+      <div className="absolute inset-0 glass-lines-bg z-0 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-slate-50/15 backdrop-blur-[4px] z-10 pointer-events-none"></div>
+      
+      <div className="w-full flex-1 flex flex-col items-center relative z-20 pointer-events-none">
+        <main className="
+          flex-1 w-full flex flex-col overflow-hidden pointer-events-auto
+          transition-all duration-300 relative bg-transparent
+          sm:max-w-[520px] sm:mx-auto sm:my-3 sm:min-h-[calc(100vh-1.5rem)]
+          lg:max-w-[680px] lg:my-6 lg:min-h-[calc(100vh-3rem)]
+        ">
+          
+          {/* Header ΓÇö logo centrado, spinner a la derecha */}
+          <header className="px-5 py-4 flex items-center justify-center relative shrink-0 h-14 z-20">
+            <h1
             className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none"
             onClick={() => setActiveDept("Producción")}
             title="Volver a Inicio"
@@ -1207,12 +1231,12 @@ export default function Home() {
         </header>
 
         {/* Big Select Navigation */}
-        <div className="px-4 py-3 border-b border-slate-100 bg-white shrink-0 z-20">
+        <div className="px-4 py-2 shrink-0 z-20 pointer-events-auto">
            <div className="relative">
              <select 
                 value={activeDept}
                 onChange={(e) => setActiveDept(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 text-center font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none shadow-sm text-[15px]"
+                className="w-full bg-white/90 backdrop-blur-sm border border-white/40 rounded-full px-4 py-3 text-slate-900 text-center font-bold focus:ring-2 focus:ring-blue-500 outline-none appearance-none shadow-sm text-[15px] transition-all hover:bg-white"
              >
                 <option value="Producción">Producción</option>
                 <option value="all">TODAS (Monitor Global)</option>
@@ -1224,7 +1248,7 @@ export default function Home() {
         </div>
 
         {/* List Content */}
-        <div className="flex-1 overflow-y-auto w-full pb-24 relative z-10 bg-[#f8fafc]">
+        <div className="flex-1 overflow-y-auto w-full pb-24 relative z-10 mobile-scroll">
            {loading && cases.length === 0 ? (
                <div className="p-10 text-center text-slate-400 font-medium text-sm">Cargando datos...</div>
            ) : (
@@ -1297,18 +1321,18 @@ export default function Home() {
                                {casosEnGrupo.map((c) => {
                                   const devProps = getDeliveryDateProps(c.fecha_entrega, c.hora_entrega);
                                   const slaColor = getSlaColor(c.hora_llegada, c.dept);
-                                  const borderClass = c.urgent
-                                    ? 'border-l-4 border-red-500 pl-3'
-                                    : slaColor === 'red'    ? 'border-l-4 border-red-400 pl-3'
-                                    : slaColor === 'yellow' ? 'border-l-4 border-yellow-400 pl-3'
-                                    : slaColor === 'green'  ? 'border-l-4 border-green-400 pl-3'
-                                    : 'border-l-4 border-transparent pl-3';
+                                  const shadowClass = c.urgent
+                                    ? 'shadow-[0_0_15px_rgba(239,68,68,0.4)] border-red-200 ring-1 ring-red-500/20'
+                                    : slaColor === 'red'    ? 'shadow-[0_0_10px_rgba(248,113,113,0.3)] border-red-100'
+                                    : slaColor === 'yellow' ? 'shadow-[0_0_10px_rgba(250,204,21,0.3)] border-yellow-100'
+                                    : slaColor === 'green'  ? 'shadow-[0_0_10px_rgba(74,222,128,0.3)] border-green-100'
+                                    : 'shadow-sm border-white/40 hover:shadow-md';
                                   
                                   const cExpanded = !!expandedCases[c.internal_id];
                                   const isReadOnly = activeDept === "all";
 
                                   return (
-                                      <li key={c.internal_id} className={`flex flex-col border border-slate-100 transition-colors bg-white rounded-2xl shadow-sm mb-3 hover:shadow-md ${borderClass.replace('border-l-4', 'border-l-4')}`}>
+                                      <li key={c.internal_id} className={`flex flex-col transition-all bg-white/90 backdrop-blur-md rounded-[2rem] mx-4 mb-4 overflow-hidden border ${shadowClass}`}>
                                         <div className="flex items-start px-5 pt-4 pb-3 min-w-0">
                                           {/* Izquierda: Codigo, Fecha/Hora, Paciente */}
                                           <div className="flex-1 flex flex-col min-w-0 pr-4 gap-1.5">
@@ -1495,6 +1519,7 @@ export default function Home() {
         </div>
 
       </main>
+      </div>
 
       {/* Avatar de usuario ΓÇö fijo al pie de pantalla, centrado */}
       {currentUser && (
