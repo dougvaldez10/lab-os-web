@@ -6,6 +6,7 @@ import {
   Wallet, 
   History, 
   ChevronRight, 
+  ChevronLeft,
   Search, 
   RefreshCw, 
   Plus,
