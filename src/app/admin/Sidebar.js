@@ -139,7 +139,7 @@ export default function Sidebar() {
 
   return (
     <aside 
-      className={`group w-full bg-slate-900/30 backdrop-blur-2xl text-slate-300 flex flex-row md:flex-col shrink-0 transition-all duration-500 relative border-b md:border-b-0 md:border-r border-slate-700/50 hover:shadow-[0_0_50px_rgba(255,255,255,0.05)] md:h-screen md:sticky md:top-0 z-50 ${
+      className={`group w-full bg-slate-900/65 backdrop-blur-2xl text-slate-300 flex flex-row md:flex-col shrink-0 transition-all duration-500 relative border-b md:border-b-0 md:border-r border-slate-700/50 hover:shadow-[0_0_50px_rgba(255,255,255,0.05)] md:h-screen md:sticky md:top-0 z-50 ${
         isCollapsed ? "md:w-20" : "md:w-64"
       } items-center md:items-stretch`}
     >
