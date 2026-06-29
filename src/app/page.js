@@ -1219,43 +1219,46 @@ export default function Home() {
           lg:max-w-[680px] lg:my-6 lg:min-h-[calc(100vh-3rem)]
         ">
           
-          {/* Header ΓÇö logo centrado, spinner a la derecha */}
-          <header className="px-5 py-4 flex items-center justify-center sticky top-0 shrink-0 h-14 z-50 pointer-events-auto bg-transparent">
-            <h1
-            className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none"
-            onClick={() => setActiveDept("Producción")}
-            title="Volver a Inicio"
-          >
-            Lab OS
-          </h1>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
-            {isAdmin && (
-              <Link href="/admin" className="text-slate-500 hover:text-[#D4AF37] transition-colors" title="Administración">
-                <Settings size={20} />
-              </Link>
-            )}
-            {loading && (
-              <RefreshCw size={14} className="animate-spin text-slate-300" />
-            )}
-          </div>
-        </header>
+          {/* Unified Sticky Glass Header */}
+          <div className="sticky top-0 z-40 w-full bg-white/70 backdrop-blur-md border-b border-white/40 shadow-sm flex flex-col pointer-events-auto">
+            {/* Header ΓÇö logo centrado, spinner a la derecha */}
+            <header className="px-5 py-4 flex items-center justify-center shrink-0 h-14 bg-transparent relative">
+              <h1
+              className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none"
+              onClick={() => setActiveDept("Producción")}
+              title="Volver a Inicio"
+            >
+              Lab OS
+            </h1>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
+              {isAdmin && (
+                <Link href="/admin" className="text-slate-500 hover:text-[#D4AF37] transition-colors" title="Administración">
+                  <Settings size={20} />
+                </Link>
+              )}
+              {loading && (
+                <RefreshCw size={14} className="animate-spin text-slate-300" />
+              )}
+            </div>
+          </header>
 
-        {/* Big Select Navigation */}
-        <div className="px-4 py-3 shrink-0 z-40 pointer-events-auto sticky top-14 bg-transparent mb-2">
-           <div className="flex bg-slate-200/70 p-1 rounded-2xl w-full shadow-inner backdrop-blur-md border border-white/50">
-             <button 
-                onClick={() => setActiveDept("Producción")}
-                className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${activeDept === "Producción" ? "bg-white text-[#0062cc] shadow-md" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
-             >
-                Producción
-             </button>
-             <button 
-                onClick={() => setActiveDept("all")}
-                className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${activeDept === "all" ? "bg-white text-[#0062cc] shadow-md" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
-             >
-                Monitor Global
-             </button>
-           </div>
+          {/* Big Select Navigation */}
+          <div className="px-4 py-3 pb-4 shrink-0 bg-transparent w-full">
+             <div className="flex bg-slate-200/70 p-1 rounded-2xl w-full shadow-inner backdrop-blur-sm border border-white/50">
+               <button 
+                  onClick={() => setActiveDept("Producción")}
+                  className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${activeDept === "Producción" ? "bg-white text-[#0062cc] shadow-md" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+               >
+                  Producción
+               </button>
+               <button 
+                  onClick={() => setActiveDept("all")}
+                  className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${activeDept === "all" ? "bg-white text-[#0062cc] shadow-md" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+               >
+                  Monitor Global
+               </button>
+             </div>
+          </div>
         </div>
 
         {/* List Content */}
@@ -1298,7 +1301,7 @@ export default function Home() {
                      <div key={grupo.id} className="mb-2">
                        <div 
                          onClick={() => toggleDept(grupo.id)}
-                         className="flex items-center justify-center py-3 px-4 cursor-pointer select-none group mb-2 mt-4 relative bg-white/70 backdrop-blur-md mx-4 rounded-2xl border border-white/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] sticky top-[134px] z-30 pointer-events-auto transition-transform active:scale-[0.98]"
+                         className="flex items-center justify-center py-3 px-4 cursor-pointer select-none group mb-2 mt-4 relative bg-white/70 backdrop-blur-md mx-4 rounded-2xl border border-white/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] sticky top-[138px] z-30 pointer-events-auto transition-transform active:scale-[0.98]"
                        >
                          <span className="text-[15px] font-black text-slate-900 uppercase tracking-widest">{grupo.name.replace("Digital_", "")}</span>
                          <div className="absolute right-2">
