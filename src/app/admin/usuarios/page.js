@@ -141,6 +141,7 @@ export default function AdminUsuarios() {
         icon={<UserCog size={24} className="text-rose-400" />}
         iconBg="bg-rose-400/10 border-rose-400/20"
         scrollbarClass="usuarios-scroll"
+        scrollbarColor="#fb7185"
         headerActions={
           <>
             <button onClick={() => openModal()} className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold transition-colors flex items-center gap-2 shadow-sm">
