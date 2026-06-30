@@ -1282,8 +1282,7 @@ export default function Home() {
 
       {/* LAYER 1: CONTENIDO Y STICKY GLASS */}
       <div className="w-full flex-1 flex flex-col relative z-0">
-        {/* NUEVO VIDRIO GLOBAL (Debajo de las tarjetas, sobre el papel) */}
-        <div className="fixed inset-0 bg-slate-50/15 backdrop-blur-[4px] pointer-events-none z-0"></div>
+        {/* NUEVO VIDRIO GLOBAL (Debajo de las tarjetas, sobre el papel) - REMOVIDO PARA EVITAR DOBLE VIDRIO */}
         
         {/* WRAPPER STICKY PARA LAYER 2 Y 3 */}
         <div className="w-full h-0 sticky top-0 z-10">
