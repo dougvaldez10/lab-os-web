@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { Edit, Trash2, Plus, RefreshCw, X, Save, Building2, UserCircle } from "lucide-react";
+import { Edit, Trash2, Plus, RefreshCw, X, Save, Building2, UserCircle, Users } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { 
   getAdminClients, createAdminClient, updateAdminClient, deleteAdminClient,
@@ -112,11 +112,12 @@ export default function AdminCRM() {
   return (
     <>
       <GlassLayout
-      title="Directorio CRM"
+      title="Directorio"
       subtitle="Gestión de Clínicas y Doctores."
-      icon={<Building2 size={24} className="text-[#D4AF37]" />}
-      iconBg="bg-[#D4AF37]/10 border-[#D4AF37]/20"
+      icon={<Users size={24} className="text-green-400" />}
+      iconBg="bg-green-400/10 border-green-400/20"
       scrollbarClass="crm-scroll"
+      scrollbarColor="#4ade80"
       headerActions={
         <>
           <button onClick={() => openModal()} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-2 shadow-sm pointer-events-auto">
