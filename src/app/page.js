@@ -712,10 +712,18 @@ export default function Home() {
         background-size: 100% 40px;
       }
       .mobile-scroll {
-        scrollbar-width: none;
+        scrollbar-width: thin;
+        scrollbar-color: #60a5fa transparent;
       }
       .mobile-scroll::-webkit-scrollbar {
-        display: none;
+        width: 8px;
+      }
+      .mobile-scroll::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .mobile-scroll::-webkit-scrollbar-thumb {
+        background-color: #60a5fa;
+        border-radius: 20px;
       }
     `}} />
   );

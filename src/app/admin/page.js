@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Edit, Trash2, Search, RefreshCw, AlertCircle, X, Save, Plus, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { Edit, Trash2, Search, RefreshCw, ClipboardList, X, Save, Plus, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { updateAdminCase, deleteAdminCase } from "@/app/actions/admin-cases";
 import { getClients, getAllClinics } from "@/app/actions/clients";
@@ -299,8 +299,9 @@ export default function AdminBoard() {
       <GlassLayout
         title="Casos en curso"
         subtitle="Vista administrativa. Puedes modificar cualquier detalle del caso."
-        icon={<AlertCircle size={24} className="text-[#60a5fa]" />}
+        icon={<ClipboardList size={24} className="text-[#60a5fa]" />}
         iconBg="bg-[#60a5fa]/10 border-[#60a5fa]/20"
+        scrollbarColor="#60a5fa"
         scrollbarClass="casos-scroll"
         headerActions={
           <>
