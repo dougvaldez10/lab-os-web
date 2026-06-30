@@ -199,6 +199,13 @@ function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onTog
             <Play size={14} className="text-blue-600" /> Iniciar Proceso
           </button>
           
+          <button 
+            onClick={() => handleAction('PAUSE', 'Pausando...', `Caso ${currentCase.id} en Pausa`)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-red-50 hover:border-red-200 transition-colors shadow-sm font-medium"
+          >
+            <Pause size={14} className="text-red-600" /> Pausar
+          </button>
+
           {currentCase.dept === 'Recibo/Factura' ? (
              <button 
                onClick={() => onOpenReceipt(currentCase)}
@@ -214,13 +221,6 @@ function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onTog
                <Check size={14} className="text-green-600" /> Terminar Proceso
              </button>
           )}
-          
-          <button 
-            onClick={() => handleAction('PAUSE', 'Pausando...', `Caso ${currentCase.id} en Pausa`)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-red-50 hover:border-red-200 transition-colors shadow-sm font-medium"
-          >
-            <Pause size={14} className="text-red-600" /> Pausar
-          </button>
 
           {/* Archivos Dinamicos */}
           {showDownloadEscaneo && (
@@ -1286,12 +1286,22 @@ export default function Home() {
                                {casosEnGrupo.map((c) => {
                                   const devProps = getDeliveryDateProps(c.fecha_entrega, c.hora_entrega);
                                   const slaColor = getSlaColor(c.hora_llegada, c.dept);
-                                  const shadowClass = c.urgent
-                                    ? 'shadow-[0_0_15px_rgba(239,68,68,0.4)] border-red-200 ring-1 ring-red-500/20'
-                                    : slaColor === 'red'    ? 'shadow-[0_0_10px_rgba(248,113,113,0.3)] border-red-100'
-                                    : slaColor === 'yellow' ? 'shadow-[0_0_10px_rgba(250,204,21,0.3)] border-yellow-100'
-                                    : slaColor === 'green'  ? 'shadow-[0_0_10px_rgba(74,222,128,0.3)] border-green-100'
-                                    : 'shadow-sm border-white/40 hover:shadow-md';
+                                  
+                                  let shadowClass = '';
+                                  if (c.urgent) {
+                                    shadowClass = 'shadow-[0_0_15px_rgba(239,68,68,0.4)] border-red-200 ring-1 ring-red-500/20';
+                                  } else if (c.status === 'En Pausa') {
+                                    shadowClass = 'shadow-[0_0_12px_rgba(239,68,68,0.25)] border-red-200';
+                                  } else if (c.status === 'En Proceso') {
+                                    shadowClass = 'shadow-[0_0_12px_rgba(59,130,246,0.25)] border-blue-200';
+                                  } else if (c.status === 'Terminado') {
+                                    shadowClass = 'shadow-[0_0_12px_rgba(34,197,94,0.25)] border-green-200';
+                                  } else {
+                                    shadowClass = slaColor === 'red'    ? 'shadow-[0_0_10px_rgba(248,113,113,0.3)] border-red-100'
+                                                : slaColor === 'yellow' ? 'shadow-[0_0_10px_rgba(250,204,21,0.3)] border-yellow-100'
+                                                : slaColor === 'green'  ? 'shadow-[0_0_10px_rgba(74,222,128,0.3)] border-green-100'
+                                                : 'shadow-sm border-white/40 hover:shadow-md';
+                                  }
                                   
                                   const cExpanded = !!expandedCases[c.internal_id];
                                   const isReadOnly = activeDept === "all";
