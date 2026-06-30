@@ -1569,7 +1569,7 @@ export default function Home() {
       <div className="absolute top-0 left-0 w-full h-[100dvh] pointer-events-none z-10">
           {/* LAYER 2: EL VIDRIO OPACO */}
           <div className="absolute top-0 left-0 w-full h-[100dvh] pointer-events-none flex flex-col z-10">
-            <div className="h-[144px] bg-slate-50/15 backdrop-blur-[4px] w-full transition-all duration-300 border-b border-white/40" />
+            <div className="h-[144px] bg-slate-50/15 backdrop-blur-[4px] w-full transition-all duration-300" />
             <div className="flex-1 flex relative w-full">
               <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300" />
               <div className="w-[calc(100%-2rem)] sm:w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto bg-transparent h-full px-0 flex flex-col relative pointer-events-none">
