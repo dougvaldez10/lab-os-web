@@ -1743,6 +1743,7 @@ export default function BillingPanel() {
           </AnimatePresence>
         )}
       </div>
+      </GlassLayout>
 
       {/* REGISTRAR ABONO MODAL */}
       {abonoModal && (
@@ -2398,7 +2399,6 @@ export default function BillingPanel() {
           </div>
         )}
       </AnimatePresence>
-      </GlassLayout>
     </>
   );
 }

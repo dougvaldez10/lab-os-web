@@ -1102,9 +1102,6 @@ export default function Home() {
   return (
     <div className="h-[100dvh] w-full relative overflow-hidden bg-white sm:bg-slate-50 lg:bg-slate-100 flex flex-col font-sans transition-colors duration-300">
       
-      {/* CAPA SCROLL (CONTIENE TODO EXCEPTO EL VIDRIO Y EL HEADER) */}
-      <div className="absolute inset-0 overflow-y-auto overflow-x-hidden mobile-scroll z-0 glass-lines-bg flex flex-col">
-
       <Toaster position="bottom-center" />
       
       <NewCaseModal isOpen={isNewCaseModalOpen} onClose={() => setIsNewCaseModalOpen(false)} clients={clients} onActionComplete={fetchCases}/>
@@ -1283,6 +1280,9 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* CAPA SCROLL (CONTIENE TODO EXCEPTO EL VIDRIO Y EL HEADER) */}
+      <div className="absolute inset-0 overflow-y-auto overflow-x-hidden mobile-scroll z-0 glass-lines-bg flex flex-col">
 
       {/* CAPA CONTENIDO Y TARJETAS */}
       <div className="w-full flex-1 flex flex-col relative z-0" style={{ paddingLeft: 'calc(100vw - 100%)' }}>
@@ -1571,11 +1571,11 @@ export default function Home() {
           <div className="absolute top-0 left-0 w-full h-[100dvh] pointer-events-none flex flex-col z-10">
             <div className="h-[144px] bg-slate-50/15 backdrop-blur-[4px] w-full transition-all duration-300 border-b border-white/40" />
             <div className="flex-1 flex relative w-full">
-              <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300 border-r border-white/40" />
+              <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300" />
               <div className="w-[calc(100%-2rem)] sm:w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto bg-transparent h-full px-0 flex flex-col relative pointer-events-none">
                  <div className="w-full flex-1 relative z-30 pointer-events-none"></div>
               </div>
-              <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300 border-l border-white/40" />
+              <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300" />
             </div>
           </div>
 
