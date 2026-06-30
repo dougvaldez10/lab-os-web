@@ -741,8 +741,34 @@ export default function Home() {
   const [expandedDepts, setExpandedDepts] = useState({});
   const [expandedCases, setExpandedCases] = useState({});
 
+  // Estado para el modal de pausa
+  const [pauseModalState, setPauseModalState] = useState({ isOpen: false, caseId: null });
+  const [isPausing, setIsPausing] = useState(false);
+  const [pauseReason, setPauseReason] = useState('');
+
   const toggleDept = (deptId) => setExpandedDepts(prev => ({ ...prev, [deptId]: !prev[deptId] }));
   const toggleCase = (caseId) => setExpandedCases(prev => ({ ...prev, [caseId]: !prev[caseId] }));
+
+  const executePause = async (caseId, reason) => {
+    if (!reason.trim()) return;
+    setIsPausing(true);
+    const id = toast.loading('Pausando caso...');
+    try {
+      const res = await updateCaseState(caseId, 'pause', currentUser?.username, { reason });
+      if (res.success) {
+        toast.success('Caso pausado correctamente.', { id });
+        setPauseModalState({ isOpen: false, caseId: null });
+        setPauseReason('');
+        fetchCases({ silent: true });
+      } else {
+        toast.error(res.error || 'Error al pausar.', { id });
+      }
+    } catch (err) {
+      toast.error('Error de servidor.', { id });
+    } finally {
+      setIsPausing(false);
+    }
+  };
 
   const loadInitialData = async () => {
     try {
