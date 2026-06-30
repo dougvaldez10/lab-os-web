@@ -54,7 +54,7 @@ function FileProgressBar({ progress, direction }) {
   );
 }
 // Barra de acciones horizontal por caso (reemplaza los 3 puntos)
-function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onToggleExpand, onOpenReceipt }) {
+function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onToggleExpand, onOpenReceipt, onPauseRequest }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [fileProgress, setFileProgress] = useState(null);
   const [fileDirection, setFileDirection] = useState(null); // 'upload' o 'download'
@@ -1068,7 +1068,45 @@ export default function Home() {
   return (
     <div className="h-[100dvh] overflow-y-auto overflow-x-hidden mobile-scroll bg-white sm:bg-slate-50 lg:bg-slate-100 flex flex-col font-sans transition-colors duration-300 relative glass-lines-bg">
       <Toaster position="bottom-center" />
+      
       <NewCaseModal isOpen={isNewCaseModalOpen} onClose={() => setIsNewCaseModalOpen(false)} clients={clients} onActionComplete={fetchCases}/>
+      
+      {/* PAUSE MODAL */}
+      {pauseModalState.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden flex flex-col">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Motivo de Pausa</h3>
+              <p className="text-slate-500 text-sm mb-4">Ingresa la razón por la cual estás pausando este caso.</p>
+              <textarea
+                value={pauseReason}
+                onChange={(e) => setPauseReason(e.target.value)}
+                placeholder="Ej. Faltan modelos, falla eléctrica..."
+                className="w-full border border-slate-300 rounded-lg p-3 min-h-[100px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-800"
+                disabled={isPausing}
+              />
+            </div>
+            <div className="bg-slate-50 px-6 py-4 flex justify-end gap-3 border-t border-slate-100">
+              <button
+                onClick={() => setPauseModalState({ isOpen: false, caseId: null, isWorkingHour: false })}
+                className="px-4 py-2 font-bold text-slate-500 hover:bg-slate-200 rounded-lg transition-colors"
+                disabled={isPausing}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => executePause(pauseModalState.caseId, pauseReason)}
+                disabled={!pauseReason.trim() || isPausing}
+                className="px-4 py-2 font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2"
+              >
+                {isPausing && <RefreshCw size={16} className="animate-spin" />}
+                Confirmar Pausa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* MODAL DE RECIBO / BORRADOR */}
       {receiptCase && (

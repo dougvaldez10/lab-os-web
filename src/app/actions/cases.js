@@ -2,6 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
+import { toZonedTime } from 'date-fns-tz';
+import { addMinutes } from 'date-fns';
 
 // Cliente Admin — bypasses RLS. Seguro porque "use server" nunca llega al navegador.
 function getAdminClient() {
@@ -30,10 +32,44 @@ async function registrarInicio(supabase, caseId, departamento) {
   }
 }
 
-async function registrarTermino(supabase, caseId, departamento, nextDept) {
+function calculateTimeSegments(inicioStr, terminoStr) {
+  const TIMEZONE = 'America/Tijuana';
+  let startUTC = new Date(inicioStr);
+  let endUTC = terminoStr ? new Date(terminoStr) : new Date();
+
+  if (startUTC >= endUTC) {
+      return { minutos_habiles: 0, minutos_extra: 0 };
+  }
+
+  let minutos_habiles = 0;
+  let minutos_extra = 0;
+
+  let current = toZonedTime(startUTC, TIMEZONE);
+  let end = toZonedTime(endUTC, TIMEZONE);
+
+  while (current < end) {
+      const dayOfWeek = current.getDay();
+      const hour = current.getHours();
+      const minute = current.getMinutes();
+      
+      const isWeekday = dayOfWeek !== 0 && dayOfWeek !== 6;
+      const isWorkingHour = hour >= 9 && (hour < 16 || (hour === 16 && minute < 30));
+
+      if (isWeekday && isWorkingHour) {
+          minutos_habiles++;
+      } else {
+          minutos_extra++;
+      }
+
+      current = addMinutes(current, 1);
+  }
+
+  return { minutos_habiles, minutos_extra };
+}
+
+async function registrarTermino(supabase, caseId, departamento, nextDept, isPause = false, motivoPausa = null) {
   if (!departamento || departamento === 'Facturación') return;
   try {
-    // 1. Obtener la hora_inicio para calcular minutos
     const { data: registro } = await supabase
       .from('casos_tiempos_historicos')
       .select('id, hora_inicio')
@@ -45,19 +81,26 @@ async function registrarTermino(supabase, caseId, departamento, nextDept) {
       .single();
 
     if (registro && registro.hora_inicio) {
-      const inicio = new Date(registro.hora_inicio);
-      const termino = new Date();
-      const diffMs = termino - inicio;
-      const mins = Math.round(diffMs / 60000);
+      const terminoStr = new Date().toISOString();
+      const { minutos_habiles, minutos_extra } = calculateTimeSegments(registro.hora_inicio, terminoStr);
+      const minutos_totales = minutos_habiles + minutos_extra;
 
-      // 2. Actualizar registro con hora_termino y minutos
+      const updateData = {
+        hora_termino: terminoStr,
+        minutos_habiles: minutos_habiles,
+        minutos_extra: minutos_extra,
+        minutos_totales: minutos_totales
+      };
+
+      if (!isPause) {
+        updateData.departamento_siguiente = nextDept || null;
+      } else {
+        updateData.motivo_pausa = motivoPausa;
+      }
+
       await supabase
         .from('casos_tiempos_historicos')
-        .update({
-          hora_termino: termino.toISOString(),
-          minutos_totales: mins,
-          departamento_siguiente: nextDept || null
-        })
+        .update(updateData)
         .eq('id', registro.id);
     }
   } catch (err) {
@@ -168,7 +211,7 @@ async function registrarCargoEnvio(supabase, caseId, codigo, paciente) {
   }
 }
 
-export async function updateCaseState(internalId, action, operatorName = null) {
+export async function updateCaseState(internalId, action, operatorName = null, motivoPausa = null) {
   try {
     const supabase = getAdminClient();
     if (!internalId || !['START', 'PAUSE', 'COMPLETE', 'SHIP'].includes(action)) {
@@ -269,7 +312,13 @@ export async function updateCaseState(internalId, action, operatorName = null) {
     }
 
     // Captura de tiempos historicos
-    if (action === 'START') { registrarInicio(supabase, internalId, _deptoActualForHistorico).catch(() => {}); } else if (action === 'COMPLETE') { registrarTermino(supabase, internalId, _deptoActualForHistorico, _nextDeptForHistorico).catch(() => {}); }
+    if (action === 'START') { 
+      registrarInicio(supabase, internalId, _deptoActualForHistorico).catch(() => {}); 
+    } else if (action === 'COMPLETE') { 
+      registrarTermino(supabase, internalId, _deptoActualForHistorico, _nextDeptForHistorico).catch(() => {}); 
+    } else if (action === 'PAUSE') {
+      registrarTermino(supabase, internalId, _deptoActualForHistorico, null, true, motivoPausa).catch(() => {}); 
+    }
 
     // Si es envío final → generar CARGO en cuenta corriente
     if (esEnvioFinal) {
