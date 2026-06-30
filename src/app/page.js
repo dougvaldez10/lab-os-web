@@ -1297,10 +1297,7 @@ export default function Home() {
                                   } else if (c.status === 'Terminado') {
                                     shadowClass = 'shadow-[0_0_12px_rgba(34,197,94,0.25)] border-green-200';
                                   } else {
-                                    shadowClass = slaColor === 'red'    ? 'shadow-[0_0_10px_rgba(248,113,113,0.3)] border-red-100'
-                                                : slaColor === 'yellow' ? 'shadow-[0_0_10px_rgba(250,204,21,0.3)] border-yellow-100'
-                                                : slaColor === 'green'  ? 'shadow-[0_0_10px_rgba(74,222,128,0.3)] border-green-100'
-                                                : 'shadow-sm border-white/40 hover:shadow-md';
+                                    shadowClass = 'shadow-sm border-slate-200 hover:shadow-md';
                                   }
                                   
                                   const cExpanded = !!expandedCases[c.internal_id];
