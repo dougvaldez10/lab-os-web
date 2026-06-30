@@ -53,7 +53,8 @@ export default function AnalyticsPanel() {
         subtitle="Visualiza el rendimiento de la cobranza, ingresos y métodos de pago."
         icon={<BarChart3 size={24} className="text-purple-500" />}
         iconBg="bg-purple-500/10 border-purple-500/20"
-        scrollbarClass="metrics-scroll"
+        scrollbarClass="metricas-scroll"
+        scrollbarColor="#c084fc"
         headerActions={
           <button 
             onClick={fetchData} 
