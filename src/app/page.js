@@ -1285,8 +1285,8 @@ export default function Home() {
       )}
 
       {/* CAPA CONTENIDO Y TARJETAS */}
-      <div className="w-full flex-1 flex flex-col relative z-0">
-        <div style={{ paddingTop: '144px', paddingBottom: '100px' }} className="w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto flex flex-col relative z-0 px-0">
+      <div className="w-full flex-1 flex flex-col relative z-0" style={{ paddingLeft: 'calc(100vw - 100%)' }}>
+        <div style={{ paddingTop: '144px', paddingBottom: '100px' }} className="w-[calc(100%-2rem)] sm:w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto flex flex-col relative z-0 px-0">
            {loading && cases.length === 0 ? (
                <div className="p-10 text-center text-slate-400 font-medium text-sm">Cargando datos...</div>
            ) : (
@@ -1571,11 +1571,11 @@ export default function Home() {
           <div className="absolute top-0 left-0 w-full h-[100dvh] pointer-events-none flex flex-col z-10">
             <div className="h-[144px] bg-slate-50/15 backdrop-blur-[4px] w-full transition-all duration-300 border-b border-white/40" />
             <div className="flex-1 flex relative w-full">
-              <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300 border-r border-white/40 hidden sm:block" />
-              <div className="w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto bg-transparent h-full px-0 flex flex-col relative pointer-events-none">
+              <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300 border-r border-white/40" />
+              <div className="w-[calc(100%-2rem)] sm:w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto bg-transparent h-full px-0 flex flex-col relative pointer-events-none">
                  <div className="w-full flex-1 relative z-30 pointer-events-none"></div>
               </div>
-              <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300 border-l border-white/40 hidden sm:block" />
+              <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300 border-l border-white/40" />
             </div>
           </div>
 
