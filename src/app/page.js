@@ -1596,73 +1596,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* LAYER 2: EL VIDRIO OPACO (ZONA FUERA DEL HUECO) */}
-      <div className="absolute inset-0 z-10 pointer-events-none flex flex-col">
-        {/* Top glass (cubre Lab OS y el menú) */}
-        <div className="h-[144px] bg-slate-50/15 backdrop-blur-[4px] w-full transition-all duration-300 border-b border-white/40" />
-        
-        {/* Middle section (El Hueco) */}
-        <div className="flex-1 flex relative w-full">
-          {/* Lado izquierdo */}
-          <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300 border-r border-white/40 hidden sm:block" />
-          
-          {/* El Hueco en sí */}
-          <div className="w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto bg-transparent h-full sm:shadow-[inset_0_0_20px_rgba(0,0,0,0.02)] px-0 flex flex-col relative pointer-events-none">
-             {/* Marco del hueco sin borde visible, solo el espacio libre */}
-             <div className="w-full flex-1 relative z-30 pointer-events-none"></div>
-          </div>
-          
-          {/* Lado derecho */}
-          <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300 border-l border-white/40 hidden sm:block" />
-        </div>
-      </div>
 
-      {/* LAYER 3: LOS PAPELES SOLIDOS (TÍTULOS Y BOTONES FLOTANTES) */}
-      <div className="absolute inset-0 z-20 pointer-events-none flex flex-col items-center">
-        {/* Header - Letras recortadas flotando */}
-        <header className="px-5 py-4 flex items-center justify-center shrink-0 h-[56px] w-full bg-transparent relative pointer-events-auto">
-          <h1
-            className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none"
-            onClick={() => setActiveDept("Producción")}
-            title="Volver a Inicio"
-          >
-            Lab OS
-          </h1>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            <button 
-              onClick={fetchCases}
-              disabled={loading}
-              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-blue-500 shadow-sm transition-all active:scale-95"
-              title="Sincronizar datos"
-            >
-              <RefreshCw size={16} className={loading ? "animate-spin text-blue-500" : ""} />
-            </button>
-            {isAdmin && (
-              <Link href="/admin" className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-[#D4AF37] shadow-sm transition-all active:scale-95" title="Administración">
-                <Settings size={16} />
-              </Link>
-            )}
-          </div>
-        </header>
-
-        {/* Big Select Navigation - Hoja flotando */}
-        <div className="px-4 py-3 pb-5 shrink-0 bg-transparent w-full flex justify-center pointer-events-auto h-[88px]">
-           <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm w-full max-w-[320px]">
-             <button 
-                onClick={() => setActiveDept("Producción")}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeDept === "Producción" ? "bg-slate-100 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-             >
-                Producción
-             </button>
-             <button 
-                onClick={() => setActiveDept("all")}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeDept === "all" ? "bg-slate-100 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-             >
-                Monitor Global
-             </button>
-           </div>
-        </div>
-      </div>
 
       {/* Avatar de usuario ΓÇö fijo al pie de pantalla, centrado */}
       {currentUser && (
