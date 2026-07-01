@@ -1088,7 +1088,7 @@ export default function Home() {
       )}
 
       {/* CAPA SCROLL (CONTIENE TODO EXCEPTO EL VIDRIO Y EL HEADER) */}
-      <div className="absolute inset-0 overflow-y-auto overflow-x-hidden mobile-scroll z-0 glass-lines-bg flex flex-col">
+      <div className="fixed inset-0 overflow-y-auto overflow-x-hidden mobile-scroll z-0 glass-lines-bg flex flex-col">
 
       {/* CAPA CONTENIDO Y TARJETAS */}
       <div className="w-full flex-1 flex flex-col relative z-0" style={{ paddingLeft: 'calc(100vw - 100%)' }}>
@@ -1355,9 +1355,9 @@ export default function Home() {
       </div> {/* FIN CAPA SCROLL */}
 
       {/* CAPA VIDRIO Y HEADER (SIBLINGS FIJOS PARA QUE EL SCROLL QUEDE DEBAJO) */}
-      <div className="absolute top-0 left-0 w-full h-[100dvh] pointer-events-none z-10">
+      <div className="fixed inset-0 pointer-events-none z-10">
           {/* LAYER 2: EL VIDRIO OPACO */}
-          <div className="absolute top-0 left-0 w-full h-[100dvh] pointer-events-none flex flex-col z-10">
+          <div className="fixed inset-0 pointer-events-none flex flex-col z-10">
             <div className="h-[144px] bg-slate-50/15 backdrop-blur-[4px] w-full transition-all duration-300" />
             <div className="flex-1 flex relative w-full">
               <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300" />
@@ -1369,7 +1369,7 @@ export default function Home() {
           </div>
 
           {/* LAYER 3: LOS PAPELES SOLIDOS */}
-          <div className="absolute top-0 left-0 w-full h-[100dvh] pointer-events-none flex flex-col items-center z-20">
+          <div className="fixed inset-0 pointer-events-none flex flex-col items-center z-20">
             <header className="px-5 py-4 flex items-center justify-center shrink-0 h-[56px] w-full bg-transparent relative pointer-events-auto">
               <h1 className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none" onClick={() => setActiveDept("Producción")} title="Volver a Inicio">
                 Lab OS
