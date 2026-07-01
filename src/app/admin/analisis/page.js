@@ -140,8 +140,8 @@ export default function MetricasPage() {
       });
 
       const colors = {
-        "Digital": "#0F172A", // slate-900
-        "Análogo": "#D4AF37", // Dorado
+        "Digital": "#3B82F6", // blue-500
+        "Análogo": "#D4AF37", // Dorado/Amarillo
         "Otros": "#CBD5E1"    // slate-300
       };
 
