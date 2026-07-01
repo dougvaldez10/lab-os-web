@@ -251,196 +251,6 @@ function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onTog
 }
 
 
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-// Componente: Tarjetas Apiladas (Pre-aviso de Yesos)
-// Muestra los casos iniciados en Yesos en modo stack estilo iOS.
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-function StackedCases({ cases, onRefresh, operatorName }) {
-  const [expanded, setExpanded] = useState(false);
-  const [selectedId, setSelectedId] = useState(null);
-  const [isActing, setIsActing] = useState(false);
-
-  if (!cases || cases.length === 0) return null;
-
-  const selectedCase = cases.find(c => c.internal_id === selectedId);
-
-  const handleSelect = (id) => {
-    setSelectedId(prev => prev === id ? null : id);
-  };
-
-  const handlePull = async () => {
-    if (!selectedCase) return;
-    setIsActing(true);
-    const id = toast.loading(`Iniciando ${selectedCase.id} en Escaneo...`);
-    try {
-      const res = await updateCaseState(selectedCase.internal_id, 'PULL_TO_ESCANEO', operatorName);
-      if (res.success) {
-        toast.success(`Caso ${selectedCase.id} ahora En Proceso en Escaneo Γ£ô`, { id });
-        setSelectedId(null);
-        setExpanded(false);
-        onRefresh();
-      } else {
-        toast.error(res.error || 'Error al iniciar.', { id });
-      }
-    } catch {
-      toast.error('Error de servidor.', { id });
-    } finally {
-      setIsActing(false);
-    }
-  };
-
-  // Vista colapsada: tarjetas encimadas
-  const STACK_PREVIEW = Math.min(cases.length, 3);
-
-  return (
-    <div className="px-4 sm:px-0 mb-2">
-      {/* Header de sección */}
-      <div className="flex items-center gap-2 mb-3 mt-6">
-        <div className="flex-1 h-px bg-amber-200/80" />
-        <span className="text-[11px] font-black uppercase tracking-widest text-amber-600/80 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />
-          En proceso en Yesos
-        </span>
-        <div className="flex-1 h-px bg-amber-200/80" />
-      </div>
-
-      {/* Stack colapsado */}
-      {!expanded && (
-        <button
-          onClick={() => setExpanded(true)}
-          className="relative w-full h-28 flex items-center justify-center group focus:outline-none"
-          aria-label={`Ver ${cases.length} casos pendientes de Yesos`}
-        >
-          {/* Tarjetas apiladas (de abajo hacia arriba) */}
-          {Array.from({ length: STACK_PREVIEW }).map((_, i) => {
-            const c = cases[STACK_PREVIEW - 1 - i]; // último = mís abajo
-            const isTop = i === STACK_PREVIEW - 1;
-            const offsetY = (STACK_PREVIEW - 1 - i) * -10;
-            const scale = 1 - (STACK_PREVIEW - 1 - i) * 0.04;
-            return (
-              <div
-                key={c.internal_id}
-                className="absolute w-full bg-white border border-amber-200 rounded-2xl shadow-md px-5 py-3.5 flex items-center justify-between transition-all duration-300"
-                style={{
-                  transform: `translateY(${offsetY}px) scale(${scale})`,
-                  zIndex: i + 1,
-                  top: '50%',
-                  marginTop: '-3.5rem'
-                }}
-              >
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[12px] font-medium text-amber-600/80">#{c.id}</span>
-                  <span className="text-[15px] font-bold text-slate-900 truncate">{c.patient}</span>
-                  {isTop && c.doctor && (
-                    <span className="text-[12px] text-slate-400 truncate">{c.doctor}</span>
-                  )}
-                </div>
-                {isTop && (
-                  <div className="flex flex-col items-end gap-1 shrink-0 ml-3">
-                    <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-300/50 whitespace-nowrap">
-                      Desde Yesos
-                    </span>
-                    {cases.length > 1 && (
-                      <span className="text-[11px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
-                        +{cases.length - 1} mís
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {/* Indicador de tap */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center gap-1 text-[11px] font-bold text-amber-500/70 group-hover:text-amber-600 transition-colors z-10 bg-transparent">
-            <ChevronDown size={14} />
-            <span>Toca para ver</span>
-          </div>
-        </button>
-      )}
-
-      {/* Vista expandida */}
-      {expanded && (
-        <div className="bg-amber-50/60 border border-amber-200 rounded-2xl overflow-hidden shadow-sm">
-          {/* Header expandido */}
-          <button
-            onClick={() => { setExpanded(false); setSelectedId(null); }}
-            className="w-full flex items-center justify-between px-4 py-3 border-b border-amber-200/60 hover:bg-amber-100/40 transition-colors"
-          >
-            <span className="text-[12px] font-black uppercase tracking-wider text-amber-700">
-              {cases.length} caso{cases.length > 1 ? 's' : ''} desde Yesos
-            </span>
-            <ChevronUp size={16} className="text-amber-500" />
-          </button>
-
-          {/* Lista de casos expandidos */}
-          <ul className="flex flex-col divide-y divide-amber-100/80">
-            {cases.map((c) => {
-              const isSelected = c.internal_id === selectedId;
-              return (
-                <li
-                  key={c.internal_id}
-                  onClick={() => handleSelect(c.internal_id)}
-                  className={`flex items-center justify-between px-4 py-3.5 cursor-pointer transition-all duration-200 ${
-                    isSelected
-                      ? 'bg-amber-100/80 ring-1 ring-inset ring-amber-300'
-                      : 'bg-white/60 hover:bg-white/90'
-                  }`}
-                >
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[12px] font-medium text-amber-600/80">#{c.id}</span>
-                      {c.fecha_entrega && (() => {
-                        const [y, m, d] = c.fecha_entrega.split('-');
-                        return <span className="text-[11px] text-slate-400">{d}/{m}</span>;
-                      })()}
-                    </div>
-                    <span className="text-[15px] font-bold text-slate-900 truncate">{c.patient}</span>
-                    {c.doctor && <span className="text-[12px] text-slate-400 truncate">{c.doctor}</span>}
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0 ml-3">
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap ring-1 ring-inset ${
-                      c.status === 'En Proceso'
-                        ? 'bg-blue-50 text-blue-700 ring-blue-700/10'
-                        : 'bg-red-50 text-red-700 ring-red-600/10'
-                    }`}>
-                      {c.status}
-                    </span>
-                    {isSelected && (
-                      <div className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center shadow-sm">
-                        <Check size={12} className="text-white" strokeWidth={3} />
-                      </div>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-
-          {/* Barra de acción ΓÇö aparece solo cuando hay un caso seleccionado */}
-          {selectedCase && (
-            <div className="border-t border-amber-200 bg-white/90 p-3 flex flex-col gap-2 animate-in slide-in-from-bottom-2 duration-200">
-              <p className="text-[11px] font-bold text-slate-500 text-center">
-                Caso <span className="text-slate-800">#{selectedCase.id}</span> ΓÇö {selectedCase.patient}
-              </p>
-              <button
-                onClick={handlePull}
-                disabled={isActing}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 hover:bg-black text-white font-bold rounded-xl text-sm transition-all shadow-md active:scale-[0.98] disabled:opacity-60"
-              >
-                {isActing
-                  ? <RefreshCw size={16} className="animate-spin" />
-                  : <Play size={16} className="text-amber-400" />
-                }
-                Iniciar Proceso en Escaneo
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function LoginScreen({ onLoginSuccess }) {
 
@@ -1067,11 +877,6 @@ export default function Home() {
   const rawRoles = userRolesStr.split(',').map(r => r.trim());
   const isAdmin = rawRoles.some(r => !!r.match(/admin/i));
 
-  // Variable global: casos de Yesos En Proceso/Pausa para mostrar como stack
-  const casosYesosEnProceso = cases.filter(c =>
-    c.dept === 'Yesos' &&
-    (c.status === 'En Proceso' || c.status === 'En Pausa')
-  );
 
   let groupsToRender = [];
   if (activeDept === "all") {
@@ -1294,13 +1099,6 @@ export default function Home() {
                
 
                <div className="flex flex-col">
-               {casosYesosEnProceso.length > 0 && activeDept !== "all" && (
-                 <StackedCases
-                   cases={casosYesosEnProceso}
-                   onRefresh={fetchCases}
-                   operatorName={currentOperatorName}
-                 />
-               )}
                
                  {groupsToRender.map(grupo => {
                    // Obtener los casos para este grupo
@@ -1308,16 +1106,6 @@ export default function Home() {
                      .filter(c => c.dept === grupo.id)
                      .sort(dateTimeSort);
 
-                    // -- Tarjetas Apiladas (solo visible en Escaneo) --
-                    // Casos iniciados (En Proceso / En Pausa) en Yesos que aun no fueron terminados.
-                    const casosApilados = grupo.id === 'Digital_Escaneo'
-                      ? cases
-                          .filter(c =>
-                            c.dept === 'Yesos' &&
-                            (c.status === 'En Proceso' || c.status === 'En Pausa')
-                          )
-                          .sort(dateTimeSort)
-                      : [];
                    
                    const collapsed = isDeptHidden(grupo.id);
 
@@ -1347,11 +1135,11 @@ export default function Home() {
 
                            
                             {/* Lista de Casos */}
-                           {casosEnGrupo.length === 0 && casosApilados.length === 0 ? (
+                           {casosEnGrupo.length === 0 ? (
                              <div className="py-6 text-center text-slate-400 font-medium text-sm">
                                No hay casos en {grupo.name.replace("Digital_", "")}
                              </div>
-                           ) : casosEnGrupo.length === 0 ? null : (
+                           ) : (
                              <ul className="flex flex-col">
                                {casosEnGrupo.map((c) => {
                                   const devProps = getDeliveryDateProps(c.fecha_entrega, c.hora_entrega);
