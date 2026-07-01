@@ -11,7 +11,7 @@ import {
   Minus,
   Wallet
 } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 import MaterialChart from "./MaterialChart";
 
 export default function MetricasPage() {
@@ -55,10 +55,6 @@ export default function MetricasPage() {
     const isoActualEnd = now.toISOString();
     const isoPrevStart = fechaInicioAnterior.toISOString();
     const isoPrevEnd = fechaFinAnterior.toISOString();
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     try {
       // 1. TOP CLÍNICAS - Periodo Actual
