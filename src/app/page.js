@@ -1398,46 +1398,49 @@ export default function Home() {
 
       {/* Avatar de usuario — fijo al pie de pantalla, centrado */}
       {currentUser && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6">
-          
-          {/* Refresh Button */}
-          <div className="relative flex flex-col items-center group">
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+          {/* Bubble container */}
+          <div className="bg-white/60 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full px-5 py-3 flex items-center gap-6 relative">
+            
+            {/* Refresh Button */}
+            <div className="relative flex flex-col items-center group">
+              <button
+                onClick={fetchCases}
+                disabled={loading}
+                className="w-11 h-11 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-500 hover:text-blue-500 hover:scale-110 hover:shadow-md transition-all duration-300 active:scale-95 disabled:opacity-50"
+                title="Sincronizar"
+              >
+                <RefreshCw size={18} className={`transition-all duration-300 group-hover:rotate-180 group-hover:text-blue-500 ${loading ? "animate-spin text-blue-500" : ""}`} />
+              </button>
+              <span className="absolute -bottom-6 text-[10px] font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap shadow-sm bg-white/80 backdrop-blur px-2 py-0.5 rounded-full">
+                Sincronizar
+              </span>
+            </div>
+
+            {/* User Avatar */}
             <button
-              onClick={fetchCases}
-              disabled={loading}
-              className="w-11 h-11 rounded-full bg-white border border-slate-200 shadow-lg flex items-center justify-center text-slate-500 hover:text-blue-500 hover:scale-110 hover:shadow-xl transition-all duration-300 active:scale-95 disabled:opacity-50"
-              title="Sincronizar"
+              onClick={handleLogout}
+              title="Cerrar sesión"
+              className="w-12 h-12 rounded-full bg-white border border-slate-200 shadow-md flex items-center justify-center text-slate-700 font-black text-[16px] hover:bg-slate-50 hover:shadow-lg transition-all hover:scale-105 active:scale-95 select-none z-10"
             >
-              <RefreshCw size={18} className={`transition-all duration-300 group-hover:rotate-180 group-hover:text-blue-500 ${loading ? "animate-spin text-blue-500" : ""}`} />
+              {currentUser.username?.charAt(0).toUpperCase()}
             </button>
-            <span className="absolute -bottom-5 text-[11px] font-bold text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-              Sincronizar
-            </span>
+
+            {/* Add New Case */}
+            <div className="relative flex flex-col items-center group">
+              <button
+                onClick={() => setIsNewCaseModalOpen(true)}
+                className="w-11 h-11 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-500 hover:text-[#D4AF37] hover:scale-110 hover:shadow-md transition-all duration-300 active:scale-95"
+                title="Registrar Nuevo Trabajo"
+              >
+                <Plus size={22} strokeWidth={2.5} className="transition-colors duration-300" />
+              </button>
+              <span className="absolute -bottom-6 text-[10px] font-bold text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap shadow-sm bg-white/80 backdrop-blur px-2 py-0.5 rounded-full">
+                Nuevo Trabajo
+              </span>
+            </div>
+
           </div>
-
-          {/* User Avatar */}
-          <button
-            onClick={handleLogout}
-            title="Cerrar sesión"
-            className="w-12 h-12 rounded-full bg-white border border-slate-200 shadow-xl flex items-center justify-center text-slate-700 font-black text-[16px] hover:bg-slate-50 hover:shadow-2xl transition-all hover:scale-105 active:scale-95 select-none z-10 relative"
-          >
-            {currentUser.username?.charAt(0).toUpperCase()}
-          </button>
-
-          {/* Add New Case */}
-          <div className="relative flex flex-col items-center group">
-            <button
-              onClick={() => setIsNewCaseModalOpen(true)}
-              className="w-11 h-11 rounded-full bg-[#D4AF37] border-2 border-white shadow-lg flex items-center justify-center text-white hover:bg-yellow-500 hover:scale-110 hover:shadow-xl transition-all duration-300 active:scale-95"
-              title="Registrar Nuevo"
-            >
-              <Plus size={22} strokeWidth={3} />
-            </button>
-            <span className="absolute -bottom-5 text-[11px] font-bold text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap">
-              Nuevo
-            </span>
-          </div>
-
         </div>
       )}
     </div>
