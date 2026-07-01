@@ -1,4 +1,6 @@
-"use client";
+const fs = require('fs');
+
+const content = `"use client";
 
 import { useState, useEffect } from "react";
 import { 
@@ -182,7 +184,7 @@ export default function MetricasPage() {
             <button
               key={opt.id}
               onClick={() => setTimeFilter(opt.id)}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all ${timeFilter === opt.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              className={\`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all \${timeFilter === opt.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}\`}
             >
               {opt.label}
             </button>
@@ -226,11 +228,11 @@ export default function MetricasPage() {
                           <div className="flex items-center justify-end gap-2">
                             <span className="font-bold text-slate-900 text-sm">{cli.unidades} u.</span>
                             {cli.diff > 0 ? (
-                              <div className="flex items-center text-emerald-600 text-xs font-bold" title={`+ ${cli.diff.toFixed(1)}% vs anterior`}>
+                              <div className="flex items-center text-emerald-600 text-xs font-bold" title={\`+ \${cli.diff.toFixed(1)}% vs anterior\`}>
                                 <TrendingUp size={12} className="mr-0.5"/> {Math.abs(cli.diff).toFixed(0)}%
                               </div>
                             ) : cli.diff < 0 ? (
-                              <div className="flex items-center text-red-500 text-xs font-bold" title={`- ${Math.abs(cli.diff).toFixed(1)}% vs anterior`}>
+                              <div className="flex items-center text-red-500 text-xs font-bold" title={\`- \${Math.abs(cli.diff).toFixed(1)}% vs anterior\`}>
                                 <TrendingDown size={12} className="mr-0.5"/> {Math.abs(cli.diff).toFixed(0)}%
                               </div>
                             ) : (
@@ -320,3 +322,6 @@ export default function MetricasPage() {
     </div>
   );
 }
+`;
+
+fs.writeFileSync('src/app/admin/analisis/page.js', content);
