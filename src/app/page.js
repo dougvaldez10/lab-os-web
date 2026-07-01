@@ -1404,16 +1404,24 @@ export default function Home() {
             
             {/* Refresh Button */}
             <div className="relative flex flex-col items-center justify-center group h-14 w-14">
-              <span className="absolute text-[9px] font-bold tracking-wide text-blue-600 opacity-0 group-hover:opacity-100 transform translate-y-0 group-hover:translate-y-[22px] transition-all duration-300 pointer-events-none whitespace-nowrap z-0">
+              <span className={`absolute text-[9px] font-bold tracking-wide text-blue-600 transform transition-all duration-300 pointer-events-none whitespace-nowrap z-0 ${
+                loading 
+                  ? "opacity-100 translate-y-[22px]" 
+                  : "opacity-0 translate-y-0 group-hover:opacity-100 group-hover:translate-y-[22px]"
+              }`}>
                 Sincronizar
               </span>
               <button
                 onClick={fetchCases}
                 disabled={loading}
-                className="w-11 h-11 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-500 hover:text-blue-500 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-md active:scale-95 disabled:opacity-50 relative z-10"
+                className={`w-11 h-11 rounded-full bg-white flex items-center justify-center transition-all duration-300 active:scale-95 disabled:opacity-80 relative z-10 ${
+                  loading 
+                    ? "text-blue-500 border border-blue-300 shadow-[0_0_15px_rgba(59,130,246,0.5)] -translate-y-2" 
+                    : "text-blue-500 border border-slate-200 shadow-sm group-hover:border-blue-300 group-hover:shadow-[0_0_15px_rgba(59,130,246,0.5)] group-hover:-translate-y-2"
+                }`}
                 title="Sincronizar"
               >
-                <RefreshCw size={18} className={`transition-all duration-300 group-hover:rotate-180 group-hover:text-blue-500 ${loading ? "animate-spin text-blue-500" : ""}`} />
+                <RefreshCw size={18} className={`transition-all duration-300 ${loading ? "animate-spin" : "group-hover:rotate-180"}`} />
               </button>
             </div>
 
@@ -1435,7 +1443,7 @@ export default function Home() {
               </span>
               <button
                 onClick={() => setIsNewCaseModalOpen(true)}
-                className="w-11 h-11 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-500 hover:text-[#D4AF37] transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-md active:scale-95 relative z-10"
+                className="w-11 h-11 rounded-full bg-white flex items-center justify-center text-[#D4AF37] border border-slate-200 shadow-sm transition-all duration-300 group-hover:border-[#D4AF37]/50 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.6)] group-hover:-translate-y-2 active:scale-95 relative z-10"
                 title="Registrar Nuevo Trabajo"
               >
                 <Plus size={22} strokeWidth={2.5} className="transition-colors duration-300" />
