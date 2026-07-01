@@ -64,7 +64,7 @@ export default function MetricasPage() {
       // 1. TOP CLÍNICAS - Periodo Actual
       const { data: casosActuales } = await supabase
         .from('casos_master')
-        .select('cliente_id, monto_total, pago_recibido, clientes(nombre), casos_detalle(unidades)')
+        .select('cliente_id, monto_total, pago_recibido, tipo, clientes(nombre), casos_detalle(unidades)')
         .gte('fecha_ingreso', isoActualStart)
         .lte('fecha_ingreso', isoActualEnd);
 
@@ -127,34 +127,27 @@ export default function MetricasPage() {
       const topDoctoresArr = Object.values(doctoresMap).sort((a, b) => b.unidades - a.unidades);
       setTopDoctores(topDoctoresArr);
 
-      // 3. DISTRIBUCIÓN DE MATERIALES
-      const { data: detalles } = await supabase
-        .from('casos_detalle')
-        .select('producto, unidades, casos_master!inner(fecha_ingreso)')
-        .gte('casos_master.fecha_ingreso', isoActualStart)
-        .lte('casos_master.fecha_ingreso', isoActualEnd);
-
-      const matCounts = { "Zirconia": 0, "E.max": 0, "Metal": 0, "Otros": 0 };
+      // 3. DISTRIBUCIÓN POR ORIGEN (Digital vs Análogo)
+      const tipoCounts = { "Digital": 0, "Análogo": 0, "Otros": 0 };
       
-      (detalles || []).forEach(d => {
-        const p = (d.producto || "").toLowerCase();
-        const u = d.unidades || 1;
-        if (p.includes("zr") || p.includes("zirconia")) matCounts["Zirconia"] += u;
-        else if (p.includes("emax") || p.includes("e.max") || p.includes("disilicato")) matCounts["E.max"] += u;
-        else if (p.includes("metal") || p.includes("pfm") || p.includes("aleación")) matCounts["Metal"] += u;
-        else matCounts["Otros"] += u;
+      (casosActuales || []).forEach(c => {
+        const tipoStr = (c.tipo || "").toLowerCase();
+        const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
+        
+        if (tipoStr.includes("digital")) tipoCounts["Digital"] += unidades;
+        else if (tipoStr.includes("fisico") || tipoStr.includes("análogo") || tipoStr.includes("analogo")) tipoCounts["Análogo"] += unidades;
+        else tipoCounts["Otros"] += unidades;
       });
 
       const colors = {
-        "Zirconia": "#0F172A", // slate-900
-        "E.max": "#D4AF37",    // Dorado
-        "Metal": "#64748B",    // slate-500
-        "Otros": "#CBD5E1"     // slate-300
+        "Digital": "#0F172A", // slate-900
+        "Análogo": "#D4AF37", // Dorado
+        "Otros": "#CBD5E1"    // slate-300
       };
 
-      const chartData = Object.keys(matCounts)
-        .filter(k => matCounts[k] > 0)
-        .map(k => ({ name: k, value: matCounts[k], color: colors[k] }));
+      const chartData = Object.keys(tipoCounts)
+        .filter(k => tipoCounts[k] > 0)
+        .map(k => ({ name: k, value: tipoCounts[k], color: colors[k] }));
         
       setMaterialData(chartData.sort((a, b) => b.value - a.value));
 
@@ -277,13 +270,13 @@ export default function MetricasPage() {
                 </div>
               </div>
 
-              {/* MATERIALES */}
+              {/* ORIGEN (Digital vs Analogo) */}
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col">
                 <div className="p-5 border-b border-slate-100 flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37]">
                     <Layers size={16} />
                   </div>
-                  <h2 className="text-md font-bold text-slate-800">Distribución por Material</h2>
+                  <h2 className="text-md font-bold text-slate-800">Distribución Digital vs Análogo</h2>
                 </div>
                 <div className="p-4 flex-1">
                   <MaterialChart data={materialData} />
