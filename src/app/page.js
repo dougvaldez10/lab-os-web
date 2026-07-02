@@ -1362,7 +1362,7 @@ export default function Home() {
                                   {/* Derecha: Pill de estado del Caso */}
                                   <div className="flex flex-col items-end gap-1.5 min-w-[80px] shrink-0">
                                     <StatusBadge status={c.status} />
-                                    {c.status === 'En Proceso' && c.operador_actual && (
+                                    {(c.status === 'En Proceso' || c.status === 'En Pausa') && c.operador_actual && (
                                        <span className="text-[10px] text-slate-600 font-medium tracking-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-[80px]">
                                           <User size={10} className="inline mr-1" />{c.operador_actual.split(' ')[0]}
                                        </span>
