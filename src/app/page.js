@@ -1158,8 +1158,9 @@ export default function Home() {
                        return { ...c, urgencyObj: getUrgency(c.fecha_entrega) };
                    });
 
-                   const alwaysVisibleCases = groupCases.filter(c => c.urgencyObj && c.urgencyObj.days <= 2);
-                   const expandedVisibleCases = groupCases.filter(c => c.urgencyObj && c.urgencyObj.days === 3);
+                   const hasUrgentCase = groupCases.some(c => c.urgencyObj && (c.urgencyObj.level === 'urgente' || c.urgencyObj.level === 'atrasado'));
+
+                   const expandedVisibleCases = groupCases.filter(c => c.urgencyObj && (c.urgencyObj.days <= 3 || c.urgencyObj.level === 'atrasado'));
                    const stackedCases = groupCases.filter(c => !c.urgencyObj || c.urgencyObj.days > 3);
 
                    const renderCaseList = (caseArray, isStacked = false) => {
@@ -1168,23 +1169,13 @@ export default function Home() {
                           const slaColor = getSlaColor(c.hora_llegada, c.dept);
                           
                           let shadowClass = '';
-                          let badgeEl = null;
+                          let dotColor = null;
 
                           if (c.urgencyObj) {
-                            const { level, badge } = c.urgencyObj;
-                            if (level === 'atrasado') {
-                               shadowClass = 'shadow-[0_0_15px_rgba(220,38,38,0.3)] border-red-600 ring-2 ring-red-600/50';
-                               badgeEl = <span className="text-[10px] font-bold text-white bg-red-600 px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">{badge}</span>;
-                            } else if (level === 'urgente') {
-                               shadowClass = 'shadow-[0_0_12px_rgba(248,113,113,0.2)] border-red-400 ring-1 ring-red-400/30';
-                               badgeEl = <span className="text-[10px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">{badge}</span>;
-                            } else if (level === 'muy_pronto') {
-                               shadowClass = 'shadow-[0_0_12px_rgba(251,146,60,0.2)] border-orange-400 ring-1 ring-orange-400/30';
-                               badgeEl = <span className="text-[10px] font-bold text-white bg-orange-500 px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">{badge}</span>;
-                            } else if (level === 'proximo') {
-                               shadowClass = 'shadow-[0_0_12px_rgba(250,204,21,0.2)] border-yellow-400 ring-1 ring-yellow-400/30';
-                               badgeEl = <span className="text-[10px] font-bold text-yellow-800 bg-yellow-400 px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">{badge}</span>;
-                            }
+                            const { level } = c.urgencyObj;
+                            if (level === 'urgente') dotColor = 'bg-red-500';
+                            else if (level === 'muy_pronto') dotColor = 'bg-orange-500';
+                            else if (level === 'proximo') dotColor = 'bg-yellow-400';
                           }
 
                           if (!shadowClass) {
@@ -1206,7 +1197,12 @@ export default function Home() {
                           const marginBottom = isStacked ? "mb-3" : "mb-4";
 
                           return (
-                              <li key={c.internal_id} className={`flex flex-col transition-all bg-white/90 backdrop-blur-md rounded-[2rem] mx-4 sm:mx-0 ${marginBottom} overflow-hidden border ${shadowClass}`}>
+                              <li key={c.internal_id} className={`flex flex-col transition-all bg-white/90 backdrop-blur-md rounded-[2rem] mx-4 sm:mx-0 ${marginBottom} overflow-hidden border relative ${shadowClass}`}>
+                                {dotColor && (
+                                  <div className="absolute top-[22px] left-1/2 -translate-x-1/2 pointer-events-none">
+                                    <span className={`block w-2 h-2 rounded-full ${dotColor}`} />
+                                  </div>
+                                )}
                                 <div className="flex items-start px-5 pt-4 pb-3 min-w-0">
                                   {/* Izquierda: Codigo, Fecha/Hora, Paciente */}
                                   <div className="flex-1 flex flex-col min-w-0 pr-4 gap-1.5">
@@ -1220,7 +1216,6 @@ export default function Home() {
                                            {devProps.text}
                                          </span>
                                        )}
-                                       {badgeEl}
                                     </div>
                                     <p className="text-[16px] font-bold text-slate-900 truncate tracking-tight">
                                       {c.patient}
@@ -1388,17 +1383,12 @@ export default function Home() {
                      <div key={grupo.id} className="mb-2">
                        <div 
                          onClick={() => toggleDept(grupo.id)}
-                         className="flex items-center justify-center py-3 px-4 cursor-pointer select-none group mb-2 mt-4 relative bg-slate-50 hover:bg-slate-100 mx-4 sm:mx-0 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md sticky top-[144px] z-30 pointer-events-auto transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+                         className={`flex items-center justify-center py-3 px-4 cursor-pointer select-none group mb-2 mt-4 relative mx-4 sm:mx-0 rounded-2xl border shadow-sm hover:shadow-md sticky top-[144px] z-30 pointer-events-auto transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] ${collapsed && hasUrgentCase ? 'bg-red-50 hover:bg-red-100 border-red-200' : 'bg-slate-50 hover:bg-slate-100 border-slate-200'}`}
                        >
-                         <span className="text-sm font-bold text-slate-800 uppercase tracking-wide group-hover:text-slate-900">{grupo.name.replace("Digital_", "")}</span>
+                         <span className={`text-sm font-bold uppercase tracking-wide transition-colors ${collapsed && hasUrgentCase ? 'text-red-800 group-hover:text-red-900' : 'text-slate-800 group-hover:text-slate-900'}`}>
+                           {grupo.name.replace("Digital_", "")}
+                         </span>
                        </div>
-
-                       {/* Contenido Siempre Visible (Atrasados y Urgentes) */}
-                       {alwaysVisibleCases.length > 0 && (
-                          <ul className="flex flex-col mb-2">
-                             {renderCaseList(alwaysVisibleCases)}
-                          </ul>
-                       )}
 
                        {/* Contenido Colapsable */}
                        {!collapsed && (
@@ -1431,25 +1421,25 @@ export default function Home() {
                                {stackedCases.length > 0 && (
                                   <div className="mx-4 sm:mx-0 mb-4 mt-2">
                                      {!isStackExpanded ? (
-                                        <button 
-                                          onClick={() => toggleStack(grupo.id)}
-                                          className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-2xl flex items-center justify-between transition-colors shadow-sm"
-                                        >
-                                          <span className="text-[13px] font-bold text-slate-600">Ver {stackedCases.length} casos más (próximos días)</span>
-                                          <ChevronDown size={16} className="text-slate-500" />
-                                        </button>
-                                     ) : (
-                                        <div className="bg-slate-50/50 border border-slate-200 rounded-2xl p-2 pt-3 shadow-inner">
+                                        <div className="flex justify-center w-full py-1">
                                           <button 
                                             onClick={() => toggleStack(grupo.id)}
-                                            className="w-full pb-3 mb-3 border-b border-slate-200 flex items-center justify-between text-slate-500 hover:text-slate-700 transition-colors"
-                                          >
-                                            <span className="text-[12px] font-bold uppercase tracking-widest pl-2">Ocultar casos próximos</span>
-                                            <ChevronUp size={16} className="mr-2" />
-                                          </button>
+                                            className="w-2 h-2 rounded-full bg-slate-500 hover:bg-slate-600 transition-colors shadow-sm"
+                                            title={`Ver ${stackedCases.length} casos más`}
+                                          />
+                                        </div>
+                                     ) : (
+                                        <div className="bg-slate-50/50 border border-slate-200 rounded-2xl p-2 pt-3 shadow-inner">
                                           <ul className="flex flex-col">
                                              {renderCaseList(stackedCases, true)}
                                           </ul>
+                                          <div className="flex justify-center w-full pt-1 pb-2">
+                                            <button 
+                                              onClick={() => toggleStack(grupo.id)}
+                                              className="w-2 h-2 rounded-full bg-slate-400 hover:bg-slate-500 transition-colors shadow-sm"
+                                              title="Ocultar casos próximos"
+                                            />
+                                          </div>
                                         </div>
                                      )}
                                   </div>
