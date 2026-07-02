@@ -4,6 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, ChevronDown, ChevronUp, Plus, Check, RefreshCw, Layers, Smile, Shield, Smartphone, Package, Target, Sun, X, Calculator, DollarSign, Percent, Pause, Download, Upload, Play, AlertTriangle, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { getAllUsers, loginUser, getCurrentUser, logoutUser } from "@/lib/auth";
+import { differenceInBusinessDays, isBefore } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import { saveReceiptData } from "@/app/actions/receipts";
 import { logShadowAudit, markShadowAuditAsSaved } from "@/app/actions/audit";
 import { getClients } from "@/app/actions/clients";
@@ -28,6 +30,31 @@ const departments = [
   { id: "Terminado", name: "Terminado" },
   { id: "Inspección", name: "Inspección" },
 ];
+
+const TIMEZONE = 'America/Tijuana';
+
+const getUrgency = (fecha) => {
+  if (!fecha) return null;
+  try {
+    const [yyyy, mm, dd] = fecha.split('-');
+    if (!yyyy || !mm || !dd) return null;
+    
+    const now = new Date();
+    const todayInTijuana = toZonedTime(now, TIMEZONE);
+    const today = new Date(todayInTijuana.getFullYear(), todayInTijuana.getMonth(), todayInTijuana.getDate());
+    const deliveryDate = new Date(parseInt(yyyy, 10), parseInt(mm, 10) - 1, parseInt(dd, 10));
+    
+    if (isBefore(deliveryDate, today)) {
+       return { level: 'atrasado', badge: 'ATRASADO', days: -1 };
+    }
+    
+    const diff = differenceInBusinessDays(deliveryDate, today);
+    if (diff <= 2) return { level: 'urgente', badge: 'URGENTE', days: diff };
+    if (diff <= 4) return { level: 'muy_pronto', badge: 'MUY PRONTO', days: diff };
+    if (diff <= 6) return { level: 'proximo', badge: 'PRÓXIMO', days: diff };
+    return { level: 'normal', badge: '', days: diff };
+  } catch(e) { return null; }
+};
 
 function StatusBadge({ status }) {
   if (status === 'En Proceso') return <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 whitespace-nowrap">En Proceso</span>;
@@ -558,14 +585,39 @@ export default function Home() {
   // Estado para los acordeones de los departamentos y de los casos individuales
   const [expandedDepts, setExpandedDepts] = useState({});
   const [expandedCases, setExpandedCases] = useState({});
+  const [expandedStacks, setExpandedStacks] = useState({});
+
+  // Cargar estado de acordeones de departamentos al iniciar
+  useEffect(() => {
+    const saved = {};
+    departments.forEach(d => {
+      const val = localStorage.getItem(`pizarron_etapa_${d.name}`);
+      if (val !== null) {
+        saved[d.id] = val === 'true'; // true significa colapsado en este componente
+      } else {
+        saved[d.id] = true; // Por default todas colapsadas al cargar por primera vez
+      }
+    });
+    setExpandedDepts(saved);
+  }, []);
 
   // Estado para el modal de pausa
   const [pauseModalState, setPauseModalState] = useState({ isOpen: false, caseId: null });
   const [isPausing, setIsPausing] = useState(false);
   const [pauseReason, setPauseReason] = useState('');
 
-  const toggleDept = (deptId) => setExpandedDepts(prev => ({ ...prev, [deptId]: !prev[deptId] }));
+  const toggleDept = (deptId) => {
+    setExpandedDepts(prev => {
+      const newState = { ...prev, [deptId]: !prev[deptId] };
+      const d = departments.find(x => x.id === deptId);
+      if (d) {
+        localStorage.setItem(`pizarron_etapa_${d.name}`, newState[deptId]);
+      }
+      return newState;
+    });
+  };
   const toggleCase = (caseId) => setExpandedCases(prev => ({ ...prev, [caseId]: !prev[caseId] }));
+  const toggleStack = (deptId) => setExpandedStacks(prev => ({ ...prev, [deptId]: !prev[deptId] }));
 
   const executePause = async (caseId, reason) => {
     if (!reason.trim()) return;
@@ -624,16 +676,7 @@ export default function Home() {
       if (Array.isArray(data) && data.length > 0) {
         // Respuesta vílida
         setCases(data);
-        // Auto-collapse logic
-        const newExpandedState = {};
-        departments.forEach(dept => {
-          const hasCases = data.some(c => c.dept === dept.id);
-          // Only true means it is HIDDEN (collapsed). So if hasCases is false, hide it (true)
-          if (!hasCases) {
-            newExpandedState[dept.id] = true;
-          }
-        });
-        setExpandedDepts(newExpandedState);
+        // Auto-collapse logic eliminada: respetamos el localStorage
       } else if (retryOnAuth) {
         // Token probablemente expirado ΓåÆ refrescar y reintentar UNA vez
         await refreshGhostToken();
@@ -1109,6 +1152,237 @@ export default function Home() {
 
                    
                    const collapsed = isDeptHidden(grupo.id);
+                   const isStackExpanded = !!expandedStacks[grupo.id];
+
+                   const groupCases = casosEnGrupo.map(c => {
+                       return { ...c, urgencyObj: getUrgency(c.fecha_entrega) };
+                   });
+
+                   const alwaysVisibleCases = groupCases.filter(c => c.urgencyObj && c.urgencyObj.days <= 2);
+                   const expandedVisibleCases = groupCases.filter(c => c.urgencyObj && c.urgencyObj.days === 3);
+                   const stackedCases = groupCases.filter(c => !c.urgencyObj || c.urgencyObj.days > 3);
+
+                   const renderCaseList = (caseArray, isStacked = false) => {
+                      return caseArray.map((c) => {
+                          const devProps = getDeliveryDateProps(c.fecha_entrega, c.hora_entrega);
+                          const slaColor = getSlaColor(c.hora_llegada, c.dept);
+                          
+                          let shadowClass = '';
+                          let badgeEl = null;
+
+                          if (c.urgencyObj) {
+                            const { level, badge } = c.urgencyObj;
+                            if (level === 'atrasado') {
+                               shadowClass = 'shadow-[0_0_15px_rgba(220,38,38,0.3)] border-red-600 ring-2 ring-red-600/50';
+                               badgeEl = <span className="text-[10px] font-bold text-white bg-red-600 px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">{badge}</span>;
+                            } else if (level === 'urgente') {
+                               shadowClass = 'shadow-[0_0_12px_rgba(248,113,113,0.2)] border-red-400 ring-1 ring-red-400/30';
+                               badgeEl = <span className="text-[10px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">{badge}</span>;
+                            } else if (level === 'muy_pronto') {
+                               shadowClass = 'shadow-[0_0_12px_rgba(251,146,60,0.2)] border-orange-400 ring-1 ring-orange-400/30';
+                               badgeEl = <span className="text-[10px] font-bold text-white bg-orange-500 px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">{badge}</span>;
+                            } else if (level === 'proximo') {
+                               shadowClass = 'shadow-[0_0_12px_rgba(250,204,21,0.2)] border-yellow-400 ring-1 ring-yellow-400/30';
+                               badgeEl = <span className="text-[10px] font-bold text-yellow-800 bg-yellow-400 px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">{badge}</span>;
+                            }
+                          }
+
+                          if (!shadowClass) {
+                             if (c.urgent) {
+                                shadowClass = 'shadow-[0_0_15px_rgba(239,68,68,0.4)] border-red-200 ring-1 ring-red-500/20';
+                             } else if (c.status === 'En Pausa') {
+                                shadowClass = 'shadow-[0_0_12px_rgba(239,68,68,0.25)] border-red-200';
+                             } else if (c.status === 'En Proceso') {
+                                shadowClass = 'shadow-[0_0_12px_rgba(59,130,246,0.25)] border-blue-200';
+                             } else if (c.status === 'Terminado') {
+                                shadowClass = 'shadow-[0_0_12px_rgba(34,197,94,0.25)] border-green-200';
+                             } else {
+                                shadowClass = 'shadow-sm border-slate-200 hover:shadow-md';
+                             }
+                          }
+                          
+                          const cExpanded = !!expandedCases[c.internal_id];
+                          const isReadOnly = activeDept === "all";
+                          const marginBottom = isStacked ? "mb-3" : "mb-4";
+
+                          return (
+                              <li key={c.internal_id} className={`flex flex-col transition-all bg-white/90 backdrop-blur-md rounded-[2rem] mx-4 sm:mx-0 ${marginBottom} overflow-hidden border ${shadowClass}`}>
+                                <div className="flex items-start px-5 pt-4 pb-3 min-w-0">
+                                  {/* Izquierda: Codigo, Fecha/Hora, Paciente */}
+                                  <div className="flex-1 flex flex-col min-w-0 pr-4 gap-1.5">
+                                    <div className="flex items-center gap-2">
+                                       {c.urgent && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>}
+                                       <span className="text-[13px] font-medium text-slate-500 shrink-0 flex items-center gap-1">
+                                          <span className="text-slate-400">#</span>{c.id || "N/A"}
+                                       </span>
+                                       {devProps && (
+                                         <span className={`text-[13px] ${devProps.colorClass} truncate ml-1 tracking-tight`}>
+                                           {devProps.text}
+                                         </span>
+                                       )}
+                                       {badgeEl}
+                                    </div>
+                                    <p className="text-[16px] font-bold text-slate-900 truncate tracking-tight">
+                                      {c.patient}
+                                      {c.doctor && <span className="ml-2 text-[14px] font-medium text-slate-400 tracking-normal">({c.doctor})</span>}
+                                    </p>
+                                    
+                                    {c.items && c.items.length > 0 && (() => {
+                                      // AGRUPACIÓN Y FORMATEO
+                                      const grouped = {};
+                                      
+                                      c.items.forEach(item => {
+                                          const p = item.producto ? item.producto.toLowerCase() : "";
+                                          const cat = item.categoria ? item.categoria.toLowerCase() : "";
+                                          
+                                          // 1. Material Base y Color
+                                          let matText = "";
+                                          let matColor = "";
+                                          
+                                          if (cat.includes("zr") || cat.includes("zirconia") || p.includes("zirconia") || p.includes("zr")) {
+                                            matText = "Zr";
+                                            matColor = "text-[#D4AF37]"; // Dorado
+                                          } else if (cat.includes("pmma") || p.includes("pmma")) {
+                                            matText = "(C5O2H8)n";
+                                            matColor = "text-red-500";
+                                          } else if (cat.includes("emax") || cat.includes("litio") || p.includes("emax") || p.includes("litio") || p.includes("lisio4") || p.includes("li2si2o5")) {
+                                            matText = "Li2Si2O5";
+                                            matColor = "text-blue-500";
+                                          } else if (cat.includes("metal") || p.includes("metal")) {
+                                            matText = "Metal";
+                                            matColor = "text-slate-500";
+                                          } else {
+                                            matText = item.producto.split(' ')[0] || "Pieza"; // Fallback
+                                            matColor = "text-slate-600";
+                                          }
+
+                                          // 2. Extraer sufijo de Tipo (I, Ca, Co) y pegarlo al matText (todo mismo color y negrita)
+                                          if (p.includes("implante") || p.includes("incrustacion") || p.includes("inlay") || p.includes("onlay")) {
+                                              matText += " I";
+                                          } else if (p.includes("carilla")) {
+                                              matText += " Ca";
+                                          } else if (p.includes("corona")) {
+                                              matText += " Co";
+                                          }
+
+                                          // 3. Translucidez (Subtipo, ej. HT, LT, ML)
+                                          let extraText = "";
+                                          const dashMatch = item.producto.match(/\s-\s([A-Za-z0-9]+)/);
+                                          const parenMatch = item.producto.match(/\(([^)]+)\)/); // Compatibilidad vieja
+                                          let subtipo = "";
+                                          
+                                          if (dashMatch) {
+                                              subtipo = dashMatch[1];
+                                          } else if (parenMatch) {
+                                              subtipo = parenMatch[1].toUpperCase();
+                                          }
+                                          
+                                          if (["HT", "LT", "MT", "MO", "HO", "ML", "Mono"].includes(subtipo)) {
+                                              extraText = subtipo;
+                                          }
+
+                                          const groupKey = `${matText}|${matColor}|${extraText}`;
+                                          
+                                          if (!grouped[groupKey]) {
+                                              grouped[groupKey] = { matText, matColor, extraText, teeth: [] };
+                                          }
+                                          
+                                          if (item.dientes) {
+                                              // Teeth often come as "11,12" or "11"
+                                              const tArr = item.dientes.split(',').map(s => s.trim()).filter(Boolean);
+                                              grouped[groupKey].teeth.push(...tArr);
+                                          }
+                                      });
+
+                                      // Generar la lista final y formatear dientes
+                                      const renderedLines = Object.values(grouped).map((group, idx) => {
+                                          // Eliminar duplicados y formatear dientes consecutivos
+                                          let teethStr = "";
+                                          if (group.teeth.length > 0) {
+                                              let sorted = [...new Set(group.teeth)].map(Number).sort((a,b) => a-b);
+                                              let ranges = [];
+                                              let start = sorted[0];
+                                              let prev = sorted[0];
+                                              for (let i = 1; i < sorted.length; i++) {
+                                                  let curr = sorted[i];
+                                                  if (curr === prev + 1) {
+                                                      prev = curr;
+                                                  } else {
+                                                      ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+                                                      start = curr;
+                                                      prev = curr;
+                                                  }
+                                              }
+                                              ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+                                              teethStr = ranges.join(", ");
+                                          }
+
+                                          return (
+                                            <div key={idx} className="flex items-center gap-1.5 truncate mt-0.5">
+                                              <span className={`text-[16px] font-black tracking-tight ${group.matColor}`}>
+                                                {group.matText}
+                                              </span>
+                                              {group.extraText && (
+                                                <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50/80 border border-indigo-100/50 px-1.5 py-0.5 rounded-md tracking-tight shadow-sm">
+                                                  {group.extraText}
+                                                </span>
+                                              )}
+                                              {c.color && (
+                                                <span className="text-[11px] font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.5 rounded-md tracking-tight ml-0.5 shadow-sm border border-amber-200/50">
+                                                  {c.color}
+                                                </span>
+                                              )}
+                                              {teethStr && (
+                                                <span className="text-[14px] font-medium text-slate-700 truncate ml-0.5">
+                                                  #{teethStr}
+                                                </span>
+                                              )}
+                                            </div>
+                                          );
+                                      });
+
+                                      return (
+                                        <div className="flex flex-col gap-0.5 mt-0.5">
+                                          {renderedLines}
+                                        </div>
+                                      );
+                                    })()}
+                                    
+                                    {/* COMENTARIO (opcional) */}
+                                    {c.comentarios && c.comentarios.trim() !== "" && (
+                                      <div className="mt-1 text-[13px] text-slate-600 leading-snug break-words pr-2">
+                                        <span className="font-bold text-slate-700 mr-1">Comentario:</span>
+                                        {c.comentarios}
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Derecha: Pill de estado del Caso */}
+                                  <div className="flex flex-col items-end gap-1.5 min-w-[80px] shrink-0">
+                                    <StatusBadge status={c.status} />
+                                    {c.status === 'En Proceso' && c.operador_actual && (
+                                       <span className="text-[10px] text-slate-600 font-medium tracking-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-[80px]">
+                                          <User size={10} className="inline mr-1" />{c.operador_actual.split(' ')[0]}
+                                       </span>
+                                     )}
+                                  </div>
+                                </div>
+
+                                {/* Row Expandible del Caso (Solo si no es monitor global / read_only) */}
+                                {!isReadOnly && (
+                                   <CaseActionBar 
+                                      onOpenReceipt={openReceiptModal}
+                                     currentCase={c} 
+                                     onRefresh={fetchCases} 
+                                     operatorName={currentOperatorName} 
+                                     isExpanded={cExpanded} 
+                                     onToggleExpand={() => toggleCase(c.internal_id)} 
+                                   />
+                                )}
+                              </li>
+                          );
+                      });
+                   };
 
                    return (
                      <div key={grupo.id} className="mb-2">
@@ -1118,6 +1392,13 @@ export default function Home() {
                        >
                          <span className="text-sm font-bold text-slate-800 uppercase tracking-wide group-hover:text-slate-900">{grupo.name.replace("Digital_", "")}</span>
                        </div>
+
+                       {/* Contenido Siempre Visible (Atrasados y Urgentes) */}
+                       {alwaysVisibleCases.length > 0 && (
+                          <ul className="flex flex-col mb-2">
+                             {renderCaseList(alwaysVisibleCases)}
+                          </ul>
+                       )}
 
                        {/* Contenido Colapsable */}
                        {!collapsed && (
@@ -1134,211 +1415,46 @@ export default function Home() {
                              </div>
                            )}
 
-                           
                             {/* Lista de Casos */}
                            {casosEnGrupo.length === 0 ? (
                              <div className="py-6 text-center text-slate-400 font-medium text-sm">
                                No hay casos en {grupo.name.replace("Digital_", "")}
                              </div>
                            ) : (
-                             <ul className="flex flex-col">
-                               {casosEnGrupo.map((c) => {
-                                  const devProps = getDeliveryDateProps(c.fecha_entrega, c.hora_entrega);
-                                  const slaColor = getSlaColor(c.hora_llegada, c.dept);
-                                  
-                                  let shadowClass = '';
-                                  if (c.urgent) {
-                                    shadowClass = 'shadow-[0_0_15px_rgba(239,68,68,0.4)] border-red-200 ring-1 ring-red-500/20';
-                                  } else if (c.status === 'En Pausa') {
-                                    shadowClass = 'shadow-[0_0_12px_rgba(239,68,68,0.25)] border-red-200';
-                                  } else if (c.status === 'En Proceso') {
-                                    shadowClass = 'shadow-[0_0_12px_rgba(59,130,246,0.25)] border-blue-200';
-                                  } else if (c.status === 'Terminado') {
-                                    shadowClass = 'shadow-[0_0_12px_rgba(34,197,94,0.25)] border-green-200';
-                                  } else {
-                                    shadowClass = 'shadow-sm border-slate-200 hover:shadow-md';
-                                  }
-                                  
-                                  const cExpanded = !!expandedCases[c.internal_id];
-                                  const isReadOnly = activeDept === "all";
-
-                                  return (
-                                      <li key={c.internal_id} className={`flex flex-col transition-all bg-white/90 backdrop-blur-md rounded-[2rem] mx-4 sm:mx-0 mb-4 overflow-hidden border ${shadowClass}`}>
-                                        <div className="flex items-start px-5 pt-4 pb-3 min-w-0">
-                                          {/* Izquierda: Codigo, Fecha/Hora, Paciente */}
-                                          <div className="flex-1 flex flex-col min-w-0 pr-4 gap-1.5">
-                                            <div className="flex items-center gap-2">
-                                               {c.urgent && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>}
-                                               <span className="text-[13px] font-medium text-slate-500 shrink-0 flex items-center gap-1">
-                                                  <span className="text-slate-400">#</span>{c.id || "N/A"}
-                                               </span>
-                                               {devProps && (
-                                                 <span className={`text-[13px] ${devProps.colorClass} truncate ml-1 tracking-tight`}>
-                                                   {devProps.text}
-                                                 </span>
-                                               )}
-                                            </div>
-                                            <p className="text-[16px] font-bold text-slate-900 truncate tracking-tight">
-                                              {c.patient}
-                                              {c.doctor && <span className="ml-2 text-[14px] font-medium text-slate-400 tracking-normal">({c.doctor})</span>}
-                                            </p>
-                                            
-                                            {c.items && c.items.length > 0 && (() => {
-                                              // AGRUPACIÓN Y FORMATEO
-                                              const grouped = {};
-                                              
-                                              c.items.forEach(item => {
-                                                  const p = item.producto ? item.producto.toLowerCase() : "";
-                                                  const cat = item.categoria ? item.categoria.toLowerCase() : "";
-                                                  
-                                                  // 1. Material Base y Color
-                                                  let matText = "";
-                                                  let matColor = "";
-                                                  
-                                                  if (cat.includes("zr") || cat.includes("zirconia") || p.includes("zirconia") || p.includes("zr")) {
-                                                    matText = "Zr";
-                                                    matColor = "text-[#D4AF37]"; // Dorado
-                                                  } else if (cat.includes("pmma") || p.includes("pmma")) {
-                                                    matText = "(C5O2H8)n";
-                                                    matColor = "text-red-500";
-                                                  } else if (cat.includes("emax") || cat.includes("litio") || p.includes("emax") || p.includes("litio") || p.includes("lisio4") || p.includes("li2si2o5")) {
-                                                    matText = "Li2Si2O5";
-                                                    matColor = "text-blue-500";
-                                                  } else if (cat.includes("metal") || p.includes("metal")) {
-                                                    matText = "Metal";
-                                                    matColor = "text-slate-500";
-                                                  } else {
-                                                    matText = item.producto.split(' ')[0] || "Pieza"; // Fallback
-                                                    matColor = "text-slate-600";
-                                                  }
-
-                                                  // 2. Extraer sufijo de Tipo (I, Ca, Co) y pegarlo al matText (todo mismo color y negrita)
-                                                  if (p.includes("implante") || p.includes("incrustacion") || p.includes("inlay") || p.includes("onlay")) {
-                                                      matText += " I";
-                                                  } else if (p.includes("carilla")) {
-                                                      matText += " Ca";
-                                                  } else if (p.includes("corona")) {
-                                                      matText += " Co";
-                                                  }
-
-                                                  // 3. Translucidez (Subtipo, ej. HT, LT, ML)
-                                                  let extraText = "";
-                                                  const dashMatch = item.producto.match(/\s-\s([A-Za-z0-9]+)/);
-                                                  const parenMatch = item.producto.match(/\(([^)]+)\)/); // Compatibilidad vieja
-                                                  let subtipo = "";
-                                                  
-                                                  if (dashMatch) {
-                                                      subtipo = dashMatch[1];
-                                                  } else if (parenMatch) {
-                                                      subtipo = parenMatch[1].toUpperCase();
-                                                  }
-                                                  
-                                                  if (["HT", "LT", "MT", "MO", "HO", "ML", "Mono"].includes(subtipo)) {
-                                                      extraText = subtipo;
-                                                  }
-
-                                                  const groupKey = `${matText}|${matColor}|${extraText}`;
-                                                  
-                                                  if (!grouped[groupKey]) {
-                                                      grouped[groupKey] = { matText, matColor, extraText, teeth: [] };
-                                                  }
-                                                  
-                                                  if (item.dientes) {
-                                                      // Teeth often come as "11,12" or "11"
-                                                      const tArr = item.dientes.split(',').map(s => s.trim()).filter(Boolean);
-                                                      grouped[groupKey].teeth.push(...tArr);
-                                                  }
-                                              });
-
-                                              // Generar la lista final y formatear dientes
-                                              const renderedLines = Object.values(grouped).map((group, idx) => {
-                                                  // Eliminar duplicados y formatear dientes consecutivos
-                                                  let teethStr = "";
-                                                  if (group.teeth.length > 0) {
-                                                      let sorted = [...new Set(group.teeth)].map(Number).sort((a,b) => a-b);
-                                                      let ranges = [];
-                                                      let start = sorted[0];
-                                                      let prev = sorted[0];
-                                                      for (let i = 1; i < sorted.length; i++) {
-                                                          let curr = sorted[i];
-                                                          if (curr === prev + 1) {
-                                                              prev = curr;
-                                                          } else {
-                                                              ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
-                                                              start = curr;
-                                                              prev = curr;
-                                                          }
-                                                      }
-                                                      ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
-                                                      teethStr = ranges.join(", ");
-                                                  }
-
-                                                  return (
-                                                    <div key={idx} className="flex items-center gap-1.5 truncate mt-0.5">
-                                                      <span className={`text-[16px] font-black tracking-tight ${group.matColor}`}>
-                                                        {group.matText}
-                                                      </span>
-                                                      {group.extraText && (
-                                                        <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50/80 border border-indigo-100/50 px-1.5 py-0.5 rounded-md tracking-tight shadow-sm">
-                                                          {group.extraText}
-                                                        </span>
-                                                      )}
-                                                      {c.color && (
-                                                        <span className="text-[11px] font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.5 rounded-md tracking-tight ml-0.5 shadow-sm border border-amber-200/50">
-                                                          {c.color}
-                                                        </span>
-                                                      )}
-                                                      {teethStr && (
-                                                        <span className="text-[14px] font-medium text-slate-700 truncate ml-0.5">
-                                                          #{teethStr}
-                                                        </span>
-                                                      )}
-                                                    </div>
-                                                  );
-                                              });
-
-                                              return (
-                                                <div className="flex flex-col gap-0.5 mt-0.5">
-                                                  {renderedLines}
-                                                </div>
-                                              );
-                                            })()}
-                                            
-                                            {/* COMENTARIO (opcional) */}
-                                            {c.comentarios && c.comentarios.trim() !== "" && (
-                                              <div className="mt-1 text-[13px] text-slate-600 leading-snug break-words pr-2">
-                                                <span className="font-bold text-slate-700 mr-1">Comentario:</span>
-                                                {c.comentarios}
-                                              </div>
-                                            )}
-                                          </div>
-                                          
-                                          {/* Derecha: Pill de estado del Caso */}
-                                          <div className="flex flex-col items-end gap-1.5 min-w-[80px] shrink-0">
-                                            <StatusBadge status={c.status} />
-                                            {c.status === 'En Proceso' && c.operador_actual && (
-                                               <span className="text-[10px] text-slate-600 font-medium tracking-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-[80px]">
-                                                  <User size={10} className="inline mr-1" />{c.operador_actual.split(' ')[0]}
-                                               </span>
-                                             )}
-                                          </div>
+                             <>
+                               {expandedVisibleCases.length > 0 && (
+                                  <ul className="flex flex-col mb-2">
+                                     {renderCaseList(expandedVisibleCases)}
+                                  </ul>
+                               )}
+                               
+                               {stackedCases.length > 0 && (
+                                  <div className="mx-4 sm:mx-0 mb-4 mt-2">
+                                     {!isStackExpanded ? (
+                                        <button 
+                                          onClick={() => toggleStack(grupo.id)}
+                                          className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-2xl flex items-center justify-between transition-colors shadow-sm"
+                                        >
+                                          <span className="text-[13px] font-bold text-slate-600">Ver {stackedCases.length} casos más (próximos días)</span>
+                                          <ChevronDown size={16} className="text-slate-500" />
+                                        </button>
+                                     ) : (
+                                        <div className="bg-slate-50/50 border border-slate-200 rounded-2xl p-2 pt-3 shadow-inner">
+                                          <button 
+                                            onClick={() => toggleStack(grupo.id)}
+                                            className="w-full pb-3 mb-3 border-b border-slate-200 flex items-center justify-between text-slate-500 hover:text-slate-700 transition-colors"
+                                          >
+                                            <span className="text-[12px] font-bold uppercase tracking-widest pl-2">Ocultar casos próximos</span>
+                                            <ChevronUp size={16} className="mr-2" />
+                                          </button>
+                                          <ul className="flex flex-col">
+                                             {renderCaseList(stackedCases, true)}
+                                          </ul>
                                         </div>
-
-                                        {/* Row Expandible del Caso (Solo si no es monitor global / read_only) */}
-                                        {!isReadOnly && (
-                                           <CaseActionBar 
-                                              onOpenReceipt={openReceiptModal}
-                                             currentCase={c} 
-                                             onRefresh={fetchCases} 
-                                             operatorName={currentOperatorName} 
-                                             isExpanded={cExpanded} 
-                                             onToggleExpand={() => toggleCase(c.internal_id)} 
-                                           />
-                                        )}
-                                      </li>
-                                  );
-                               })}
-                             </ul>
+                                     )}
+                                  </div>
+                               )}
+                             </>
                            )}
                          </div>
                        )}
