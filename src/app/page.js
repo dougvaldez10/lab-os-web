@@ -1419,28 +1419,18 @@ export default function Home() {
                                )}
                                
                                {stackedCases.length > 0 && (
-                                  <div className="mx-4 sm:mx-0 mb-4 mt-2">
-                                     {!isStackExpanded ? (
-                                        <div className="flex justify-center w-full py-1">
-                                          <button 
-                                            onClick={() => toggleStack(grupo.id)}
-                                            className="w-2 h-2 rounded-full bg-slate-500 hover:bg-slate-600 transition-colors shadow-sm"
-                                            title={`Ver ${stackedCases.length} casos más`}
-                                          />
-                                        </div>
-                                     ) : (
-                                        <div className="bg-slate-50/50 border border-slate-200 rounded-2xl p-2 pt-3 shadow-inner">
-                                          <ul className="flex flex-col">
-                                             {renderCaseList(stackedCases, true)}
-                                          </ul>
-                                          <div className="flex justify-center w-full pt-1 pb-2">
-                                            <button 
-                                              onClick={() => toggleStack(grupo.id)}
-                                              className="w-2 h-2 rounded-full bg-slate-400 hover:bg-slate-500 transition-colors shadow-sm"
-                                              title="Ocultar casos próximos"
-                                            />
-                                          </div>
-                                        </div>
+                                  <div className="mb-4 mt-1">
+                                     <div className="flex justify-center w-full py-2 mb-3">
+                                       <button 
+                                         onClick={() => toggleStack(grupo.id)}
+                                         className="w-10 h-1.5 rounded-full bg-slate-300 hover:bg-slate-400 transition-colors shadow-sm"
+                                         title={isStackExpanded ? "Ocultar casos próximos" : `Ver ${stackedCases.length} casos más`}
+                                       />
+                                     </div>
+                                     {isStackExpanded && (
+                                        <ul className="flex flex-col">
+                                           {renderCaseList(stackedCases, false)}
+                                        </ul>
                                      )}
                                   </div>
                                )}
