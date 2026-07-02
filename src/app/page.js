@@ -1160,8 +1160,8 @@ export default function Home() {
 
                    const hasUrgentCase = groupCases.some(c => c.urgencyObj && (c.urgencyObj.level === 'urgente' || c.urgencyObj.level === 'atrasado'));
 
-                   const expandedVisibleCases = groupCases.filter(c => c.urgencyObj && (c.urgencyObj.days <= 3 || c.urgencyObj.level === 'atrasado'));
-                   const stackedCases = groupCases.filter(c => !c.urgencyObj || c.urgencyObj.days > 3);
+                   const expandedVisibleCases = groupCases.filter(c => c.urgencyObj && (c.urgencyObj.days <= 2 || c.urgencyObj.level === 'atrasado'));
+                   const stackedCases = groupCases.filter(c => !c.urgencyObj || c.urgencyObj.days > 2);
 
                    const renderCaseList = (caseArray, isStacked = false) => {
                       return caseArray.map((c) => {
