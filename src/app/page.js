@@ -1505,6 +1505,31 @@ export default function Home() {
           {/* Bubble container */}
           <div className="bg-slate-50/15 backdrop-blur-[4px] border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-[32px] px-6 py-2 flex items-center gap-6 relative">
             
+            {/* Add New Case */}
+            <div className="relative flex flex-col items-center justify-center group h-14 w-14">
+              <span className="absolute text-[9px] font-bold tracking-wide text-[#D4AF37] opacity-0 group-hover:opacity-100 transform translate-y-0 group-hover:translate-y-[22px] transition-all duration-300 pointer-events-none whitespace-nowrap z-0">
+                Nuevo Trabajo
+              </span>
+              <button
+                onClick={() => setIsNewCaseModalOpen(true)}
+                className="w-11 h-11 rounded-full bg-white flex items-center justify-center text-[#D4AF37] border border-slate-200 shadow-sm transition-all duration-300 group-hover:border-[#D4AF37]/50 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.6)] group-hover:-translate-y-2 active:scale-95 relative z-10"
+                title="Registrar Nuevo Trabajo"
+              >
+                <Plus size={22} strokeWidth={2.5} className="transition-colors duration-300" />
+              </button>
+            </div>
+
+            {/* User Avatar */}
+            <div className="relative flex flex-col items-center justify-center h-14">
+              <button
+                onClick={handleLogout}
+                title="Cerrar sesión"
+                className="w-12 h-12 rounded-full bg-white border border-slate-200 shadow-md flex items-center justify-center text-slate-700 font-black text-[16px] hover:bg-slate-50 hover:shadow-lg transition-all hover:scale-105 active:scale-95 select-none z-10 relative"
+              >
+                {currentUser.username?.charAt(0).toUpperCase()}
+              </button>
+            </div>
+
             {/* Refresh Button */}
             <div className="relative flex flex-col items-center justify-center group h-14 w-14">
               <span className={`absolute text-[9px] font-bold tracking-wide text-blue-600 transform transition-all duration-300 pointer-events-none whitespace-nowrap z-0 ${
@@ -1525,31 +1550,6 @@ export default function Home() {
                 title="Sincronizar"
               >
                 <RefreshCw size={18} className={`transition-all duration-300 ${loading ? "animate-spin" : "group-hover:rotate-180"}`} />
-              </button>
-            </div>
-
-            {/* User Avatar */}
-            <div className="relative flex flex-col items-center justify-center h-14">
-              <button
-                onClick={handleLogout}
-                title="Cerrar sesión"
-                className="w-12 h-12 rounded-full bg-white border border-slate-200 shadow-md flex items-center justify-center text-slate-700 font-black text-[16px] hover:bg-slate-50 hover:shadow-lg transition-all hover:scale-105 active:scale-95 select-none z-10 relative"
-              >
-                {currentUser.username?.charAt(0).toUpperCase()}
-              </button>
-            </div>
-
-            {/* Add New Case */}
-            <div className="relative flex flex-col items-center justify-center group h-14 w-14">
-              <span className="absolute text-[9px] font-bold tracking-wide text-[#D4AF37] opacity-0 group-hover:opacity-100 transform translate-y-0 group-hover:translate-y-[22px] transition-all duration-300 pointer-events-none whitespace-nowrap z-0">
-                Nuevo Trabajo
-              </span>
-              <button
-                onClick={() => setIsNewCaseModalOpen(true)}
-                className="w-11 h-11 rounded-full bg-white flex items-center justify-center text-[#D4AF37] border border-slate-200 shadow-sm transition-all duration-300 group-hover:border-[#D4AF37]/50 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.6)] group-hover:-translate-y-2 active:scale-95 relative z-10"
-                title="Registrar Nuevo Trabajo"
-              >
-                <Plus size={22} strokeWidth={2.5} className="transition-colors duration-300" />
               </button>
             </div>
 
