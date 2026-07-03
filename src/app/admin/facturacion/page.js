@@ -1322,7 +1322,8 @@ export default function BillingPanel() {
                         const walletBalance = Number(currentClinicData?.saldo_favor) || 0;
 
                         return (
-                          <div className="flex flex-col divide-y divide-slate-100 min-w-[1000px]">
+                          <>
+                            <div className="flex flex-col divide-y divide-slate-100 min-w-[1000px]">
                               {sortedSelectedClinicCases.length === 0 ? (
                                 <div className="px-6 py-8 text-center text-slate-400">
                                   No hay casos con saldo pendiente para esta clínica.
@@ -1467,6 +1468,7 @@ export default function BillingPanel() {
                               </span>
                             </div>
                           )}
+                          </>
                         );
                       })()}
                     </div>
