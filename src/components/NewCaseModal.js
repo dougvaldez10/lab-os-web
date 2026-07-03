@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Plus, Check, RefreshCw, X, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { getProducts } from "@/app/actions/products";
@@ -299,14 +300,27 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
     }
   }
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-md p-0 sm:p-4 font-sans transition-all duration-300">
-      <div 
-        className="w-full max-w-2xl bg-white rounded-t-[24px] sm:rounded-[24px] flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden border border-slate-100"
-        style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 -10px 40px -15px rgba(0, 0, 0, 0.1)' }}
-      >
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div 
+          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+          animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
+          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+          transition={{ duration: 0.3 }}
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 p-0 sm:p-4 font-sans"
+        >
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.1, y: -100, x: 200 }}
+            animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, scale: 0.1, y: -100, x: 200 }}
+            transition={{ type: "spring", damping: 20, stiffness: 250 }}
+            className="w-full max-w-2xl bg-white rounded-t-[24px] sm:rounded-[24px] flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden border border-slate-100"
+            style={{ 
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 -10px 40px -15px rgba(0, 0, 0, 0.1)',
+              transformOrigin: 'top right'
+            }}
+          >
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-white shrink-0 shadow-sm z-10">
@@ -590,7 +604,9 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
           </button>
         </div>
 
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
