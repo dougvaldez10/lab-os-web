@@ -256,10 +256,14 @@ export async function getBillingSummary() {
 
     const sentCases = (cases || []).filter(c => c.estado === 'Enviado');
 
+    const hoyStr = new Date().toISOString().split('T')[0];
     const clinicsMap = {};
     sentCases.forEach(c => {
       const cliId = c.cliente_id;
       const cliName = c.clientes?.nombre || 'Clínica Sin Nombre';
+      
+      const isDeudaActiva = !c.fecha_cobro || c.fecha_cobro <= hoyStr;
+
       if (!clinicsMap[cliId]) {
         clinicsMap[cliId] = {
           id: cliId,
@@ -269,7 +273,10 @@ export async function getBillingSummary() {
           saldo_favor: Number(c.clientes?.saldo_favor) || 0
         };
       }
-      clinicsMap[cliId].total_deuda += Number(c.saldo_pendiente) || 0;
+      
+      if (isDeudaActiva) {
+        clinicsMap[cliId].total_deuda += Number(c.saldo_pendiente) || 0;
+      }
       clinicsMap[cliId].casos_count += 1;
     });
 

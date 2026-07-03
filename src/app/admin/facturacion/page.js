@@ -809,7 +809,14 @@ export default function BillingPanel() {
   const selectedClinicCases = cases.filter(c => c.cliente_id === selectedClinic?.id);
 
   // Ordenar casos de la clínica seleccionada por fecha_entrega (más antigua primero)
+  const hoyStr = new Date().toISOString().split("T")[0];
   const sortedSelectedClinicCases = [...selectedClinicCases].sort((a, b) => {
+    const isAActive = !a.fecha_cobro || a.fecha_cobro <= hoyStr;
+    const isBActive = !b.fecha_cobro || b.fecha_cobro <= hoyStr;
+
+    if (isAActive && !isBActive) return -1;
+    if (!isAActive && isBActive) return 1;
+
     if (!a.fecha_entrega) return 1;
     if (!b.fecha_entrega) return -1;
     return a.fecha_entrega.localeCompare(b.fecha_entrega);
@@ -965,11 +972,17 @@ export default function BillingPanel() {
             </div>
           </div>
           
-          <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm w-full md:w-auto">
+          <div className="flex items-center gap-6 bg-white px-6 py-2.5 rounded-xl border border-slate-200 shadow-sm w-full md:w-auto">
+            <div className="flex flex-col pr-6 border-r border-slate-200">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cartera / Saldo A Favor</span>
+              <span className={`text-lg font-black mt-0.5 ${Number(currentClinicData?.saldo_favor) > 0 ? 'text-emerald-600' : 'text-slate-700'}`}>
+                ${Number(currentClinicData?.saldo_favor || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
             <div className="flex flex-col">
-              <span className="text-xs font-bold text-slate-400 uppercase">Cartera / Saldo</span>
-              <span className={`text-lg font-black ${Number(currentClinicData?.saldo_favor) > 0 ? 'text-emerald-600' : 'text-slate-700'}`}>
-                ${Number(currentClinicData?.saldo_favor || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Deuda Activa</span>
+              <span className="text-lg font-black mt-0.5 text-rose-600">
+                ${selectedClinicCases.reduce((acc, c) => (!c.fecha_cobro || c.fecha_cobro <= new Date().toISOString().split("T")[0]) ? acc + (Number(c.saldo_pendiente) || 0) : acc, 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
               </span>
             </div>
           </div>
@@ -1199,21 +1212,7 @@ export default function BillingPanel() {
                 transition={{ duration: 0.2 }}
                 className="h-full flex flex-col"
               >
-                {/* Nuevos Sub-Tabs de CxC */}
-                <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm w-fit mb-4">
-                  <button 
-                    onClick={() => setCxcSubTab("semana")}
-                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${cxcSubTab === "semana" ? "bg-slate-100 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-                  >
-                    Cobros de esta semana
-                  </button>
-                  <button 
-                    onClick={() => setCxcSubTab("general")}
-                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${cxcSubTab === "general" ? "bg-slate-100 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-                  >
-                    Deuda General
-                  </button>
-                </div>
+
 
 
                 {/* CxC - Nivel 1: Resumen de Clínicas */}
@@ -1296,18 +1295,6 @@ export default function BillingPanel() {
                                 title="Seleccionar/Deseleccionar todos los casos y distribuir saldo disponible" 
                               />
                             </div>
-                            {/* Contenedor de Cartera / Saldo alineado con la columna "Folio" */}
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-amber-50 text-[#D4AF37] rounded-xl border border-amber-100 shadow-sm">
-                                <Wallet size={20} />
-                              </div>
-                              <div>
-                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cartera / Saldo a Favor Disponible</div>
-                                <div className={`text-lg font-black mt-0.5 ${remainingToDistribute < 0 ? 'text-rose-600' : 'text-slate-800'}`}>
-                                  ${remainingToDistribute.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                                </div>
-                              </div>
-                            </div>
                           </div>
 
                           <div className="flex items-center gap-4 w-full md:w-auto pl-6 md:pl-0">
@@ -1345,8 +1332,11 @@ export default function BillingPanel() {
                                   const isAllocated = customAllocations[c.id] !== undefined;
                                   const allocatedAmount = customAllocations[c.id] !== undefined ? customAllocations[c.id] : "";
 
+                                  const isUpcoming = c.fecha_cobro && c.fecha_cobro > new Date().toISOString().split("T")[0];
+                                  const opacityClass = isUpcoming && !isAllocated ? "opacity-50 grayscale hover:grayscale-0 hover:opacity-100 focus-within:opacity-100 focus-within:grayscale-0 transition-all" : "transition-colors";
+
                                   return (
-                                    <div key={c.id} className="grid grid-cols-[85px_120px_minmax(150px,2fr)_120px_100px_100px_150px_120px_200px] gap-4 px-6 py-4 items-center hover:bg-slate-50/50 transition-colors text-sm">
+                                    <div key={c.id} className={`grid grid-cols-[85px_120px_minmax(150px,2fr)_120px_100px_100px_150px_120px_200px] gap-4 px-6 py-4 items-center hover:bg-slate-50/50 text-sm ${opacityClass}`}>
                                       <div className="text-center w-full">
                                         <input 
                                           type="checkbox" 
@@ -1355,20 +1345,23 @@ export default function BillingPanel() {
                                           className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded cursor-pointer border-slate-300" 
                                         />
                                       </div>
-                                      <div className="font-bold text-slate-800 flex items-center gap-2">
-                                        {(() => {
-                                          let color = "bg-rose-500"; // Rojo por defecto si no hay promesa o ya pasó
-                                          const hoy = new Date().toISOString().split("T")[0];
-                                          if (c.promesa_pago_fecha) {
-                                            if (c.promesa_pago_fecha > hoy) {
-                                              color = "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]";
-                                            } else if (c.promesa_pago_fecha === hoy) {
-                                              color = "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)] animate-pulse";
+                                      <div className="font-bold text-slate-800 flex flex-col items-start gap-1">
+                                        <div className="flex items-center gap-2">
+                                          {(() => {
+                                            let color = "bg-rose-500"; // Rojo por defecto si no hay promesa o ya pasó
+                                            const hoy = new Date().toISOString().split("T")[0];
+                                            if (c.promesa_pago_fecha) {
+                                              if (c.promesa_pago_fecha > hoy) {
+                                                color = "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]";
+                                              } else if (c.promesa_pago_fecha === hoy) {
+                                                color = "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)] animate-pulse";
+                                              }
                                             }
-                                          }
-                                          return <div title={c.promesa_pago_fecha ? `Promesa: ${c.promesa_pago_fecha}` : 'Sin promesa vigente'} className={`w-2.5 h-2.5 rounded-full ${color}`} />;
-                                        })()}
-                                        #{c.codigo}
+                                            return <div title={c.promesa_pago_fecha ? `Promesa: ${c.promesa_pago_fecha}` : 'Sin promesa vigente'} className={`w-2.5 h-2.5 rounded-full ${color}`} />;
+                                          })()}
+                                          #{c.codigo}
+                                        </div>
+                                        {isUpcoming && <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Próximo cobro</span>}
                                       </div>
                                       <div className="font-semibold text-slate-700 truncate">
                                         {c.paciente}
@@ -1466,6 +1459,14 @@ export default function BillingPanel() {
                                 })
                               )}
                           </div>
+                          {sortedSelectedClinicCases.length > 0 && (
+                            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end items-center gap-4">
+                              <span className="font-bold text-slate-500 uppercase tracking-wider text-xs">Total general</span>
+                              <span className="text-lg font-black text-slate-800">
+                                ${sortedSelectedClinicCases.reduce((acc, c) => acc + (Number(c.saldo_pendiente) || 0), 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          )}
                         );
                       })()}
                     </div>
