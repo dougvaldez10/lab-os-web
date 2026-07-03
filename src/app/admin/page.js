@@ -350,7 +350,10 @@ export default function AdminBoard() {
         ) : (
           sortedCases.map(c => (
             <div key={c.internal_id} className="relative group">
-              <div className="absolute bottom-0 left-[-30vw] right-[-30vw] h-[1px] bg-gradient-to-r from-transparent via-slate-400/70 to-transparent pointer-events-none z-0"></div>
+              {/* Línea base gris */}
+              <div className="absolute bottom-0 left-[-30vw] right-[-30vw] h-[1px] bg-gradient-to-r from-transparent via-slate-400/40 to-transparent pointer-events-none z-0"></div>
+              {/* Estela dorada al hacer hover con delay de apagado para efecto onda */}
+              <div className="absolute bottom-0 left-[-30vw] right-[-30vw] h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent pointer-events-none z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-[800ms] group-hover:duration-[50ms] ease-out"></div>
               <div className="grid grid-cols-[1fr_2fr_1.5fr_1.5fr_1fr_1fr_100px] gap-4 py-3 items-center hover:bg-slate-50/50 transition-colors relative z-10 text-sm">
                 <div className="font-medium text-slate-900 px-4">#{c.id}</div>
                 <div className="text-slate-700 font-bold px-4 truncate">{c.patient}</div>
