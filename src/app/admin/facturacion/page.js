@@ -946,6 +946,9 @@ export default function BillingPanel() {
       ) : null;
     } else {
       const currentClinicData = allClinics.find(cl => cl.id === selectedClinic.id) || selectedClinic;
+      const totalAssigned = Object.keys(customAllocations).reduce((acc, caseId) => acc + (Number(customAllocations[caseId]) || 0), 0);
+      const remainingToDistribute = (Number(currentClinicData?.saldo_favor) || 0) - totalAssigned;
+      
       currentSubHeader = (
         <div className="mb-4 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center pointer-events-auto">
           <div className="flex items-center gap-3">
@@ -973,8 +976,8 @@ export default function BillingPanel() {
           <div className="flex items-center gap-6 bg-white px-6 py-2.5 rounded-xl border border-slate-200 shadow-sm w-full md:w-auto">
             <div className="flex flex-col pr-6 border-r border-slate-200">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cartera / Saldo A Favor</span>
-              <span className={`text-lg font-black mt-0.5 ${Number(currentClinicData?.saldo_favor) > 0 ? 'text-emerald-600' : 'text-slate-700'}`}>
-                ${Number(currentClinicData?.saldo_favor || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              <span className={`text-lg font-black mt-0.5 ${remainingToDistribute > 0 ? 'text-emerald-600' : 'text-slate-700'}`}>
+                ${remainingToDistribute.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex flex-col">
@@ -1285,7 +1288,7 @@ export default function BillingPanel() {
                       const remainingToDistribute = walletBalance - totalAssigned;
 
                       return (
-                        <div className="py-4 pr-6 pl-0 bg-amber-50/40 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+                        <div className="py-4 pr-6 pl-6 bg-amber-50/40 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
                           <div className="flex items-center flex-1 w-full">
                             {/* Casilla superior de asignar/seleccionar todos alineada con la columna "Asignar" */}
                             <div className="w-[85px] flex justify-center shrink-0">
