@@ -304,21 +304,22 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
     <AnimatePresence>
       {isOpen && (
         <motion.div 
-          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
-          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 p-0 sm:p-4 font-sans"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-md p-0 sm:p-4 font-sans"
         >
           <motion.div 
-            initial={{ opacity: 0, scale: 0.1, y: -100, x: 200 }}
-            animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
-            exit={{ opacity: 0, scale: 0.1, y: -100, x: 200 }}
-            transition={{ type: "spring", damping: 20, stiffness: 250 }}
+            initial={{ opacity: 0, scale: 0.3 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.3 }}
+            transition={{ type: "spring", damping: 25, stiffness: 350 }}
             className="w-full max-w-2xl bg-white rounded-t-[24px] sm:rounded-[24px] flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden border border-slate-100"
             style={{ 
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 -10px 40px -15px rgba(0, 0, 0, 0.1)',
-              transformOrigin: 'top right'
+              transformOrigin: 'top right',
+              willChange: 'transform, opacity'
             }}
           >
         
