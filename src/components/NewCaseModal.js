@@ -307,18 +307,17 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.4 }}
           className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-md p-0 sm:p-4 font-sans"
         >
           <motion.div 
-            initial={{ opacity: 0, scale: 0.3 }}
+            initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.3 }}
-            transition={{ type: "spring", damping: 25, stiffness: 350 }}
-            className="w-full max-w-2xl bg-white rounded-t-[24px] sm:rounded-[24px] flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden border border-slate-100"
+            exit={{ opacity: 0, scale: 0 }}
+            transition={{ type: "spring", damping: 20, stiffness: 180 }}
+            className="w-full max-w-2xl bg-white rounded-t-[24px] sm:rounded-[24px] flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden border border-slate-100 shadow-2xl"
             style={{ 
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 -10px 40px -15px rgba(0, 0, 0, 0.1)',
-              transformOrigin: 'top right',
+              transformOrigin: 'calc(100% - 20px) 20px',
               willChange: 'transform, opacity'
             }}
           >
