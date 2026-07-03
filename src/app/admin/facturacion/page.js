@@ -799,10 +799,8 @@ export default function BillingPanel() {
   );
 
   // Calcular total pendiente para las clínicas filtradas
-  const filteredClinicIds = new Set(filteredClinics.map(cl => cl.id));
-  const filteredCases = cases.filter(c => filteredClinicIds.has(c.cliente_id));
-  const totalGeneral = filteredCases.reduce((acc, c) => {
-    return acc + (Number(c.saldo_pendiente) || 0);
+  const totalGeneral = filteredClinics.reduce((acc, cli) => {
+    return acc + (Number(cli.total_deuda) || 0);
   }, 0);
 
   // Casos de la clínica seleccionada (CxC Nivel 2)
@@ -1249,6 +1247,10 @@ export default function BillingPanel() {
                                     {cli.total_deuda < 0 ? (
                                       <span className="font-black text-emerald-600">
                                         ${Math.abs(cli.total_deuda).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      </span>
+                                    ) : cli.total_deuda === 0 ? (
+                                      <span className="font-bold text-slate-400">
+                                        $0.00
                                       </span>
                                     ) : (
                                       <span className="font-black text-rose-600">
