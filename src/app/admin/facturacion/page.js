@@ -706,7 +706,7 @@ export default function BillingPanel() {
             .total-row.final { font-size: 20px; font-weight: 900; color: #000000; margin-top: 15px; border-top: 1px solid #000000; padding-top: 15px; }
             @media print {
               body { padding: 0; }
-              @page { margin: 2cm; }
+              @page { margin: 0; }
             }
           </style>
         </head>
