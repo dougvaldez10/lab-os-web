@@ -705,8 +705,8 @@ export default function BillingPanel() {
             .total-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #000000; }
             .total-row.final { font-size: 20px; font-weight: 900; color: #000000; margin-top: 15px; border-top: 1px solid #000000; padding-top: 15px; }
             @media print {
-              body { padding: 0; }
-              .container { max-width: 100%; width: 100%; margin: 0; padding: 0; }
+              body { padding: 0 4mm !important; }
+              .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
               @page { margin: 0; }
             }
           </style>
