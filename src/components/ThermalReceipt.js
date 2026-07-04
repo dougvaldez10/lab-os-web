@@ -24,12 +24,6 @@ export function printThermalReceipt({ caso, abono }) {
       <head>
         <title>Recibo - Caso ${caso.codigo}</title>
         <style>
-          @media print {
-            * {
-              color: #000000 !important;
-              opacity: 1 !important;
-            }
-          }
           @page {
             margin: 0;
             size: 80mm auto;
@@ -41,7 +35,7 @@ export function printThermalReceipt({ caso, abono }) {
             font-family: monospace;
             font-size: ${fontSize};
             line-height: 1.2;
-            color: #000000;
+            color: #000;
             box-sizing: border-box;
           }
           .header {
@@ -54,7 +48,7 @@ export function printThermalReceipt({ caso, abono }) {
           }
           .info {
             margin-bottom: 10px;
-            border-bottom: 1px dashed #000000;
+            border-bottom: 1px dashed #000;
             padding-bottom: 5px;
           }
           .info div {
@@ -67,14 +61,14 @@ export function printThermalReceipt({ caso, abono }) {
           }
           table th {
             text-align: left;
-            border-bottom: 1px dashed #000000;
+            border-bottom: 1px dashed #000;
             padding-bottom: 3px;
           }
           table td {
             padding: 2px 0;
           }
           .totals {
-            border-top: 1px dashed #000000;
+            border-top: 1px dashed #000;
             padding-top: 5px;
             margin-bottom: 15px;
           }
