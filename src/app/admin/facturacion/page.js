@@ -650,20 +650,20 @@ export default function BillingPanel() {
 
     const itemsHtml = activeCase.items && activeCase.items.length > 0 
       ? activeCase.items.map(it => `
-        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #000000;">
           <div>
             <div style="font-weight: bold; font-size: 14px;">
-              <span style="color: #3b82f6;">${it.unidades}x</span> ${it.producto}
+              <span style="color: #000000;">${it.unidades}x</span> ${it.producto}
             </div>
-            ${it.dientes ? `<div style="font-size: 12px; color: #64748b; margin-top: 4px;">Piezas: #${Array.isArray(it.dientes) ? it.dientes.join(', ') : it.dientes}</div>` : ''}
+            ${it.dientes ? `<div style="font-size: 12px; color: #000000; margin-top: 4px;">Piezas: #${Array.isArray(it.dientes) ? it.dientes.join(', ') : it.dientes}</div>` : ''}
           </div>
         </div>
       `).join('')
-      : '<div style="padding: 10px; text-align: center; color: #64748b; font-size: 14px;">Sin materiales detallados.</div>';
+      : '<div style="padding: 10px; text-align: center; color: #000000; font-size: 14px;">Sin materiales detallados.</div>';
 
     const discountHtml = calc.discountAmount > 0 
       ? `
-      <div class="total-row" style="color: #ef4444; font-weight: 600;">
+      <div class="total-row" style="color: #000000; font-weight: 600;">
         <span>Descuento</span>
         <span>-$${calc.discountAmount.toFixed(2)}</span>
       </div>
@@ -672,7 +672,7 @@ export default function BillingPanel() {
 
     const ivaHtml = calc.ivaAmount > 0 
       ? `
-      <div class="total-row" style="color: #64748b; font-weight: 500;">
+      <div class="total-row" style="color: #000000; font-weight: 500;">
         <span>IVA (8%)</span>
         <span>+$${calc.ivaAmount.toFixed(2)}</span>
       </div>
@@ -685,19 +685,25 @@ export default function BillingPanel() {
         <head>
           <title>Recibo - Orden #${activeCase.id}</title>
           <style>
-            body { font-family: 'Inter', system-ui, sans-serif; color: #0f172a; margin: 0; padding: 40px; }
+            @media print {
+              * {
+                color: #000000 !important;
+                background: transparent !important;
+              }
+            }
+            body { font-family: 'Inter', system-ui, sans-serif; color: #000000; margin: 0; padding: 40px; }
             .container { max-width: 800px; margin: 0 auto; }
-            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px; margin-bottom: 30px; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #000000; padding-bottom: 20px; margin-bottom: 30px; }
             .title { font-size: 24px; font-weight: 900; margin: 0; }
-            .subtitle { font-size: 14px; color: #64748b; margin-top: 4px; }
-            .info-box { background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 30px; display: flex; gap: 40px;}
+            .subtitle { font-size: 14px; color: #000000; margin-top: 4px; }
+            .info-box { padding: 20px; border: 1px solid #000000; border-radius: 12px; margin-bottom: 30px; display: flex; gap: 40px;}
             .info-item { display: flex; flex-direction: column; gap: 4px;}
-            .info-label { font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: bold; letter-spacing: 0.05em; }
-            .info-value { font-size: 16px; font-weight: 700; }
-            .section-title { font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 15px; }
-            .totals { margin-top: 40px; border-top: 2px solid #f1f5f9; padding-top: 20px; width: 300px; margin-left: auto; }
-            .total-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
-            .total-row.final { font-size: 20px; font-weight: 900; color: #0062cc; margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+            .info-label { font-size: 12px; color: #000000; text-transform: uppercase; font-weight: bold; letter-spacing: 0.05em; }
+            .info-value { font-size: 16px; font-weight: 700; color: #000000; }
+            .section-title { font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: #000000; margin-bottom: 15px; }
+            .totals { margin-top: 40px; border-top: 2px solid #000000; padding-top: 20px; width: 300px; margin-left: auto; }
+            .total-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #000000; }
+            .total-row.final { font-size: 20px; font-weight: 900; color: #000000; margin-top: 15px; border-top: 1px solid #000000; padding-top: 15px; }
             @media print {
               body { padding: 0; }
               @page { margin: 2cm; }
@@ -735,7 +741,7 @@ export default function BillingPanel() {
 
             <div class="totals">
               <div class="total-row">
-                <span style="color: #64748b; font-weight: 500;">Subtotal Base</span>
+                <span style="font-weight: 500;">Subtotal Base</span>
                 <span>$${calc.subtotal.toFixed(2)}</span>
               </div>
               ${discountHtml}
@@ -746,7 +752,7 @@ export default function BillingPanel() {
               </div>
             </div>
             
-            <div style="margin-top: 60px; text-align: center; color: #94a3b8; font-size: 12px;">
+            <div style="margin-top: 60px; text-align: center; font-size: 12px; color: #000000;">
               <p>Gracias por su preferencia.</p>
             </div>
           </div>
