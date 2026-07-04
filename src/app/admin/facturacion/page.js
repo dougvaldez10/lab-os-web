@@ -713,7 +713,7 @@ export default function BillingPanel() {
         <body>
           <div class="container">
             <div style="text-align: center; margin-bottom: 20px;">
-              <img src="/Logo.png" alt="Legion Logo" style="height: 1.8cm; object-fit: contain; margin-bottom: 10px;" onerror="this.style.display='none'" />
+              <img src="${window.location.origin}/Logo.png" alt="Legion Logo" style="height: 1.8cm; object-fit: contain; margin-bottom: 10px;" />
             </div>
             <div class="header">
               <div>
