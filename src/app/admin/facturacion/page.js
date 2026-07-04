@@ -713,8 +713,7 @@ export default function BillingPanel() {
         <body>
           <div class="container">
             <div style="text-align: center; margin-bottom: 20px;">
-              <!-- Se asume que el usuario colocará el logo en la carpeta public con el nombre logo-recibo.png o jpg -->
-              <img src="/logo-recibo.png" alt="Legion Logo" style="height: 1.8cm; object-fit: contain; margin-bottom: 10px;" onerror="this.style.display='none'" />
+              <img src="/Logo.png" alt="Legion Logo" style="height: 1.8cm; object-fit: contain; margin-bottom: 10px;" onerror="this.style.display='none'" />
             </div>
             <div class="header">
               <div>
