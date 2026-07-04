@@ -712,10 +712,14 @@ export default function BillingPanel() {
         </head>
         <body>
           <div class="container">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <!-- Se asume que el usuario colocará el logo en la carpeta public con el nombre logo-recibo.png o jpg -->
+              <img src="/logo-recibo.png" alt="Legion Logo" style="height: 1.8cm; object-fit: contain; margin-bottom: 10px;" onerror="this.style.display='none'" />
+            </div>
             <div class="header">
               <div>
                 <h1 class="title">RECIBO</h1>
-                <p class="subtitle">Laboratorio Dental Lab OS</p>
+                <p class="subtitle">Laboratorio Dental Legion</p>
               </div>
               <div style="text-align: right;">
                 <h2 style="margin: 0; font-size: 20px; font-weight: bold;">Orden #${activeCase.id}</h2>
@@ -754,6 +758,7 @@ export default function BillingPanel() {
             
             <div style="margin-top: 60px; text-align: center; font-size: 12px; color: #000000;">
               <p>Gracias por su preferencia.</p>
+              <p style="font-size: 10px; margin-top: 15px; color: #000000;">Generado por Lab OS</p>
             </div>
           </div>
           <script>
