@@ -994,7 +994,14 @@ export default function BillingPanel() {
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Deuda Activa</span>
               <span className="text-lg font-black mt-0.5 text-rose-600">
-                ${selectedClinicCases.reduce((acc, c) => (!c.fecha_cobro || c.fecha_cobro <= new Date().toISOString().split("T")[0]) ? acc + (Number(c.saldo_pendiente) || 0) : acc, 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                ${selectedClinicCases.reduce((acc, c) => {
+                  if (!c.fecha_cobro || c.fecha_cobro <= new Date().toISOString().split("T")[0]) {
+                    const originalBalance = Number(c.saldo_pendiente) || 0;
+                    const allocated = Number(customAllocations[c.id]) || 0;
+                    return acc + (originalBalance - allocated);
+                  }
+                  return acc;
+                }, 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
               </span>
             </div>
           </div>
@@ -1480,7 +1487,11 @@ export default function BillingPanel() {
                             <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end items-center gap-4">
                               <span className="font-bold text-slate-500 uppercase tracking-wider text-xs">Total general</span>
                               <span className="text-lg font-black text-slate-800">
-                                ${sortedSelectedClinicCases.reduce((acc, c) => acc + (Number(c.saldo_pendiente) || 0), 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                ${sortedSelectedClinicCases.reduce((acc, c) => {
+                                  const originalBalance = Number(c.saldo_pendiente) || 0;
+                                  const allocated = Number(customAllocations[c.id]) || 0;
+                                  return acc + (originalBalance - allocated);
+                                }, 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                               </span>
                             </div>
                           )}
