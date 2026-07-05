@@ -24,18 +24,41 @@ export function printThermalReceipt({ caso, abono }) {
       <head>
         <title>Recibo - Caso ${caso.codigo}</title>
         <style>
-          @page {
-            margin: 0;
-            size: 80mm auto;
+          @media print {
+            @page {
+              size: 80mm auto;
+              margin: 0mm;
+            }
+            body, html {
+              margin: 0 !important;
+              padding: 0 !important;
+              width: 80mm !important;
+              font-family: monospace;
+              font-size: ${fontSize};
+              color: #000;
+              background-color: white;
+            }
+            .receipt-container {
+              width: 79.4mm !important;
+              margin: 0 auto !important;
+              padding: 4mm 0.3mm !important;
+              box-sizing: border-box !important;
+            }
           }
+          
+          /* Estilos generales para cuando se ve en la mini ventana antes de imprimir */
           body {
-            margin: 0;
-            padding: 5mm;
-            width: ${width};
             font-family: monospace;
             font-size: ${fontSize};
             line-height: 1.2;
             color: #000;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+          }
+          .receipt-container {
+            width: 80mm;
+            padding: 5mm;
             box-sizing: border-box;
           }
           .header {
@@ -88,7 +111,8 @@ export function printThermalReceipt({ caso, abono }) {
         </style>
       </head>
       <body>
-        <div class="header">
+        <div class="receipt-container">
+          <div class="header">
           <h2>LEGION DENTAL LAB</h2>
           <div>Folio: ${caso.codigo || caso.id}</div>
           <div>Fecha: ${new Date().toLocaleDateString()}</div>
@@ -139,6 +163,7 @@ export function printThermalReceipt({ caso, abono }) {
 
         <div class="footer">
           <div>Gracias por su preferencia</div>
+        </div>
         </div>
 
         <script>
