@@ -11,7 +11,7 @@ import {
   Minus,
   Wallet
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { getMetricsData } from "@/app/actions/admin-cases";
 import MaterialChart from "./MaterialChart";
 
 export default function MetricasPage() {
@@ -25,133 +25,101 @@ export default function MetricasPage() {
   const [resumenFinanciero, setResumenFinanciero] = useState({ recaudado: 0, porCobrar: 0 });
 
   useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      
+      try {
+        const res = await getMetricsData(timeFilter);
+        if (!res.success) {
+          throw new Error(res.error);
+        }
+        const { casosActuales, casosAnteriores } = res;
+
+        // Procesar Clínicas Actuales
+        const clinicasMap = {};
+        let totalRecaudado = 0;
+        let totalPorCobrar = 0;
+
+        (casosActuales || []).forEach(c => {
+          const cId = c.cliente_id;
+          const nombre = c.clientes?.nombre || "Desconocido";
+          const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
+          
+          const pagoRecibido = (c.total_caso || 0) - (c.saldo_pendiente || 0);
+          totalRecaudado += pagoRecibido;
+          totalPorCobrar += (c.saldo_pendiente || 0);
+
+          if (!clinicasMap[cId]) {
+            clinicasMap[cId] = { id: cId, nombre, casos: 0, unidades: 0, anterior: 0 };
+          }
+          clinicasMap[cId].casos += 1;
+          clinicasMap[cId].unidades += unidades;
+        });
+
+        // Procesar Clínicas Anteriores
+        (casosAnteriores || []).forEach(c => {
+          const cId = c.cliente_id;
+          const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
+          if (clinicasMap[cId]) {
+            clinicasMap[cId].anterior += unidades;
+          }
+        });
+
+        // Convertir a array, ordenar y calcular %
+        const topClinicasArr = Object.values(clinicasMap).sort((a, b) => b.unidades - a.unidades).map(c => {
+          let diff = 0;
+          if (c.anterior === 0 && c.unidades > 0) diff = 100;
+          else if (c.anterior > 0) diff = ((c.unidades - c.anterior) / c.anterior) * 100;
+          return { ...c, diff };
+        });
+        setTopClinicas(topClinicasArr);
+        setResumenFinanciero({ recaudado: totalRecaudado, porCobrar: totalPorCobrar });
+
+        // 2. TOP DOCTORES
+        const doctoresMap = {};
+        (casosActuales || []).forEach(c => {
+          const docName = c.doctor || "Sin doctor asignado";
+          const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
+          
+          if (!doctoresMap[docName]) doctoresMap[docName] = { nombre: docName, casos: 0, unidades: 0 };
+          doctoresMap[docName].casos += 1;
+          doctoresMap[docName].unidades += unidades;
+        });
+        const topDoctoresArr = Object.values(doctoresMap).sort((a, b) => b.unidades - a.unidades);
+        setTopDoctores(topDoctoresArr);
+
+        // 3. DISTRIBUCIÓN POR ORIGEN (Digital vs Análogo)
+        const tipoCounts = { "Digital": 0, "Análogo": 0, "Otros": 0 };
+        
+        (casosActuales || []).forEach(c => {
+          const tipoStr = (c.tipo || "").toLowerCase();
+          const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
+          
+          if (tipoStr.includes("digital")) tipoCounts["Digital"] += unidades;
+          else if (tipoStr.includes("fisico") || tipoStr.includes("análogo") || tipoStr.includes("analogo")) tipoCounts["Análogo"] += unidades;
+          else tipoCounts["Otros"] += unidades;
+        });
+
+        const colors = {
+          "Digital": "#3B82F6", // blue-500
+          "Análogo": "#D4AF37", // Dorado/Amarillo
+          "Otros": "#CBD5E1"    // slate-300
+        };
+
+        const chartData = Object.keys(tipoCounts)
+          .filter(k => tipoCounts[k] > 0)
+          .map(k => ({ name: k, value: tipoCounts[k], color: colors[k] }));
+          
+        setMaterialData(chartData.sort((a, b) => b.value - a.value));
+
+      } catch (err) {
+        console.error(err);
+      }
+      setLoading(false);
+    };
+
     fetchData();
   }, [timeFilter]);
-
-  const fetchData = async () => {
-    setLoading(true);
-    
-    // Configurar fechas según filtro
-    const now = new Date();
-    let fechaInicioActual = new Date();
-    let fechaInicioAnterior = new Date();
-    let fechaFinAnterior = new Date();
-
-    if (timeFilter === "30d") {
-      fechaInicioActual.setDate(now.getDate() - 30);
-      fechaInicioAnterior.setDate(now.getDate() - 60);
-      fechaFinAnterior.setDate(now.getDate() - 30);
-    } else if (timeFilter === "3m") {
-      fechaInicioActual.setMonth(now.getMonth() - 3);
-      fechaInicioAnterior.setMonth(now.getMonth() - 6);
-      fechaFinAnterior.setMonth(now.getMonth() - 3);
-    } else if (timeFilter === "year") {
-      fechaInicioActual = new Date(now.getFullYear(), 0, 1);
-      fechaInicioAnterior = new Date(now.getFullYear() - 1, 0, 1);
-      fechaFinAnterior = new Date(now.getFullYear() - 1, 11, 31);
-    }
-
-    const isoActualStart = fechaInicioActual.toISOString();
-    const isoActualEnd = now.toISOString();
-    const isoPrevStart = fechaInicioAnterior.toISOString();
-    const isoPrevEnd = fechaFinAnterior.toISOString();
-
-    try {
-      // 1. TOP CLÍNICAS - Periodo Actual
-      const { data: casosActuales } = await supabase
-        .from('casos_master')
-        .select('cliente_id, monto_total, pago_recibido, tipo, clientes(nombre), casos_detalle(unidades)')
-        .gte('fecha_ingreso', isoActualStart)
-        .lte('fecha_ingreso', isoActualEnd);
-
-      // 1b. TOP CLÍNICAS - Periodo Anterior
-      const { data: casosAnteriores } = await supabase
-        .from('casos_master')
-        .select('cliente_id, casos_detalle(unidades)')
-        .gte('fecha_ingreso', isoPrevStart)
-        .lte('fecha_ingreso', isoPrevEnd);
-
-      // Procesar Clínicas Actuales
-      const clinicasMap = {};
-      let totalRecaudado = 0;
-      let totalPorCobrar = 0;
-
-      (casosActuales || []).forEach(c => {
-        const cId = c.cliente_id;
-        const nombre = c.clientes?.nombre || "Desconocido";
-        const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
-        
-        totalRecaudado += (c.pago_recibido || 0);
-        totalPorCobrar += ((c.monto_total || 0) - (c.pago_recibido || 0));
-
-        if (!clinicasMap[cId]) {
-          clinicasMap[cId] = { id: cId, nombre, casos: 0, unidades: 0, anterior: 0 };
-        }
-        clinicasMap[cId].casos += 1;
-        clinicasMap[cId].unidades += unidades;
-      });
-
-      // Procesar Clínicas Anteriores
-      (casosAnteriores || []).forEach(c => {
-        const cId = c.cliente_id;
-        const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
-        if (clinicasMap[cId]) {
-          clinicasMap[cId].anterior += unidades;
-        }
-      });
-
-      // Convertir a array, ordenar y calcular %
-      const topClinicasArr = Object.values(clinicasMap).sort((a, b) => b.unidades - a.unidades).map(c => {
-        let diff = 0;
-        if (c.anterior === 0 && c.unidades > 0) diff = 100;
-        else if (c.anterior > 0) diff = ((c.unidades - c.anterior) / c.anterior) * 100;
-        return { ...c, diff };
-      });
-      setTopClinicas(topClinicasArr);
-      setResumenFinanciero({ recaudado: totalRecaudado, porCobrar: totalPorCobrar });
-
-      // 2. TOP DOCTORES
-      const doctoresMap = {};
-      (casosActuales || []).forEach(c => {
-        const docName = c.doctor || "Sin doctor asignado";
-        const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
-        
-        if (!doctoresMap[docName]) doctoresMap[docName] = { nombre: docName, casos: 0, unidades: 0 };
-        doctoresMap[docName].casos += 1;
-        doctoresMap[docName].unidades += unidades;
-      });
-      const topDoctoresArr = Object.values(doctoresMap).sort((a, b) => b.unidades - a.unidades);
-      setTopDoctores(topDoctoresArr);
-
-      // 3. DISTRIBUCIÓN POR ORIGEN (Digital vs Análogo)
-      const tipoCounts = { "Digital": 0, "Análogo": 0, "Otros": 0 };
-      
-      (casosActuales || []).forEach(c => {
-        const tipoStr = (c.tipo || "").toLowerCase();
-        const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
-        
-        if (tipoStr.includes("digital")) tipoCounts["Digital"] += unidades;
-        else if (tipoStr.includes("fisico") || tipoStr.includes("análogo") || tipoStr.includes("analogo")) tipoCounts["Análogo"] += unidades;
-        else tipoCounts["Otros"] += unidades;
-      });
-
-      const colors = {
-        "Digital": "#3B82F6", // blue-500
-        "Análogo": "#D4AF37", // Dorado/Amarillo
-        "Otros": "#CBD5E1"    // slate-300
-      };
-
-      const chartData = Object.keys(tipoCounts)
-        .filter(k => tipoCounts[k] > 0)
-        .map(k => ({ name: k, value: tipoCounts[k], color: colors[k] }));
-        
-      setMaterialData(chartData.sort((a, b) => b.value - a.value));
-
-    } catch (err) {
-      console.error(err);
-    }
-    setLoading(false);
-  };
 
   const formatCurrency = (val) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
 

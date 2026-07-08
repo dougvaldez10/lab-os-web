@@ -193,3 +193,58 @@ export async function cancelarCaso({ caso_id, motivo }) {
   }
 }
 
+export async function getMetricsData(timeFilter) {
+  try {
+    await checkAdminAccess();
+    const supabase = getAdminClient();
+
+    const now = new Date();
+    let fechaInicioActual = new Date();
+    let fechaInicioAnterior = new Date();
+    let fechaFinAnterior = new Date();
+
+    if (timeFilter === "30d") {
+      fechaInicioActual.setDate(now.getDate() - 30);
+      fechaInicioAnterior.setDate(now.getDate() - 60);
+      fechaFinAnterior.setDate(now.getDate() - 30);
+    } else if (timeFilter === "3m") {
+      fechaInicioActual.setMonth(now.getMonth() - 3);
+      fechaInicioAnterior.setMonth(now.getMonth() - 6);
+      fechaFinAnterior.setMonth(now.getMonth() - 3);
+    } else if (timeFilter === "year") {
+      fechaInicioActual = new Date(now.getFullYear(), 0, 1);
+      fechaInicioAnterior = new Date(now.getFullYear() - 1, 0, 1);
+      fechaFinAnterior = new Date(now.getFullYear() - 1, 11, 31);
+    }
+
+    const isoActualStart = fechaInicioActual.toISOString().split('T')[0];
+    const isoActualEnd = now.toISOString().split('T')[0];
+    const isoPrevStart = fechaInicioAnterior.toISOString().split('T')[0];
+    const isoPrevEnd = fechaFinAnterior.toISOString().split('T')[0];
+
+    // 1. TOP CLÍNICAS - Periodo Actual
+    const { data: casosActuales, error: errorActual } = await supabase
+      .from('casos_master')
+      .select('cliente_id, total_caso, saldo_pendiente, tipo, doctor, clientes(nombre), casos_detalle(unidades)')
+      .gte('fecha_ingreso', isoActualStart)
+      .lte('fecha_ingreso', isoActualEnd);
+
+    if (errorActual) throw errorActual;
+
+    // 1b. TOP CLÍNICAS - Periodo Anterior
+    const { data: casosAnteriores, error: errorAnterior } = await supabase
+      .from('casos_master')
+      .select('cliente_id, casos_detalle(unidades)')
+      .gte('fecha_ingreso', isoPrevStart)
+      .lte('fecha_ingreso', isoPrevEnd);
+
+    if (errorAnterior) throw errorAnterior;
+
+    return { success: true, casosActuales, casosAnteriores };
+  } catch (err) {
+    console.error('getMetricsData error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+

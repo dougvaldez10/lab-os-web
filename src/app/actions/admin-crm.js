@@ -83,7 +83,7 @@ export async function getAdminDoctors() {
     const supabase = getAdminClient();
     const { data, error } = await supabase
       .from('doctores')
-      .select('*, clientes(nombre)')
+      .select('*, doctor_clinica(cliente_id, clientes(nombre))')
       .order('nombre', { ascending: true });
     if (error) throw error;
     return { success: true, data };
@@ -96,11 +96,35 @@ export async function createAdminDoctor(payload) {
   try {
     await checkAdminAccess();
     const supabase = getAdminClient();
-    const { error } = await supabase.from('doctores').insert([payload]);
-    if (error) throw error;
+    
+    // Extraemos cliente_ids del payload para insertarlos en la tabla intermedia
+    const { cliente_ids, ...doctorData } = payload;
+
+    // Insertar doctor en la tabla doctores
+    const { data: insertedDoctor, error: docError } = await supabase
+      .from('doctores')
+      .insert([doctorData])
+      .select('id')
+      .single();
+
+    if (docError) throw docError;
+
+    // Si hay clínicas asociadas, creamos los registros en la tabla intermedia
+    if (cliente_ids && cliente_ids.length > 0) {
+      const links = cliente_ids.map(cId => ({
+        doctor_id: insertedDoctor.id,
+        cliente_id: parseInt(cId)
+      }));
+      const { error: linkError } = await supabase
+        .from('doctor_clinica')
+        .insert(links);
+      if (linkError) throw linkError;
+    }
+
     revalidatePath('/admin/crm');
     return { success: true };
   } catch (err) {
+    console.error("createAdminDoctor error:", err);
     return { success: false, error: err.message };
   }
 }
@@ -109,11 +133,42 @@ export async function updateAdminDoctor(id, payload) {
   try {
     await checkAdminAccess();
     const supabase = getAdminClient();
-    const { error } = await supabase.from('doctores').update(payload).eq('id', id);
-    if (error) throw error;
+    
+    // Extraemos cliente_ids del payload
+    const { cliente_ids, ...doctorData } = payload;
+
+    // Actualizar campos del doctor
+    const { error: docError } = await supabase
+      .from('doctores')
+      .update(doctorData)
+      .eq('id', id);
+
+    if (docError) throw docError;
+
+    // Eliminar asociaciones actuales en la tabla intermedia
+    const { error: delError } = await supabase
+      .from('doctor_clinica')
+      .delete()
+      .eq('doctor_id', id);
+      
+    if (delError) throw delError;
+
+    // Insertar nuevas asociaciones
+    if (cliente_ids && cliente_ids.length > 0) {
+      const links = cliente_ids.map(cId => ({
+        doctor_id: id,
+        cliente_id: parseInt(cId)
+      }));
+      const { error: linkError } = await supabase
+        .from('doctor_clinica')
+        .insert(links);
+      if (linkError) throw linkError;
+    }
+
     revalidatePath('/admin/crm');
     return { success: true };
   } catch (err) {
+    console.error("updateAdminDoctor error:", err);
     return { success: false, error: err.message };
   }
 }

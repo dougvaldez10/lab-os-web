@@ -82,18 +82,19 @@ export async function createNewCase(formData) {
 
     const fecha_ingreso = new Date().toISOString().split('T')[0];
 
-    // Obtener nombre del doctor y ID de clÃƒÂ­nica desde la tabla doctores
+    // Obtener nombre del doctor y ID de clínica desde la tabla intermedia doctor_clinica
     let doctorNombre  = doctor || '';
     let db_cliente_id = null;
     if (form_doctor_id) {
-      const { data: docData } = await supabase
-        .from('doctores')
-        .select('trato, nombre, apellido, cliente_id')
+      const { data: linkData } = await supabase
+        .from('doctor_clinica')
+        .select('cliente_id, doctores(trato, nombre, apellido)')
         .eq('id', form_doctor_id)
         .single();
-      if (docData) {
-        doctorNombre  = `${docData.trato || 'Dr.'} ${docData.nombre} ${docData.apellido || ''}`.trim();
-        db_cliente_id = docData.cliente_id;
+      if (linkData) {
+        const doc = linkData.doctores;
+        doctorNombre  = `${doc?.trato || 'Dr.'} ${doc?.nombre || ''} ${doc?.apellido || ''}`.trim();
+        db_cliente_id = linkData.cliente_id;
       }
     }
 

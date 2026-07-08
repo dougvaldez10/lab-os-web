@@ -61,12 +61,13 @@ export default function AdminCRM() {
 
   const openModal = (item = null) => {
     if (item) {
-      setEditingItem({ ...item, isNew: false });
+      const clientIds = item.doctor_clinica ? item.doctor_clinica.map(dc => dc.cliente_id) : [];
+      setEditingItem({ ...item, cliente_ids: clientIds, isNew: false });
     } else {
       if (activeTab === "clinicas") {
         setEditingItem({ isNew: true, nombre: "", tel_fijo: "", email: "", direccion: "" });
       } else {
-        setEditingItem({ isNew: true, trato: "Dr.", nombre: "", apellido: "", cliente_id: "", telefono: "", email: "" });
+        setEditingItem({ isNew: true, trato: "Dr.", nombre: "", apellido: "", cliente_ids: [], telefono: "", email: "" });
       }
     }
   };
@@ -91,7 +92,7 @@ export default function AdminCRM() {
         trato: editingItem.trato, 
         nombre: editingItem.nombre, 
         apellido: editingItem.apellido, 
-        cliente_id: editingItem.cliente_id || null, 
+        cliente_ids: editingItem.cliente_ids || [], 
         telefono: editingItem.telefono, 
         email: editingItem.email 
       };
@@ -191,7 +192,9 @@ export default function AdminCRM() {
              <div className="absolute bottom-0 left-[-30vw] right-[-30vw] h-[1px] bg-gradient-to-r from-transparent via-slate-400/70 to-transparent pointer-events-none z-0"></div>
              <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_100px] gap-4 py-3 items-center hover:bg-slate-50/50 transition-colors relative z-10 text-sm">
                 <div className="font-bold text-slate-800 px-4">{d.trato} {d.nombre} {d.apellido}</div>
-                <div className="text-slate-600 px-4">{d.clientes?.nombre || "Sin Clínica"}</div>
+                <div className="text-slate-600 px-4">
+                  {(d.doctor_clinica || []).map(dc => dc.clientes?.nombre).filter(Boolean).join(", ") || "Sin Clínica"}
+                </div>
                 <div className="text-slate-600 px-4">{d.telefono}</div>
                 <div className="text-slate-600 px-4">{d.email}</div>
                 <div className="text-right px-4">
@@ -260,11 +263,30 @@ export default function AdminCRM() {
                     <input type="text" value={editingItem.apellido || ""} onChange={e => setEditingItem({...editingItem, apellido: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Clínica a la que pertenece</label>
-                    <select value={editingItem.cliente_id || ""} onChange={e => setEditingItem({...editingItem, cliente_id: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none">
-                      <option value="">-- Sin Clínica --</option>
-                      {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                    </select>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Clínicas a las que pertenece</label>
+                    <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-xl p-3 space-y-2 bg-white">
+                      {clientes.map(c => {
+                        const isChecked = (editingItem.cliente_ids || []).includes(c.id);
+                        return (
+                          <label key={c.id} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer hover:bg-slate-50 p-1 rounded-lg transition-colors">
+                            <input 
+                              type="checkbox" 
+                              checked={isChecked}
+                              onChange={(e) => {
+                                const ids = editingItem.cliente_ids || [];
+                                if (e.target.checked) {
+                                  setEditingItem({ ...editingItem, cliente_ids: [...ids, c.id] });
+                                } else {
+                                  setEditingItem({ ...editingItem, cliente_ids: ids.filter(id => id !== c.id) });
+                                }
+                              }}
+                              className="rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                            />
+                            <span>{c.nombre}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
