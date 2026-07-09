@@ -93,7 +93,7 @@ export async function createNewCase(formData) {
         .single();
       if (linkData) {
         const doc = linkData.doctores;
-        doctorNombre  = `${doc?.trato || 'Dr.'} ${doc?.nombre || ''} ${doc?.apellido || ''}`.trim();
+        doctorNombre  = `${doc?.trato || 'Dr.'} ${doc?.nombre || ''} ${doc?.apellido || ''}`.replace(/\s+/g, ' ').trim();
         db_cliente_id = linkData.cliente_id;
       }
     }

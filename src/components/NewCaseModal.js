@@ -13,8 +13,10 @@ const ClientSelect = ({ clients, selected, onChange }) => {
   const [focusedIndex, setFocusedIndex] = useState(-1);
   
   const filtered = clients.filter(c => {
-     const term = search.toLowerCase();
-     return (c.nombre?.toLowerCase().includes(term) || c.nombre_dentista?.toLowerCase().includes(term));
+     const term = search.trim().toLowerCase().replace(/\s+/g, ' ');
+     const cleanName = (c.nombre_dentista || '').toLowerCase().replace(/\s+/g, ' ');
+     const cleanClinic = (c.nombre || '').toLowerCase().replace(/\s+/g, ' ');
+     return (cleanClinic.includes(term) || cleanName.includes(term));
   });
 
   useEffect(() => {

@@ -100,6 +100,11 @@ export async function createAdminDoctor(payload) {
     // Extraemos cliente_ids del payload para insertarlos en la tabla intermedia
     const { cliente_ids, ...doctorData } = payload;
 
+    // Normalizar espaciado y recortar espacios en blanco al inicio y al final
+    if (doctorData.nombre) doctorData.nombre = doctorData.nombre.trim();
+    if (doctorData.apellido) doctorData.apellido = doctorData.apellido.trim();
+    if (doctorData.trato) doctorData.trato = doctorData.trato.trim();
+
     // Insertar doctor en la tabla doctores
     const { data: insertedDoctor, error: docError } = await supabase
       .from('doctores')
@@ -136,6 +141,11 @@ export async function updateAdminDoctor(id, payload) {
     
     // Extraemos cliente_ids del payload
     const { cliente_ids, ...doctorData } = payload;
+
+    // Normalizar espaciado y recortar espacios en blanco al inicio y al final
+    if (doctorData.nombre) doctorData.nombre = doctorData.nombre.trim();
+    if (doctorData.apellido) doctorData.apellido = doctorData.apellido.trim();
+    if (doctorData.trato) doctorData.trato = doctorData.trato.trim();
 
     // Actualizar campos del doctor
     const { error: docError } = await supabase

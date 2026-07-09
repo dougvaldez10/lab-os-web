@@ -24,7 +24,7 @@ export async function getClients() {
         id: link.id, // Usamos el ID de la tabla intermedia
         doctor_id: link.doctor_id,
         cliente_id: link.cliente_id,
-        nombre_dentista: `${doc?.trato || 'Dr.'} ${doc?.nombre || ''} ${doc?.apellido || ''}`.trim(),
+        nombre_dentista: `${doc?.trato || 'Dr.'} ${doc?.nombre || ''} ${doc?.apellido || ''}`.replace(/\s+/g, ' ').trim(),
         nombre: cli?.nombre || 'Sin Clínica'
       };
     });
