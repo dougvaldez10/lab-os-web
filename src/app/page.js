@@ -49,9 +49,9 @@ const getUrgency = (fecha) => {
     }
     
     const diff = differenceInBusinessDays(deliveryDate, today);
-    if (diff <= 2) return { level: 'urgente', badge: 'URGENTE', days: diff };
-    if (diff <= 4) return { level: 'muy_pronto', badge: 'MUY PRONTO', days: diff };
-    if (diff <= 6) return { level: 'proximo', badge: 'PRÓXIMO', days: diff };
+    if (diff <= 1) return { level: 'urgente', badge: 'URGENTE', days: diff };
+    if (diff <= 3) return { level: 'muy_pronto', badge: 'MUY PRONTO', days: diff };
+    if (diff <= 5) return { level: 'proximo', badge: 'PRÓXIMO', days: diff };
     return { level: 'normal', badge: '', days: diff };
   } catch(e) { return null; }
 };
@@ -1163,11 +1163,11 @@ export default function Home() {
                    const isCaseActive = (c) => c.status && c.status !== 'Pendiente';
 
                    const expandedVisibleCases = groupCases.filter(c => 
-                       isCaseActive(c) || (c.urgencyObj && (c.urgencyObj.days <= 2 || c.urgencyObj.level === 'atrasado'))
+                       isCaseActive(c) || (c.urgencyObj && (c.urgencyObj.days <= 1 || c.urgencyObj.level === 'atrasado'))
                    );
                    
                    const stackedCases = groupCases.filter(c => 
-                       !isCaseActive(c) && (!c.urgencyObj || c.urgencyObj.days > 2)
+                       !isCaseActive(c) && (!c.urgencyObj || c.urgencyObj.days > 1)
                    );
 
                    const renderCaseList = (caseArray, isStacked = false) => {
