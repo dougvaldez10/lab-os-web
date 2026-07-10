@@ -48,16 +48,18 @@ export default function MetricasPage() {
           const cId = c.cliente_id;
           const nombre = c.clientes?.nombre || "Desconocido";
           const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
+          const totalCaso = Number(c.total_caso) || 0;
           
           const pagoRecibido = (c.total_caso || 0) - (c.saldo_pendiente || 0);
           totalRecaudado += pagoRecibido;
           totalPorCobrar += (c.saldo_pendiente || 0);
 
           if (!clinicasMap[cId]) {
-            clinicasMap[cId] = { id: cId, nombre, casos: 0, unidades: 0, anterior: 0 };
+            clinicasMap[cId] = { id: cId, nombre, casos: 0, unidades: 0, ingresos: 0, anterior: 0 };
           }
           clinicasMap[cId].casos += 1;
           clinicasMap[cId].unidades += unidades;
+          clinicasMap[cId].ingresos += totalCaso;
         });
 
         // Procesar Clínicas Anteriores
@@ -69,8 +71,8 @@ export default function MetricasPage() {
           }
         });
 
-        // Convertir a array, ordenar y calcular %
-        const topClinicasArr = Object.values(clinicasMap).sort((a, b) => b.unidades - a.unidades).map(c => {
+        // Convertir a array, ordenar por ingresos y calcular %
+        const topClinicasArr = Object.values(clinicasMap).sort((a, b) => b.ingresos - a.ingresos).map(c => {
           let diff = 0;
           if (c.anterior === 0 && c.unidades > 0) diff = 100;
           else if (c.anterior > 0) diff = ((c.unidades - c.anterior) / c.anterior) * 100;
@@ -85,15 +87,18 @@ export default function MetricasPage() {
         const clinicasColors = ["#10B981", "#3B82F6", "#6366F1", "#8B5CF6", "#EC4899", "#F43F5E"];
         const cChartData = top6Clinicas.map((c, i) => ({
           name: c.nombre,
-          value: c.unidades,
+          value: c.ingresos,
+          unidades: c.unidades,
           color: clinicasColors[i % clinicasColors.length]
         }));
         if (restClinicas.length > 0) {
+          const restIngresos = restClinicas.reduce((sum, c) => sum + c.ingresos, 0);
           const restUnidades = restClinicas.reduce((sum, c) => sum + c.unidades, 0);
-          if (restUnidades > 0) {
+          if (restIngresos > 0) {
             cChartData.push({
               name: `Otros (${restClinicas.length} más...)`,
-              value: restUnidades,
+              value: restIngresos,
+              unidades: restUnidades,
               color: "#CBD5E1"
             });
           }
@@ -105,12 +110,14 @@ export default function MetricasPage() {
         (casosActuales || []).forEach(c => {
           const docName = c.doctor || "Sin doctor asignado";
           const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
+          const totalCaso = Number(c.total_caso) || 0;
           
-          if (!doctoresMap[docName]) doctoresMap[docName] = { nombre: docName, casos: 0, unidades: 0 };
+          if (!doctoresMap[docName]) doctoresMap[docName] = { nombre: docName, casos: 0, unidades: 0, ingresos: 0 };
           doctoresMap[docName].casos += 1;
           doctoresMap[docName].unidades += unidades;
+          doctoresMap[docName].ingresos += totalCaso;
         });
-        const topDoctoresArr = Object.values(doctoresMap).sort((a, b) => b.unidades - a.unidades);
+        const topDoctoresArr = Object.values(doctoresMap).sort((a, b) => b.ingresos - a.ingresos);
         setTopDoctores(topDoctoresArr);
 
         // Preparar gráfico de Doctores (Top 6 + Otros)
@@ -119,15 +126,18 @@ export default function MetricasPage() {
         const doctoresColors = ["#10B981", "#8B5CF6", "#3B82F6", "#EF4444", "#F59E0B", "#EC4899"];
         const dChartData = top6Doctores.map((d, i) => ({
           name: d.nombre,
-          value: d.unidades,
+          value: d.ingresos,
+          unidades: d.unidades,
           color: doctoresColors[i % doctoresColors.length]
         }));
         if (restDoctores.length > 0) {
+          const restIngresos = restDoctores.reduce((sum, d) => sum + d.ingresos, 0);
           const restUnidades = restDoctores.reduce((sum, d) => sum + d.unidades, 0);
-          if (restUnidades > 0) {
+          if (restIngresos > 0) {
             dChartData.push({
               name: `Otros (${restDoctores.length} más...)`,
-              value: restUnidades,
+              value: restIngresos,
+              unidades: restUnidades,
               color: "#CBD5E1"
             });
           }
@@ -211,7 +221,7 @@ export default function MetricasPage() {
                 </div>
               </div>
               <div className="p-4 flex-1">
-                <MaterialChart data={clinicasChartData} emptyMessage="Sin datos de clínicas en el periodo" showLegend={false} />
+                <MaterialChart data={clinicasChartData} emptyMessage="Sin datos de clínicas en el periodo" showLegend={false} valueType="currency" />
                 
                 {/* Custom Interactive Legend */}
                 {clinicasChartData.length > 0 && (
@@ -219,12 +229,16 @@ export default function MetricasPage() {
                     {clinicasChartData
                       .slice(0, clinicasExpanded ? clinicasChartData.length : 3)
                       .map((item, index) => (
-                        <div key={index} className="flex items-center justify-between text-xs py-1.5 px-2 hover:bg-slate-50 rounded-lg transition-colors">
+                        <div 
+                          key={index} 
+                          title={`Ingresos: ${formatCurrency(item.value)}`}
+                          className="flex items-center justify-between text-xs py-1.5 px-2 hover:bg-slate-50 rounded-lg transition-colors cursor-help"
+                        >
                           <div className="flex items-center gap-2 overflow-hidden">
                             <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }}></span>
                             <span className="text-slate-600 font-semibold truncate">{item.name}</span>
                           </div>
-                          <span className="text-slate-900 font-bold flex-shrink-0">{item.value} u.</span>
+                          <span className="text-slate-900 font-bold flex-shrink-0">{item.unidades} u.</span>
                         </div>
                       ))}
 
@@ -261,7 +275,7 @@ export default function MetricasPage() {
                 </div>
               </div>
               <div className="p-4 flex-1">
-                <MaterialChart data={doctoresChartData} emptyMessage="Sin datos de doctores en el periodo" showLegend={false} />
+                <MaterialChart data={doctoresChartData} emptyMessage="Sin datos de doctores en el periodo" showLegend={false} valueType="currency" />
                 
                 {/* Custom Interactive Legend */}
                 {doctoresChartData.length > 0 && (
@@ -269,12 +283,16 @@ export default function MetricasPage() {
                     {doctoresChartData
                       .slice(0, doctoresExpanded ? doctoresChartData.length : 3)
                       .map((item, index) => (
-                        <div key={index} className="flex items-center justify-between text-xs py-1.5 px-2 hover:bg-slate-50 rounded-lg transition-colors">
+                        <div 
+                          key={index} 
+                          title={`Ingresos: ${formatCurrency(item.value)}`}
+                          className="flex items-center justify-between text-xs py-1.5 px-2 hover:bg-slate-50 rounded-lg transition-colors cursor-help"
+                        >
                           <div className="flex items-center gap-2 overflow-hidden">
                             <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }}></span>
                             <span className="text-slate-600 font-semibold truncate">{item.name}</span>
                           </div>
-                          <span className="text-slate-900 font-bold flex-shrink-0">{item.value} u.</span>
+                          <span className="text-slate-900 font-bold flex-shrink-0">{item.unidades} u.</span>
                         </div>
                       ))}
 
