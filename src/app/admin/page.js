@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Edit, Trash2, Search, RefreshCw, ClipboardList, X, Save, Plus, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { Edit, Trash2, Printer, Search, RefreshCw, ClipboardList, X, Save, Plus, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { updateAdminCase, deleteAdminCase } from "@/app/actions/admin-cases";
 import { getClients, getAllClinics } from "@/app/actions/clients";
@@ -56,7 +56,7 @@ export default function AdminBoard() {
   }, []);
 
   const handleDelete = async (id, codigo) => {
-    if (!window.confirm(`┬┐Estís seguro de que deseas eliminar permanentemente el caso ${codigo}? Esta acción no se puede deshacer.`)) {
+    if (!window.confirm(`¿Está seguro de que deseas eliminar permanentemente el caso ${codigo}? Esta acción no se puede deshacer.`)) {
       return;
     }
     const toastId = toast.loading("Eliminando caso...");
@@ -67,6 +67,158 @@ export default function AdminBoard() {
     } else {
       toast.error(res.error || "Error al eliminar", { id: toastId });
     }
+  };
+
+  const handlePrintTicket = (c) => {
+    const clinicName = clinicas.find(cl => cl.id === c.cliente_id)?.nombre || "Desconocido";
+    const printWindow = window.open("", "_blank", "width=600,height=800");
+    if (!printWindow) {
+      toast.error("El bloqueador de popups impidió abrir la ventana de impresión.");
+      return;
+    }
+
+    const itemsHtml = (c.items || []).map(item => `
+      <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed #000;">
+        <div style="font-weight: bold; font-size: 13px;">
+          ${item.producto} (${item.categoria || 'N/A'})
+        </div>
+        <div style="font-size: 12px; margin-top: 2px;">
+          Unidades: ${item.unidades} u. ${item.dientes ? `| Piezas: ${item.dientes}` : ''}
+        </div>
+      </div>
+    `).join("");
+
+    const formatFechaPrint = (fecha, hora) => {
+      if (!fecha) return '—';
+      const [y, m, d] = fecha.split('-');
+      const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      const mes = meses[parseInt(m, 10) - 1] || m;
+      const horaStr = hora ? ` a las ${hora.slice(0,5)}` : '';
+      return `${d}/${mes}/${y}${horaStr}`;
+    };
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Orden de Trabajo #${c.id}</title>
+        <meta charset="utf-8" />
+        <style>
+          @page {
+            margin: 0;
+          }
+          body {
+            width: 76mm;
+            margin: 0;
+            padding: 5mm 3mm;
+            font-family: Arial, sans-serif;
+            color: #000;
+            background-color: #fff;
+            font-size: 13px;
+            line-height: 1.4;
+          }
+          .title-paciente {
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 0 0 4px 0;
+          }
+          .title-folio {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+            border-bottom: 2px solid #000;
+            padding-bottom: 6px;
+          }
+          .info-block {
+            margin-bottom: 12px;
+          }
+          .info-row {
+            margin-bottom: 4px;
+          }
+          .info-label {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 11px;
+            color: #444;
+          }
+          .info-val {
+            font-size: 13px;
+          }
+          .section-title {
+            font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 1px solid #000;
+            padding-bottom: 2px;
+            margin: 15px 0 8px 0;
+            font-size: 12px;
+          }
+          .color-section {
+            margin: 10px 0;
+            font-size: 13px;
+          }
+          .comments-box {
+            font-size: 12px;
+            white-space: pre-wrap;
+            background-color: #fcfcfc;
+            padding: 4px 0;
+          }
+          @media print {
+            body {
+              width: 76mm;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="title-paciente">${c.patient}</div>
+        <div class="title-folio">ORDEN: #${c.id}</div>
+
+        <div class="info-block">
+          <div class="info-row">
+            <span class="info-label">Doctor:</span>
+            <span class="info-val">${c.doctor || '—'}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Clínica:</span>
+            <span class="info-val" style="font-weight: bold;">${clinicName}</span>
+          </div>
+          <div class="info-row" style="margin-top: 8px;">
+            <span class="info-label">F. Entrega:</span>
+            <span class="info-val" style="font-weight: bold; text-decoration: underline;">
+              ${formatFechaPrint(c.fecha_entrega, c.hora_entrega)}
+            </span>
+          </div>
+        </div>
+
+        <div class="section-title">Especificaciones</div>
+        <div>
+          ${itemsHtml || '<div style="font-style: italic; color: #555;">Sin piezas especificadas</div>'}
+        </div>
+
+        ${c.color ? `
+        <div class="color-section">
+          <strong>COLOR:</strong> <span style="font-size: 14px; font-weight: bold; border: 1px solid #000; padding: 1px 6px;">${c.color}</span>
+        </div>
+        ` : ''}
+
+        <div class="section-title">Observaciones</div>
+        <div class="comments-box">${c.comentarios || 'Ninguna'}</div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() {
+              window.close();
+            }, 500);
+          }
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
   const handleEdit = async (c) => {
@@ -332,7 +484,7 @@ export default function AdminBoard() {
           </div>
         }
         tableHeader={
-          <div className="grid grid-cols-[1fr_2fr_1.5fr_1.5fr_1fr_1fr_100px] gap-4 px-4 py-3 text-slate-700">
+          <div className="grid grid-cols-[1fr_2fr_1.5fr_1.5fr_1fr_1fr_130px] gap-4 px-4 py-3 text-slate-700">
             <SortableHeader label="Orden" sortKey="id" />
             <SortableHeader label="Paciente" sortKey="patient" />
             <SortableHeader label="Doctor" sortKey="doctor" />
@@ -354,7 +506,7 @@ export default function AdminBoard() {
               <div className="absolute bottom-0 left-[-30vw] right-[-30vw] h-[1px] bg-gradient-to-r from-transparent via-slate-400/40 to-transparent pointer-events-none z-0"></div>
               {/* Estela dorada al hacer hover con delay de apagado para efecto onda */}
               <div className="absolute bottom-0 left-[-30vw] right-[-30vw] h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent pointer-events-none z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-[800ms] group-hover:duration-[50ms] ease-out"></div>
-              <div className="grid grid-cols-[1fr_2fr_1.5fr_1.5fr_1fr_1fr_100px] gap-4 py-3 items-center hover:bg-slate-50/50 transition-colors relative z-10 text-sm">
+              <div className="grid grid-cols-[1fr_2fr_1.5fr_1.5fr_1fr_1fr_130px] gap-4 py-3 items-center hover:bg-slate-50/50 transition-colors relative z-10 text-sm">
                 <div className="font-medium text-slate-900 px-4">#{c.id}</div>
                 <div className="text-slate-700 font-bold px-4 truncate">{c.patient}</div>
                 <div className="text-slate-600 px-4 truncate">{c.doctor}</div>
@@ -369,9 +521,10 @@ export default function AdminBoard() {
                   </span>
                 </div>
                 <div className="text-slate-600 px-4">{formatFecha(c.fecha_entrega, c.hora_entrega)}</div>
-                <div className="text-right px-4">
-                  <button onClick={() => handleEdit(c)} className="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg mr-2"><Edit size={16} /></button>
-                  <button onClick={() => handleDelete(c.internal_id, c.id)} className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg"><Trash2 size={16} /></button>
+                <div className="text-right px-4 flex items-center justify-end gap-1">
+                  <button onClick={() => handlePrintTicket(c)} className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg" title="Imprimir ticket"><Printer size={16} /></button>
+                  <button onClick={() => handleEdit(c)} className="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg" title="Editar"><Edit size={16} /></button>
+                  <button onClick={() => handleDelete(c.internal_id, c.id)} className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg" title="Eliminar"><Trash2 size={16} /></button>
                 </div>
               </div>
             </div>

@@ -287,7 +287,7 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
     try {
       const result = await createNewCase(formData);
       if (result.success) {
-        toast.success(`Registrado con éxito. Pasa a: ${result.deptoAsignado}.`, { id: loadingToast });
+        toast.success(`Caso #${result.codigo} registrado con éxito. Pasa a: ${result.deptoAsignado}.`, { id: loadingToast });
         setItems([]); setSelectedTeeth([]); setMaterial(''); setProducto(''); setSubtipo(''); setSelectedClient(null);
         onActionComplete();
         onClose();
@@ -339,7 +339,7 @@ export default function NewCaseModal({ isOpen, onClose, clients, onActionComplet
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                <div className="space-y-1.5">
                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">No. Orden</label>
-                 <input type="text" name="codigo" required placeholder="Ej. A-1234" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-sm font-medium shadow-sm"/>
+                 <input type="text" name="codigo" placeholder="Ej. A-1234 (Vacío para auto-generar)" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none text-sm font-medium shadow-sm"/>
                </div>
                <div className="space-y-1.5">
                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Color</label>

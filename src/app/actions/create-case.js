@@ -43,25 +43,47 @@ export async function createNewCase(formData) {
     const user = await getCurrentUserFromCookie();
 
     // Obtener valores del form
-    const form_doctor_id = formData.get('cliente_id'); // UI envÃƒÂ­a el ID del Doctor aquÃƒÂ­
+    const form_doctor_id = formData.get('cliente_id'); // UI envía el ID del Doctor aquí
     const paciente       = formData.get('paciente');
-    const codigo         = formData.get('codigo');
+    let codigo           = formData.get('codigo')?.trim();
     const color          = formData.get('color');
     const doctor         = formData.get('doctor');
-    const tipo           = formData.get('tipo'); // 'AnÃƒ¡logo' o 'Digital'
+    const tipo           = formData.get('tipo'); // 'Análogo' o 'Digital'
     const fecha_entrega  = formData.get('fecha_entrega');
     const hora_entrega   = formData.get('hora_entrega');
     const comentarios    = formData.get('comentarios');
 
-    // Parseo de ÃƒÂ­tems del odontograma
+    // Parseo de ítems del odontograma
     let items = [];
     try {
       items = JSON.parse(formData.get('items') || '[]');
     } catch (e) {}
 
-    // Validaciones bÃƒ¡sicas
-    if (!form_doctor_id || !paciente || !tipo || !codigo) {
-      return { success: false, error: "Faltan campos (Cliente, Paciente, Tipo, No. Orden)." };
+    // Validaciones básicas
+    if (!form_doctor_id || !paciente || !tipo) {
+      return { success: false, error: "Faltan campos obligatorios (Cliente, Paciente, Tipo)." };
+    }
+
+    // Auto-generación de folio si viene vacío
+    if (!codigo) {
+      const { data: existingCodes, error: codesErr } = await supabase
+        .from('casos_master')
+        .select('codigo');
+
+      let nextNum = 1;
+      if (!codesErr && existingCodes && existingCodes.length > 0) {
+        const usedInts = new Set();
+        existingCodes.forEach(c => {
+          const val = parseInt(c.codigo, 10);
+          if (!isNaN(val) && val > 0) {
+            usedInts.add(val);
+          }
+        });
+        while (usedInts.has(nextNum)) {
+          nextNum++;
+        }
+      }
+      codigo = String(nextNum);
     }
 
     // Auto-enrutamiento inicial o override
@@ -194,7 +216,8 @@ export async function createNewCase(formData) {
     return {
       success: true,
       insertedId:    insertedData.id,
-      deptoAsignado: depto_actual
+      deptoAsignado: depto_actual,
+      codigo
     };
 
   } catch (error) {
