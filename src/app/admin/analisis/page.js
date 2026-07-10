@@ -7,9 +7,9 @@ import {
   Layers, 
   TrendingUp, 
   TrendingDown, 
-  DollarSign, 
   Minus,
-  Wallet
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { getMetricsData } from "@/app/actions/admin-cases";
 import MaterialChart from "./MaterialChart";
@@ -23,6 +23,8 @@ export default function MetricasPage() {
   const [topDoctores, setTopDoctores] = useState([]);
   const [clinicasChartData, setClinicasChartData] = useState([]);
   const [doctoresChartData, setDoctoresChartData] = useState([]);
+  const [clinicasExpanded, setClinicasExpanded] = useState(false);
+  const [doctoresExpanded, setDoctoresExpanded] = useState(false);
   const [materialData, setMaterialData] = useState([]);
   const [resumenFinanciero, setResumenFinanciero] = useState({ recaudado: 0, porCobrar: 0 });
 
@@ -77,11 +79,11 @@ export default function MetricasPage() {
         setTopClinicas(topClinicasArr);
         setResumenFinanciero({ recaudado: totalRecaudado, porCobrar: totalPorCobrar });
 
-        // Preparar gráfico de Clínicas (Top 5 + Otras)
-        const top5Clinicas = topClinicasArr.slice(0, 5);
-        const restClinicas = topClinicasArr.slice(5);
-        const clinicasColors = ["#3B82F6", "#10B981", "#6366F1", "#8B5CF6", "#EC4899"];
-        const cChartData = top5Clinicas.map((c, i) => ({
+        // Preparar gráfico de Clínicas (Top 6 + Otras)
+        const top6Clinicas = topClinicasArr.slice(0, 6);
+        const restClinicas = topClinicasArr.slice(6);
+        const clinicasColors = ["#10B981", "#3B82F6", "#6366F1", "#8B5CF6", "#EC4899", "#F43F5E"];
+        const cChartData = top6Clinicas.map((c, i) => ({
           name: c.nombre,
           value: c.unidades,
           color: clinicasColors[i % clinicasColors.length]
@@ -90,7 +92,7 @@ export default function MetricasPage() {
           const restUnidades = restClinicas.reduce((sum, c) => sum + c.unidades, 0);
           if (restUnidades > 0) {
             cChartData.push({
-              name: "Otras",
+              name: `Otros (${restClinicas.length} más...)`,
               value: restUnidades,
               color: "#CBD5E1"
             });
@@ -111,11 +113,11 @@ export default function MetricasPage() {
         const topDoctoresArr = Object.values(doctoresMap).sort((a, b) => b.unidades - a.unidades);
         setTopDoctores(topDoctoresArr);
 
-        // Preparar gráfico de Doctores (Top 5 + Otros)
-        const top5Doctores = topDoctoresArr.slice(0, 5);
-        const restDoctores = topDoctoresArr.slice(5);
-        const doctoresColors = ["#F59E0B", "#EF4444", "#10B981", "#8B5CF6", "#0EA5E9"];
-        const dChartData = top5Doctores.map((d, i) => ({
+        // Preparar gráfico de Doctores (Top 6 + Otros)
+        const top6Doctores = topDoctoresArr.slice(0, 6);
+        const restDoctores = topDoctoresArr.slice(6);
+        const doctoresColors = ["#10B981", "#8B5CF6", "#3B82F6", "#EF4444", "#F59E0B", "#EC4899"];
+        const dChartData = top6Doctores.map((d, i) => ({
           name: d.nombre,
           value: d.unidades,
           color: doctoresColors[i % doctoresColors.length]
@@ -124,7 +126,7 @@ export default function MetricasPage() {
           const restUnidades = restDoctores.reduce((sum, d) => sum + d.unidades, 0);
           if (restUnidades > 0) {
             dChartData.push({
-              name: "Otros",
+              name: `Otros (${restDoctores.length} más...)`,
               value: restUnidades,
               color: "#CBD5E1"
             });
@@ -196,7 +198,7 @@ export default function MetricasPage() {
       ) : (
         <>
           {/* TOP SECTIONS GRID */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             
             {/* CLÍNICAS */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
@@ -209,7 +211,42 @@ export default function MetricasPage() {
                 </div>
               </div>
               <div className="p-4 flex-1">
-                <MaterialChart data={clinicasChartData} emptyMessage="Sin datos de clínicas en el periodo" />
+                <MaterialChart data={clinicasChartData} emptyMessage="Sin datos de clínicas en el periodo" showLegend={false} />
+                
+                {/* Custom Interactive Legend */}
+                {clinicasChartData.length > 0 && (
+                  <div className="mt-4 space-y-2 border-t border-slate-100 pt-3">
+                    {clinicasChartData
+                      .slice(0, clinicasExpanded ? clinicasChartData.length : 3)
+                      .map((item, index) => (
+                        <div key={index} className="flex items-center justify-between text-xs py-1.5 px-2 hover:bg-slate-50 rounded-lg transition-colors">
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }}></span>
+                            <span className="text-slate-600 font-semibold truncate">{item.name}</span>
+                          </div>
+                          <span className="text-slate-900 font-bold flex-shrink-0">{item.value} u.</span>
+                        </div>
+                      ))}
+
+                    {/* Show toggle button if there are more than 3 items */}
+                    {clinicasChartData.length > 3 && (
+                      <button 
+                        onClick={() => setClinicasExpanded(!clinicasExpanded)}
+                        className="w-full mt-2 py-1.5 text-xs font-bold text-[#D4AF37] hover:text-[#c49f30] flex items-center justify-center gap-1 transition-colors border-t border-slate-100"
+                      >
+                        {clinicasExpanded ? (
+                          <>
+                            Mostrar menos <ChevronUp size={14} />
+                          </>
+                        ) : (
+                          <>
+                            Mostrar más <ChevronDown size={14} />
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -224,7 +261,42 @@ export default function MetricasPage() {
                 </div>
               </div>
               <div className="p-4 flex-1">
-                <MaterialChart data={doctoresChartData} emptyMessage="Sin datos de doctores en el periodo" />
+                <MaterialChart data={doctoresChartData} emptyMessage="Sin datos de doctores en el periodo" showLegend={false} />
+                
+                {/* Custom Interactive Legend */}
+                {doctoresChartData.length > 0 && (
+                  <div className="mt-4 space-y-2 border-t border-slate-100 pt-3">
+                    {doctoresChartData
+                      .slice(0, doctoresExpanded ? doctoresChartData.length : 3)
+                      .map((item, index) => (
+                        <div key={index} className="flex items-center justify-between text-xs py-1.5 px-2 hover:bg-slate-50 rounded-lg transition-colors">
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }}></span>
+                            <span className="text-slate-600 font-semibold truncate">{item.name}</span>
+                          </div>
+                          <span className="text-slate-900 font-bold flex-shrink-0">{item.value} u.</span>
+                        </div>
+                      ))}
+
+                    {/* Show toggle button if there are more than 3 items */}
+                    {doctoresChartData.length > 3 && (
+                      <button 
+                        onClick={() => setDoctoresExpanded(!doctoresExpanded)}
+                        className="w-full mt-2 py-1.5 text-xs font-bold text-[#D4AF37] hover:text-[#c49f30] flex items-center justify-center gap-1 transition-colors border-t border-slate-100"
+                      >
+                        {doctoresExpanded ? (
+                          <>
+                            Mostrar menos <ChevronUp size={14} />
+                          </>
+                        ) : (
+                          <>
+                            Mostrar más <ChevronDown size={14} />
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -239,33 +311,10 @@ export default function MetricasPage() {
                 </div>
               </div>
               <div className="p-4 flex-1">
-                <MaterialChart data={materialData} emptyMessage="No hay datos de materiales en este periodo" />
+                <MaterialChart data={materialData} emptyMessage="No hay datos de materiales en este periodo" showLegend={true} />
               </div>
             </div>
 
-          </div>
-
-          {/* RESUMEN FINANCIERO (Secundario) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-8">
-            <div className="bg-emerald-50 rounded-2xl p-6 border border-emerald-100 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center text-white shadow-sm">
-                <Wallet size={24} />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-emerald-800">Total Recaudado (Periodo)</p>
-                <p className="text-2xl font-black text-emerald-900 mt-1">{formatCurrency(resumenFinanciero.recaudado)}</p>
-              </div>
-            </div>
-            
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-white shadow-sm">
-                <DollarSign size={24} />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-slate-600">Cuentas por Cobrar</p>
-                <p className="text-2xl font-black text-slate-900 mt-1">{formatCurrency(resumenFinanciero.porCobrar)}</p>
-              </div>
-            </div>
           </div>
         </>
       )}
