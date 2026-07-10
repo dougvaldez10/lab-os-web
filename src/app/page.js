@@ -1181,7 +1181,7 @@ export default function Home() {
                           if (c.urgencyObj) {
                             const { level } = c.urgencyObj;
                             if (level === 'urgente') dotColor = 'bg-red-500';
-                            else if (level === 'muy_pronto') dotColor = 'bg-orange-500';
+                            else if (level === 'muy_pronto') dotColor = 'bg-orange-400';
                             else if (level === 'proximo') dotColor = 'bg-yellow-400';
                           }
 
