@@ -329,7 +329,22 @@ export default function MetricasPage() {
                 </div>
               </div>
               <div className="p-4 flex-1">
-                <MaterialChart data={materialData} emptyMessage="No hay datos de materiales en este periodo" showLegend={true} />
+                <MaterialChart data={materialData} emptyMessage="No hay datos de materiales en este periodo" showLegend={false} valueType="units" />
+                
+                {/* Custom Legend */}
+                {materialData.length > 0 && (
+                  <div className="mt-4 space-y-2 border-t border-slate-100 pt-3">
+                    {materialData.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between text-xs py-1.5 px-2 hover:bg-slate-50 rounded-lg transition-colors">
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }}></span>
+                          <span className="text-slate-600 font-semibold truncate">{item.name}</span>
+                        </div>
+                        <span className="text-slate-900 font-bold flex-shrink-0">{item.value} u.</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
