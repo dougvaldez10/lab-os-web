@@ -226,6 +226,7 @@ export async function getMetricsData(timeFilter) {
     const { data: casosActuales, error: errorActual } = await supabase
       .from('casos_master')
       .select('cliente_id, total_caso, saldo_pendiente, tipo, doctor, clientes(nombre), casos_detalle(unidades)')
+      .eq('estado_pago', 'Pagado')
       .gte('fecha_ingreso', isoActualStart)
       .lte('fecha_ingreso', isoActualEnd);
 
@@ -235,6 +236,7 @@ export async function getMetricsData(timeFilter) {
     const { data: casosAnteriores, error: errorAnterior } = await supabase
       .from('casos_master')
       .select('cliente_id, casos_detalle(unidades)')
+      .eq('estado_pago', 'Pagado')
       .gte('fecha_ingreso', isoPrevStart)
       .lte('fecha_ingreso', isoPrevEnd);
 
