@@ -225,8 +225,7 @@ export async function getMetricsData(timeFilter) {
     // 1. TOP CLÍNICAS - Periodo Actual
     const { data: casosActuales, error: errorActual } = await supabase
       .from('casos_master')
-      .select('cliente_id, total_caso, saldo_pendiente, tipo, doctor, clientes(nombre), casos_detalle(unidades)')
-      .eq('estado_pago', 'Pagado')
+      .select('cliente_id, total_caso, saldo_pendiente, tipo, doctor, estado, estado_pago, clientes(nombre), casos_detalle(unidades)')
       .gte('fecha_ingreso', isoActualStart)
       .lte('fecha_ingreso', isoActualEnd);
 
@@ -235,8 +234,7 @@ export async function getMetricsData(timeFilter) {
     // 1b. TOP CLÍNICAS - Periodo Anterior
     const { data: casosAnteriores, error: errorAnterior } = await supabase
       .from('casos_master')
-      .select('cliente_id, casos_detalle(unidades)')
-      .eq('estado_pago', 'Pagado')
+      .select('cliente_id, estado, estado_pago, casos_detalle(unidades)')
       .gte('fecha_ingreso', isoPrevStart)
       .lte('fecha_ingreso', isoPrevEnd);
 

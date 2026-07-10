@@ -39,12 +39,19 @@ export default function MetricasPage() {
         }
         const { casosActuales, casosAnteriores } = res;
 
-        // Procesar Clínicas Actuales
+        // Filtrar casos para Clínicas y Doctores (solo pagados)
+        const casosActualesPagados = (casosActuales || []).filter(c => c.estado_pago === 'Pagado');
+        const casosAnterioresPagados = (casosAnteriores || []).filter(c => c.estado_pago === 'Pagado');
+
+        // Filtrar casos para Materiales (todo excepto cancelados)
+        const casosParaMateriales = (casosActuales || []).filter(c => c.estado !== 'Cancelado');
+
+        // Procesar Clínicas Actuales (solo pagados)
         const clinicasMap = {};
         let totalRecaudado = 0;
         let totalPorCobrar = 0;
 
-        (casosActuales || []).forEach(c => {
+        casosActualesPagados.forEach(c => {
           const cId = c.cliente_id;
           const nombre = c.clientes?.nombre || "Desconocido";
           const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
@@ -62,8 +69,8 @@ export default function MetricasPage() {
           clinicasMap[cId].ingresos += totalCaso;
         });
 
-        // Procesar Clínicas Anteriores
-        (casosAnteriores || []).forEach(c => {
+        // Procesar Clínicas Anteriores (solo pagados)
+        casosAnterioresPagados.forEach(c => {
           const cId = c.cliente_id;
           const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
           if (clinicasMap[cId]) {
@@ -105,9 +112,9 @@ export default function MetricasPage() {
         }
         setClinicasChartData(cChartData);
 
-        // 2. TOP DOCTORES
+        // 2. TOP DOCTORES (solo pagados)
         const doctoresMap = {};
-        (casosActuales || []).forEach(c => {
+        casosActualesPagados.forEach(c => {
           const docName = c.doctor || "Sin doctor asignado";
           const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
           const totalCaso = Number(c.total_caso) || 0;
@@ -144,10 +151,10 @@ export default function MetricasPage() {
         }
         setDoctoresChartData(dChartData);
 
-        // 3. DISTRIBUCIÓN POR ORIGEN (Digital vs Análogo)
+        // 3. DISTRIBUCIÓN POR ORIGEN (Digital vs Análogo) - incluye no pagados y activos
         const tipoCounts = { "Digital": 0, "Análogo": 0, "Otros": 0 };
         
-        (casosActuales || []).forEach(c => {
+        casosParaMateriales.forEach(c => {
           const tipoStr = (c.tipo || "").toLowerCase();
           const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
           
