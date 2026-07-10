@@ -1180,9 +1180,9 @@ export default function Home() {
 
                           if (c.urgencyObj) {
                             const { level } = c.urgencyObj;
-                            if (level === 'urgente') dotColor = 'bg-red-500';
-                            else if (level === 'muy_pronto') dotColor = 'bg-orange-400';
-                            else if (level === 'proximo') dotColor = 'bg-yellow-400';
+                            if (level === 'urgente') dotColor = '#EF4444';
+                            else if (level === 'muy_pronto') dotColor = '#FFB870';
+                            else if (level === 'proximo') dotColor = '#FACC15';
                           }
 
                           if (!shadowClass) {
@@ -1206,8 +1206,8 @@ export default function Home() {
                           return (
                               <li key={c.internal_id} className={`flex flex-col transition-all bg-white/90 backdrop-blur-md rounded-[2rem] mx-4 sm:mx-0 ${marginBottom} overflow-hidden border relative ${shadowClass}`}>
                                 {dotColor && (
-                                  <div className="absolute top-[22px] left-1/2 -translate-x-1/2 pointer-events-none">
-                                    <span className={`block w-2 h-2 rounded-full ${dotColor}`} />
+                                  <div className="absolute top-[21px] left-1/2 -translate-x-1/2 pointer-events-none">
+                                    <span className="block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: dotColor }} />
                                   </div>
                                 )}
                                 <div className="flex items-start px-5 pt-4 pb-3 min-w-0">
