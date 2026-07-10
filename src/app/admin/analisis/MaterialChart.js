@@ -3,11 +3,11 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
-export default function MaterialChart({ data }) {
+export default function MaterialChart({ data, emptyMessage = "Sin datos en el periodo" }) {
   if (!data || data.length === 0) {
     return (
       <div className="h-[250px] flex items-center justify-center text-slate-400 font-medium text-sm">
-        No hay datos de materiales en este periodo
+        {emptyMessage}
       </div>
     );
   }

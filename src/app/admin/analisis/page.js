@@ -21,6 +21,8 @@ export default function MetricasPage() {
   // States para datos
   const [topClinicas, setTopClinicas] = useState([]);
   const [topDoctores, setTopDoctores] = useState([]);
+  const [clinicasChartData, setClinicasChartData] = useState([]);
+  const [doctoresChartData, setDoctoresChartData] = useState([]);
   const [materialData, setMaterialData] = useState([]);
   const [resumenFinanciero, setResumenFinanciero] = useState({ recaudado: 0, porCobrar: 0 });
 
@@ -75,6 +77,27 @@ export default function MetricasPage() {
         setTopClinicas(topClinicasArr);
         setResumenFinanciero({ recaudado: totalRecaudado, porCobrar: totalPorCobrar });
 
+        // Preparar gráfico de Clínicas (Top 5 + Otras)
+        const top5Clinicas = topClinicasArr.slice(0, 5);
+        const restClinicas = topClinicasArr.slice(5);
+        const clinicasColors = ["#3B82F6", "#10B981", "#6366F1", "#8B5CF6", "#EC4899"];
+        const cChartData = top5Clinicas.map((c, i) => ({
+          name: c.nombre,
+          value: c.unidades,
+          color: clinicasColors[i % clinicasColors.length]
+        }));
+        if (restClinicas.length > 0) {
+          const restUnidades = restClinicas.reduce((sum, c) => sum + c.unidades, 0);
+          if (restUnidades > 0) {
+            cChartData.push({
+              name: "Otras",
+              value: restUnidades,
+              color: "#CBD5E1"
+            });
+          }
+        }
+        setClinicasChartData(cChartData);
+
         // 2. TOP DOCTORES
         const doctoresMap = {};
         (casosActuales || []).forEach(c => {
@@ -87,6 +110,27 @@ export default function MetricasPage() {
         });
         const topDoctoresArr = Object.values(doctoresMap).sort((a, b) => b.unidades - a.unidades);
         setTopDoctores(topDoctoresArr);
+
+        // Preparar gráfico de Doctores (Top 5 + Otros)
+        const top5Doctores = topDoctoresArr.slice(0, 5);
+        const restDoctores = topDoctoresArr.slice(5);
+        const doctoresColors = ["#F59E0B", "#EF4444", "#10B981", "#8B5CF6", "#0EA5E9"];
+        const dChartData = top5Doctores.map((d, i) => ({
+          name: d.nombre,
+          value: d.unidades,
+          color: doctoresColors[i % doctoresColors.length]
+        }));
+        if (restDoctores.length > 0) {
+          const restUnidades = restDoctores.reduce((sum, d) => sum + d.unidades, 0);
+          if (restUnidades > 0) {
+            dChartData.push({
+              name: "Otros",
+              value: restUnidades,
+              color: "#CBD5E1"
+            });
+          }
+        }
+        setDoctoresChartData(dChartData);
 
         // 3. DISTRIBUCIÓN POR ORIGEN (Digital vs Análogo)
         const tipoCounts = { "Digital": 0, "Análogo": 0, "Otros": 0 };
@@ -152,102 +196,53 @@ export default function MetricasPage() {
       ) : (
         <>
           {/* TOP SECTIONS GRID */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
-            {/* TOP CLÍNICAS */}
+            {/* CLÍNICAS */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-              <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
-                  <Building2 size={20} />
+              <div className="p-5 border-b border-slate-100 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
+                  <Building2 size={16} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-800">Top Clínicas</h2>
-                  <p className="text-xs text-slate-500">Por unidades producidas</p>
+                  <h2 className="text-md font-bold text-slate-800">Clínicas</h2>
                 </div>
               </div>
-              <div className="p-0 flex-1">
-                {topClinicas.length === 0 ? (
-                  <div className="p-6 text-center text-slate-400 text-sm">Sin datos en el periodo</div>
-                ) : (
-                  <ul className="divide-y divide-slate-100">
-                    {topClinicas.slice(0, 10).map((cli, i) => (
-                      <li key={cli.id} className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="text-slate-400 font-bold text-sm w-5">{i + 1}.</span>
-                          <div>
-                            <p className="font-bold text-slate-800 text-sm">{cli.nombre}</p>
-                            <p className="text-xs text-slate-500">{cli.casos} casos</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <span className="font-bold text-slate-900 text-sm">{cli.unidades} u.</span>
-                            {cli.diff > 0 ? (
-                              <div className="flex items-center text-emerald-600 text-xs font-bold" title={`+ ${cli.diff.toFixed(1)}% vs anterior`}>
-                                <TrendingUp size={12} className="mr-0.5"/> {Math.abs(cli.diff).toFixed(0)}%
-                              </div>
-                            ) : cli.diff < 0 ? (
-                              <div className="flex items-center text-red-500 text-xs font-bold" title={`- ${Math.abs(cli.diff).toFixed(1)}% vs anterior`}>
-                                <TrendingDown size={12} className="mr-0.5"/> {Math.abs(cli.diff).toFixed(0)}%
-                              </div>
-                            ) : (
-                              <div className="flex items-center text-slate-400 text-xs font-bold" title="Sin cambio">
-                                <Minus size={12} className="mr-0.5"/> 0%
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              <div className="p-4 flex-1">
+                <MaterialChart data={clinicasChartData} emptyMessage="Sin datos de clínicas en el periodo" />
               </div>
             </div>
 
-            {/* RIGHT COLUMN (Doctores + Materiales) */}
-            <div className="flex flex-col gap-6">
-              
-              {/* TOP DOCTORES */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-                <div className="p-5 border-b border-slate-100 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
-                    <UserSquare2 size={16} />
-                  </div>
-                  <h2 className="text-md font-bold text-slate-800">Top Doctores</h2>
+            {/* DOCTORES */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+              <div className="p-5 border-b border-slate-100 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
+                  <UserSquare2 size={16} />
                 </div>
-                <div className="p-0">
-                  {topDoctores.length === 0 ? (
-                    <div className="p-6 text-center text-slate-400 text-sm">Sin datos en el periodo</div>
-                  ) : (
-                    <ul className="divide-y divide-slate-100">
-                      {topDoctores.slice(0, 5).map((doc, i) => (
-                        <li key={i} className="p-3 px-5 hover:bg-slate-50 transition-colors flex items-center justify-between">
-                          <p className="font-bold text-slate-700 text-sm">{doc.nombre}</p>
-                          <div className="text-right">
-                            <span className="font-bold text-slate-900 text-sm">{doc.unidades} u.</span>
-                            <span className="text-xs text-slate-400 ml-2">({doc.casos} casos)</span>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                <div>
+                  <h2 className="text-md font-bold text-slate-800">Doctores</h2>
                 </div>
               </div>
-
-              {/* ORIGEN (Digital vs Analogo) */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col">
-                <div className="p-5 border-b border-slate-100 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37]">
-                    <Layers size={16} />
-                  </div>
-                  <h2 className="text-md font-bold text-slate-800">Distribución Digital vs Análogo</h2>
-                </div>
-                <div className="p-4 flex-1">
-                  <MaterialChart data={materialData} />
-                </div>
+              <div className="p-4 flex-1">
+                <MaterialChart data={doctoresChartData} emptyMessage="Sin datos de doctores en el periodo" />
               </div>
-
             </div>
+
+            {/* DIGITAL VS ANÁLOGO */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+              <div className="p-5 border-b border-slate-100 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37]">
+                  <Layers size={16} />
+                </div>
+                <div>
+                  <h2 className="text-md font-bold text-slate-800">Digital vs Análogo</h2>
+                </div>
+              </div>
+              <div className="p-4 flex-1">
+                <MaterialChart data={materialData} emptyMessage="No hay datos de materiales en este periodo" />
+              </div>
+            </div>
+
           </div>
 
           {/* RESUMEN FINANCIERO (Secundario) */}
