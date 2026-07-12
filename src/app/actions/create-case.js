@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { createCalendarEvent } from '@/lib/googleCalendar';
 
 // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 // Cliente Admin — usa la service role key para bypassear RLS de forma segura.
@@ -164,7 +165,24 @@ export async function createNewCase(formData) {
       }
     });
 
-    // Insertar ÃƒÂ­tems si existen
+    // Crear evento en Google Calendar si tiene fecha de entrega
+    let googleEventId = null;
+    if (newCase.fecha_entrega) {
+      try {
+        const eventDetails = items.map(item => ({
+          producto: item.producto,
+          unidades: item.unidades || 1
+        }));
+        googleEventId = await createCalendarEvent({
+          ...newCase,
+          id: masterId
+        }, eventDetails);
+      } catch (calErr) {
+        console.error("[Google Calendar] Error en createNewCase calendar sync:", calErr);
+      }
+    }
+
+    // Insertar ítems si existen
     if (items.length > 0) {
       // Precios base desde productos
       const { data: dbProductos } = await supabase.from('productos').select('nombre, precio');
@@ -201,14 +219,23 @@ export async function createNewCase(formData) {
       const { error: errorDetalles } = await supabase.from('casos_detalle').insert(detalles);
       if (errorDetalles) {
         console.error("Supabase insert error (detalles):", errorDetalles);
-        // No bloquear: el master ya quedÃƒÂ³ guardado
+        // No bloquear: el master ya quedó guardado
       } else {
-        // Actualizar el master con el total y saldo
-        await supabase.from('casos_master').update({
+        // Actualizar el master con el total, saldo y google_event_id
+        const updatePayload = {
           total_caso: grandTotal,
           saldo_pendiente: grandTotal
-        }).eq('id', masterId);
+        };
+        if (googleEventId) {
+          updatePayload.google_event_id = googleEventId;
+        }
+        await supabase.from('casos_master').update(updatePayload).eq('id', masterId);
       }
+    } else if (googleEventId) {
+      // Si no hay detalles pero sí se creó el evento, guardamos el id en casos_master
+      await supabase.from('casos_master').update({
+        google_event_id: googleEventId
+      }).eq('id', masterId);
     }
 
     revalidatePath('/');

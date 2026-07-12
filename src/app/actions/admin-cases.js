@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { getCurrentUser } from '@/lib/auth';
+import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from '@/lib/googleCalendar';
 
 function getAdminClient() {
   return createClient(
@@ -39,6 +40,47 @@ export async function updateAdminCase(internalId, payload) {
       return { success: false, error: "Error al actualizar el caso." };
     }
 
+    // Sincronizar con Google Calendar
+    try {
+      const { data: updatedCase } = await supabase
+        .from('casos_master')
+        .select('*')
+        .eq('id', internalId)
+        .single();
+
+      if (updatedCase) {
+        const { data: detalles } = await supabase
+          .from('casos_detalle')
+          .select('producto, unidades')
+          .eq('caso_id', internalId);
+
+        const eventDetails = detalles ? detalles.map(d => ({
+          producto: d.producto,
+          unidades: d.unidades || 1
+        })) : [];
+
+        if (updatedCase.google_event_id) {
+          const newEventId = await updateCalendarEvent(updatedCase.google_event_id, updatedCase, eventDetails);
+          if (newEventId !== updatedCase.google_event_id) {
+            await supabase
+              .from('casos_master')
+              .update({ google_event_id: newEventId })
+              .eq('id', internalId);
+          }
+        } else if (updatedCase.fecha_entrega) {
+          const newEventId = await createCalendarEvent(updatedCase, eventDetails);
+          if (newEventId) {
+            await supabase
+              .from('casos_master')
+              .update({ google_event_id: newEventId })
+              .eq('id', internalId);
+          }
+        }
+      }
+    } catch (calErr) {
+      console.error("[Google Calendar] Error al sincronizar en updateAdminCase:", calErr);
+    }
+
     revalidatePath('/');
     revalidatePath('/admin');
     return { success: true };
@@ -55,6 +97,15 @@ export async function deleteAdminCase(internalId) {
 
     // Primero obtener el caso para tener todos sus posibles identificadores
     const { data: casoMaster } = await supabase.from('casos_master').select('*').eq('id', internalId).single();
+    
+    // Eliminar evento de Google Calendar si existe
+    if (casoMaster && casoMaster.google_event_id) {
+      try {
+        await deleteCalendarEvent(casoMaster.google_event_id);
+      } catch (calErr) {
+        console.error("[Google Calendar] Error al eliminar evento por eliminación de caso:", calErr);
+      }
+    }
     
     // Limpieza agresiva de tablas relacionadas
     await supabase.from('casos_detalle').delete().eq('caso_id', internalId);
@@ -107,7 +158,7 @@ export async function cancelarCaso({ caso_id, motivo }) {
     // 1. Obtener información actual del caso
     const { data: caso, error: errCaso } = await supabase
       .from('casos_master')
-      .select('id, codigo, cliente_id, total_caso, saldo_pendiente, estado')
+      .select('id, codigo, cliente_id, total_caso, saldo_pendiente, estado, google_event_id')
       .eq('id', caso_id)
       .single();
 
@@ -155,18 +206,28 @@ export async function cancelarCaso({ caso_id, motivo }) {
       }
     }
 
-    // 4. Actualizar casos_master a Cancelado y limpiar deuda
+    // 4. Actualizar casos_master a Cancelado, limpiar deuda y google_event_id
     // Usamos estado_pago = 'Pendiente' debido al CHECK constraint en la base de datos
     const { error: errUpdate } = await supabase
       .from('casos_master')
       .update({
         estado: 'Cancelado',
         saldo_pendiente: 0,
-        estado_pago: 'Pendiente' 
+        estado_pago: 'Pendiente',
+        google_event_id: null
       })
       .eq('id', caso_id);
 
     if (errUpdate) throw errUpdate;
+
+    // Eliminar el evento en Google Calendar si existe
+    if (caso && caso.google_event_id) {
+      try {
+        await deleteCalendarEvent(caso.google_event_id);
+      } catch (calErr) {
+        console.error("[Google Calendar] Error al eliminar evento por cancelación de caso:", calErr);
+      }
+    }
 
     // 5. Registrar auditoría general
     await supabase

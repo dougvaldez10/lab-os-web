@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { toZonedTime } from 'date-fns-tz';
 import { addMinutes } from 'date-fns';
+import { deleteCalendarEvent, updateCalendarEvent } from '@/lib/googleCalendar';
 
 // Cliente Admin — bypasses RLS. Seguro porque "use server" nunca llega al navegador.
 function getAdminClient() {
@@ -221,7 +222,7 @@ export async function updateCaseState(internalId, action, operatorName = null, m
     // Consulta el estado actual, tipo y metadata de display
     const { data: currentCase, error: fetchError } = await supabase
       .from('casos_master')
-      .select('depto_actual, tipo, codigo, paciente')
+      .select('depto_actual, tipo, codigo, paciente, google_event_id')
       .eq('id', internalId)
       .single();
     
@@ -250,7 +251,14 @@ export async function updateCaseState(internalId, action, operatorName = null, m
         // ── ENVÍO FINAL: caso sale del laboratorio ──
         // Se chequea ANTES del bloque COMPLETE general para evitar que caiga ahí.
         esEnvioFinal = true;
-        updateData = { depto_actual: 'Facturación', estado: 'Finalizado', operador_actual: null, hora_inicio: null };
+        updateData = { depto_actual: 'Facturación', estado: 'Finalizado', operador_actual: null, hora_inicio: null, google_event_id: null };
+        
+        // Eliminar evento de Google Calendar
+        if (currentCase.google_event_id) {
+          deleteCalendarEvent(currentCase.google_event_id).catch(err => {
+            console.error("[Google Calendar] Error al eliminar evento por envío final:", err);
+          });
+        }
 
     } else if (action === 'COMPLETE') {
         let nextDept = "Terminado";
@@ -479,7 +487,7 @@ export async function updateCaseFinancials(caseId, detailsUpdates, discount, app
     // 3. Ajustar saldo_pendiente basado en la diferencia de total_caso
     const { data: master } = await supabase
       .from('casos_master')
-      .select('total_caso, saldo_pendiente')
+      .select('total_caso, saldo_pendiente, google_event_id, codigo, paciente, doctor, fecha_entrega, hora_entrega, comentarios')
       .eq('id', caseId)
       .single();
       
@@ -501,6 +509,27 @@ export async function updateCaseFinancials(caseId, detailsUpdates, discount, app
       .eq('id', caseId);
       
     if (mErr) throw mErr;
+
+    // Actualizar Google Calendar si existe un evento asociado
+    if (master?.google_event_id) {
+      try {
+        const eventDetails = detailsUpdates.map(d => ({
+          producto: d.producto,
+          unidades: d.unidades || 1
+        }));
+        await updateCalendarEvent(master.google_event_id, {
+          id: caseId,
+          codigo: master.codigo,
+          paciente: master.paciente,
+          doctor: master.doctor,
+          fecha_entrega: master.fecha_entrega,
+          hora_entrega: master.hora_entrega,
+          comentarios: master.comentarios
+        }, eventDetails);
+      } catch (calErr) {
+        console.error("[Google Calendar] Error al sincronizar cambios de productos:", calErr);
+      }
+    }
     
     revalidatePath('/admin/facturacion');
     return { success: true };
@@ -543,8 +572,8 @@ export async function updateCaseProductionDetails(caseId, detailsUpdates) {
       }
     }
     
-    // 2. Traer info maestra para mantener descuentos intactos
-    const { data: master } = await supabase.from('casos_master').select('descuento, iva_aplicado, total_caso, saldo_pendiente').eq('id', caseId).single();
+    // 2. Traer info maestra para mantener descuentos intactos y datos de Google Calendar
+    const { data: master } = await supabase.from('casos_master').select('descuento, iva_aplicado, total_caso, saldo_pendiente, google_event_id, codigo, paciente, doctor, fecha_entrega, hora_entrega, comentarios').eq('id', caseId).single();
     const desc = Number(master?.descuento) || 0;
     const applyIva = master?.iva_aplicado || false;
     
@@ -559,6 +588,27 @@ export async function updateCaseProductionDetails(caseId, detailsUpdates) {
     // 3. Actualizar Master
     await supabase.from('casos_master').update({ total_caso: newTotal, saldo_pendiente: newSaldo }).eq('id', caseId);
     
+    // Actualizar Google Calendar si existe un evento asociado
+    if (master?.google_event_id) {
+      try {
+        const eventDetails = detailsUpdates.map(d => ({
+          producto: d.producto,
+          unidades: d.unidades || 1
+        }));
+        await updateCalendarEvent(master.google_event_id, {
+          id: caseId,
+          codigo: master.codigo,
+          paciente: master.paciente,
+          doctor: master.doctor,
+          fecha_entrega: master.fecha_entrega,
+          hora_entrega: master.hora_entrega,
+          comentarios: master.comentarios
+        }, eventDetails);
+      } catch (calErr) {
+        console.error("[Google Calendar] Error al sincronizar cambios de productos:", calErr);
+      }
+    }
+
     revalidatePath('/');
     return { success: true };
   } catch (err) {
