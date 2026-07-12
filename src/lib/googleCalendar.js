@@ -9,8 +9,8 @@ function getGoogleAuthClient() {
   const privateKey = process.env.GOOGLE_PRIVATE_KEY;
   const subject = process.env.GOOGLE_SUBJECT_EMAIL || 'servicio@legiondentallab.com';
 
-  if (!email || !privateKey) {
-    console.warn("Google Calendar integration disabled: missing GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_PRIVATE_KEY");
+  if (!email || !privateKey || privateKey === 'undefined' || privateKey === 'null' || !privateKey.trim()) {
+    console.warn("Google Calendar integration disabled: missing or invalid GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_PRIVATE_KEY");
     return null;
   }
 
@@ -26,13 +26,13 @@ function getGoogleAuthClient() {
   // Log de diagnóstico seguro
   console.log(`[Google Calendar] Auth setup: Email=${email}, Subject=${subject}, KeyLen=${formattedKey.length}, startsWithPEMHeader=${formattedKey.startsWith('-----BEGIN PRIVATE KEY-----')}`);
 
-  return new google.auth.JWT(
-    email,
-    null,
-    formattedKey,
-    ['https://www.googleapis.com/auth/calendar'],
-    subject
-  );
+  // Utilizar el constructor con objeto de opciones para evitar problemas de orden de argumentos en JWT
+  return new google.auth.JWT({
+    email: email,
+    key: formattedKey,
+    scopes: ['https://www.googleapis.com/auth/calendar'],
+    subject: subject
+  });
 }
 
 /**
