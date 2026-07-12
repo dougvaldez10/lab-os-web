@@ -67,7 +67,7 @@ export async function createCalendarEvent(caso, detalles = []) {
     }
     console.log(`[Google Calendar] Token de acceso obtenido con éxito.`);
 
-    const calendar = google.calendar({ version: 'v3', auth });
+    const calendar = google.calendar({ version: 'v3' });
 
     // Construir descripción con materiales y comentarios
     let description = '';
@@ -122,6 +122,7 @@ export async function createCalendarEvent(caso, detalles = []) {
     };
 
     const response = await calendar.events.insert({
+      auth, // Pasar auth de forma explícita en la llamada
       calendarId: 'primary',
       requestBody: event,
     });
@@ -154,7 +155,7 @@ export async function updateCalendarEvent(googleEventId, caso, detalles = []) {
     console.log(`[Google Calendar] Solicitando token de acceso para actualizar...`);
     await auth.getAccessToken();
 
-    const calendar = google.calendar({ version: 'v3', auth });
+    const calendar = google.calendar({ version: 'v3' });
 
     let description = '';
     if (detalles && detalles.length > 0) {
@@ -205,6 +206,7 @@ export async function updateCalendarEvent(googleEventId, caso, detalles = []) {
     };
 
     const response = await calendar.events.patch({
+      auth, // Pasar auth de forma explícita en la llamada
       calendarId: 'primary',
       eventId: googleEventId,
       requestBody: event,
@@ -235,8 +237,9 @@ export async function deleteCalendarEvent(googleEventId) {
     console.log(`[Google Calendar] Solicitando token de acceso para eliminar...`);
     await auth.getAccessToken();
 
-    const calendar = google.calendar({ version: 'v3', auth });
+    const calendar = google.calendar({ version: 'v3' });
     await calendar.events.delete({
+      auth, // Pasar auth de forma explícita en la llamada
       calendarId: 'primary',
       eventId: googleEventId,
     });
