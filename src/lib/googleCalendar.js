@@ -23,6 +23,9 @@ function getGoogleAuthClient() {
     formattedKey = formattedKey.slice(1, -1);
   }
 
+  // Log de diagnóstico seguro
+  console.log(`[Google Calendar] Auth setup: Email=${email}, Subject=${subject}, KeyLen=${formattedKey.length}, startsWithPEMHeader=${formattedKey.startsWith('-----BEGIN PRIVATE KEY-----')}`);
+
   return new google.auth.JWT(
     email,
     null,
@@ -56,6 +59,14 @@ export async function createCalendarEvent(caso, detalles = []) {
   }
 
   try {
+    // Forzar la obtención del token de acceso (genera error detallado si las credenciales fallan)
+    console.log(`[Google Calendar] Solicitando token de acceso...`);
+    const tokenResponse = await auth.getAccessToken();
+    if (!tokenResponse || !tokenResponse.token) {
+      throw new Error("No se pudo obtener un token de acceso válido de Google.");
+    }
+    console.log(`[Google Calendar] Token de acceso obtenido con éxito.`);
+
     const calendar = google.calendar({ version: 'v3', auth });
 
     // Construir descripción con materiales y comentarios
@@ -140,6 +151,9 @@ export async function updateCalendarEvent(googleEventId, caso, detalles = []) {
   }
 
   try {
+    console.log(`[Google Calendar] Solicitando token de acceso para actualizar...`);
+    await auth.getAccessToken();
+
     const calendar = google.calendar({ version: 'v3', auth });
 
     let description = '';
@@ -218,6 +232,9 @@ export async function deleteCalendarEvent(googleEventId) {
   if (!auth) return false;
 
   try {
+    console.log(`[Google Calendar] Solicitando token de acceso para eliminar...`);
+    await auth.getAccessToken();
+
     const calendar = google.calendar({ version: 'v3', auth });
     await calendar.events.delete({
       calendarId: 'primary',
