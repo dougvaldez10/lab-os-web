@@ -14,19 +14,45 @@ function getGoogleAuthClient() {
     return null;
   }
 
-  // Corregir escapes de salto de línea y comillas que Vercel o el .env pudieran introducir
-  let formattedKey = privateKey.replace(/\\n/g, '\n');
+  let formattedKey = privateKey.trim();
+
+  // Remover comillas si existen (común en variables de entorno Vercel)
   if (formattedKey.startsWith('"') && formattedKey.endsWith('"')) {
-    formattedKey = formattedKey.slice(1, -1);
+    formattedKey = formattedKey.slice(1, -1).trim();
   }
   if (formattedKey.startsWith("'") && formattedKey.endsWith("'")) {
-    formattedKey = formattedKey.slice(1, -1);
+    formattedKey = formattedKey.slice(1, -1).trim();
+  }
+
+  // Reemplazar saltos de línea escapados
+  formattedKey = formattedKey.replace(/\\n/g, '\n').trim();
+
+  // Autoreparación de PEM: Si no empieza con la cabecera estándar de llave privada, la corregimos o envolvemos
+  if (!formattedKey.startsWith('-----BEGIN PRIVATE KEY-----')) {
+    const headerIndex = formattedKey.indexOf('-----BEGIN PRIVATE KEY-----');
+    if (headerIndex !== -1) {
+      // Si la cabecera está presente pero tiene caracteres o espacios previos, recortamos desde la cabecera
+      formattedKey = formattedKey.slice(headerIndex).trim();
+    } else {
+      // Si no contiene la cabecera en absoluto, asumimos que se copió el base64 puro y lo envolvemos en formato PEM válido
+      console.log("[Google Calendar] Cabecera PEM ausente. Envolviendo la clave privada en formato PEM estándar.");
+      formattedKey = `-----BEGIN PRIVATE KEY-----\n${formattedKey}\n-----END PRIVATE KEY-----`;
+    }
+  }
+
+  // Asegurar que termine con la cabecera de cierre estándar
+  if (!formattedKey.endsWith('-----END PRIVATE KEY-----')) {
+    const footerIndex = formattedKey.indexOf('-----END PRIVATE KEY-----');
+    if (footerIndex !== -1) {
+      formattedKey = formattedKey.slice(0, footerIndex + '-----END PRIVATE KEY-----'.length).trim();
+    } else {
+      formattedKey = `${formattedKey}\n-----END PRIVATE KEY-----`;
+    }
   }
 
   // Log de diagnóstico seguro
   console.log(`[Google Calendar] Auth setup: Email=${email}, Subject=${subject}, KeyLen=${formattedKey.length}, startsWithPEMHeader=${formattedKey.startsWith('-----BEGIN PRIVATE KEY-----')}`);
 
-  // Utilizar el constructor con objeto de opciones para evitar problemas de orden de argumentos en JWT
   return new google.auth.JWT({
     email: email,
     key: formattedKey,
