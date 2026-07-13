@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
-// Este endpoint renueva el JWT del Ghost User y actualiza el cookie
+// Este endpoint renueva el JWT del Ghost User (autenticador@legion.com) y actualiza la cookie.
 export async function POST() {
   try {
     const supabase = createClient(
