@@ -11,13 +11,18 @@ export async function POST() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
 
+    const email = process.env.GHOST_USER_EMAIL || 'autenticador@legion.com';
+    const password = process.env.GHOST_USER_PASSWORD || '5*E9uU7!4tkUN/H';
+
+    console.log(`[Ghost Refresh] Intentando login. Email=${email}, PasswordLen=${password.length}`);
+
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: process.env.GHOST_USER_EMAIL || 'autenticador@legion.com',
-      password: process.env.GHOST_USER_PASSWORD || '5*E9uU7!4tkUN/H',
+      email,
+      password,
     });
 
     if (authError || !authData?.session) {
-      console.error('Ghost refresh error:', authError);
+      console.error(`[Ghost Refresh Error] Falló login para ${email}:`, authError);
       return Response.json({ error: 'Ghost refresh failed' }, { status: 500 });
     }
 
@@ -29,6 +34,7 @@ export async function POST() {
       path: '/',
     });
 
+    console.log(`[Ghost Refresh] Token renovado con éxito para ${email}`);
     return Response.json({ success: true });
   } catch (err) {
     console.error('Refresh ghost route error:', err);
