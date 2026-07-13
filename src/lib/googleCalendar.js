@@ -110,7 +110,7 @@ export async function createCalendarEvent(caso, detalles = []) {
       description += `\nComentarios:\n${caso.comentarios}\n`;
     }
 
-    const summary = `[${caso.codigo || caso.id}] ${caso.paciente} — ${caso.doctor || 'Sin Doctor'}`;
+    const summary = `${caso.paciente} — ${caso.doctor || 'Sin Doctor'} [${caso.codigo || caso.id}]`;
 
     let start, end;
     if (caso.hora_entrega && caso.hora_entrega.trim()) {
@@ -197,7 +197,7 @@ export async function updateCalendarEvent(googleEventId, caso, detalles = []) {
       description += `\nComentarios:\n${caso.comentarios}\n`;
     }
 
-    const summary = `[${caso.codigo || caso.id}] ${caso.paciente} — ${caso.doctor || 'Sin Doctor'}`;
+    const summary = `${caso.paciente} — ${caso.doctor || 'Sin Doctor'} [${caso.codigo || caso.id}]`;
 
     let start, end;
     if (caso.hora_entrega && caso.hora_entrega.trim()) {
