@@ -95,6 +95,20 @@ export default function BillingPanel() {
   const [historySearchTerm, setHistorySearchTerm] = useState("");
   const [expandedCaseId, setExpandedCaseId] = useState(null);
 
+  // Advanced filters for history
+  const [historyStartDate, setHistoryStartDate] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+  });
+  const [historyEndDate, setHistoryEndDate] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+  });
+  const [historyClienteId, setHistoryClienteId] = useState("");
+  const [historyYear, setHistoryYear] = useState("");
+  const [comprobanteModalUrl, setComprobanteModalUrl] = useState(null);
+  const [abonoComprobante, setAbonoComprobante] = useState(null);
+
   // Modals state
   const [abonoModal, setAbonoModal] = useState(null);
   const [globalAbonoModal, setGlobalAbonoModal] = useState(false);
@@ -146,7 +160,7 @@ export default function BillingPanel() {
       }
     });
     fetchData();
-  }, [activeTab]);
+  }, [activeTab, historyStartDate, historyEndDate, historyClienteId, historyYear]);
 
   // Manejar el boton "Atras" del navegador o mouse
   useEffect(() => {
@@ -201,7 +215,12 @@ export default function BillingPanel() {
           toast.error("Error al cargar cuentas por cobrar: " + res.error);
         }
       } else if (activeTab === "history") {
-        const res = await getBillingHistory();
+        const res = await getBillingHistory({
+          startDate: historyStartDate,
+          endDate: historyEndDate,
+          clienteId: historyClienteId,
+          year: historyYear
+        });
         if (res.success) {
           setHistoryCases(res.cases || []);
         } else {
@@ -220,6 +239,7 @@ export default function BillingPanel() {
     setAbonoModal(c);
     setMontoAbono(String(c.saldo_pendiente));
     setMetodoPago("Transferencia");
+    setAbonoComprobante(null);
     if (currentUser) {
       setAdminName(currentUser.username || "");
     }
@@ -354,16 +374,20 @@ export default function BillingPanel() {
     const toastId = toast.loading("Registrando abono...");
     
     try {
-      const res = await registrarAbono({
-        id_caso: abonoModal.id,
-        monto_abono: abonoVal,
-        metodo_pago: metodoPago,
-        admin_name: adminName || "Admin"
-      });
+      const fd = new FormData();
+      fd.append("id_caso", String(abonoModal.id));
+      fd.append("monto_abono", String(abonoVal));
+      fd.append("metodo_pago", metodoPago);
+      fd.append("admin_name", adminName || "Admin");
+      if (abonoComprobante) {
+        fd.append("comprobante", abonoComprobante);
+      }
 
+      const res = await registrarAbono(fd);
       if (res.success) {
         toast.success("Abono registrado correctamente", { id: toastId });
         setAbonoModal(null);
+        setAbonoComprobante(null);
         // Refrescar datos
         fetchData();
         // Si teníamos una clínica seleccionada en drill-down, actualizar su balance o datos
@@ -899,17 +923,75 @@ export default function BillingPanel() {
     ) : null;
   } else if (activeTab === "history") {
     currentSubHeader = (
-      <div className="mb-4 relative max-w-md shrink-0 pointer-events-auto">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search size={18} className="text-slate-400" />
+      <div className="mb-6 flex flex-col gap-4 pointer-events-auto bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-slate-200/80 shadow-sm w-full">
+        {/* Primera fila: Búsqueda y Año */}
+        <div className="flex flex-col md:flex-row gap-3 w-full">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={18} className="text-slate-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar por folio o paciente..."
+              value={historySearchTerm}
+              onChange={(e) => setHistorySearchTerm(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none shadow-sm transition-all text-slate-700 font-medium"
+            />
+          </div>
+
+          <div className="w-full md:w-48 shrink-0">
+            <select
+              value={historyYear}
+              onChange={(e) => setHistoryYear(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none transition-all text-slate-700 font-semibold cursor-pointer"
+            >
+              <option value="">Todos los años</option>
+              <option value="2026">2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+            </select>
+          </div>
         </div>
-        <input
-          type="text"
-          placeholder="Buscar por folio, paciente o clínica..."
-          value={historySearchTerm}
-          onChange={(e) => setHistorySearchTerm(e.target.value)}
-          className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none shadow-sm transition-all"
-        />
+
+        {/* Segunda fila: Rango de fechas y Cliente */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+          {/* Fecha Inicio */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1">Desde</span>
+            <input
+              type="date"
+              value={historyStartDate}
+              onChange={(e) => setHistoryStartDate(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none shadow-sm text-slate-600 font-semibold"
+            />
+          </div>
+
+          {/* Fecha Fin */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1">Hasta</span>
+            <input
+              type="date"
+              value={historyEndDate}
+              onChange={(e) => setHistoryEndDate(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none shadow-sm text-slate-600 font-semibold"
+            />
+          </div>
+
+          {/* Selector de Cliente */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1">Clínica / Doctor</span>
+            <select
+              value={historyClienteId}
+              onChange={(e) => setHistoryClienteId(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none transition-all text-slate-600 font-semibold cursor-pointer"
+            >
+              <option value="">Todas las clínicas</option>
+              {allClinics.map(cli => (
+                <option key={cli.id} value={cli.id}>{cli.nombre}</option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
     );
     currentTableHeader = (
@@ -1596,6 +1678,18 @@ export default function BillingPanel() {
                                                     <span className="bg-slate-200/80 px-2 py-0.5 rounded text-slate-700 font-bold text-[10px]">
                                                       {p.metodo_pago}
                                                     </span>
+                                                    {p.comprobante_url && (
+                                                      <>
+                                                        <span className="text-slate-300">|</span>
+                                                        <button
+                                                          onClick={() => setComprobanteModalUrl(p.comprobante_url)}
+                                                          className="flex items-center gap-1 text-[#D4AF37] hover:text-[#B8860B] font-bold transition-colors cursor-pointer"
+                                                        >
+                                                          <FileText size={13} />
+                                                          <span>Comprobante</span>
+                                                        </button>
+                                                      </>
+                                                    )}
                                                   </div>
                                                   <div className="flex items-center gap-4">
                                                     <span className="text-slate-500">
@@ -1871,6 +1965,27 @@ export default function BillingPanel() {
                     className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none transition-all font-medium text-slate-700"
                     required
                   />
+                </div>
+              </div>
+
+              {/* Subir Comprobante (Opcional) */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Comprobante de Pago (Opcional)</label>
+                <div className="flex items-center justify-center w-full">
+                  <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-200 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100/50 transition-colors">
+                    <div className="flex flex-col items-center justify-center pt-4 pb-4">
+                      <UploadCloud size={24} className="text-slate-400 mb-1" />
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider text-center px-2 truncate w-full">
+                        {abonoComprobante ? abonoComprobante.name : "Subir comprobante / transferencia"}
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={(e) => setAbonoComprobante(e.target.files[0])}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
               </div>
 
@@ -2427,6 +2542,52 @@ export default function BillingPanel() {
                 </div>
                 <div className="flex justify-end gap-3"><button type="button" onClick={() => setPromesaModalCase(null)} className="px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">Cancelar</button><button type="submit" disabled={submittingPromesa} className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold transition-all shadow-md flex items-center justify-center min-w-[120px]">{submittingPromesa ? <RefreshCw size={16} className="animate-spin" /> : "Guardar Fecha"}</button></div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* VISUALIZAR COMPROBANTE MODAL */}
+      <AnimatePresence>
+        {comprobanteModalUrl && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[#0f172a]/45 backdrop-blur-md" onClick={() => setComprobanteModalUrl(null)} />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.95, opacity: 0 }} 
+              className="relative bg-white rounded-[24px] w-full max-w-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col"
+            >
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="font-black text-slate-800 flex items-center gap-2">
+                  <FileText size={20} className="text-[#D4AF37]" />
+                  Comprobante de Pago
+                </h3>
+                <button onClick={() => setComprobanteModalUrl(null)} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-full transition-colors"><X size={18} /></button>
+              </div>
+              
+              <div className="p-6 flex items-center justify-center bg-slate-50 min-h-[300px]">
+                {comprobanteModalUrl.toLowerCase().endsWith('.pdf') ? (
+                  <iframe src={comprobanteModalUrl} className="w-full h-[50vh] rounded-lg border border-slate-200" title="PDF Comprobante"></iframe>
+                ) : (
+                  <img src={comprobanteModalUrl} alt="Comprobante" className="max-w-full max-h-[50vh] object-contain rounded-lg shadow-sm" />
+                )}
+              </div>
+
+              <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 shrink-0 bg-white">
+                <button type="button" onClick={() => setComprobanteModalUrl(null)} className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+                  Cerrar
+                </button>
+                <a 
+                  href={comprobanteModalUrl} 
+                  download 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="px-5 py-2.5 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-1.5"
+                >
+                  Descargar
+                </a>
+              </div>
             </motion.div>
           </div>
         )}

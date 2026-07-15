@@ -7,6 +7,8 @@ import {
   getAllUsers, createUserInSystem, updateUserInSystem, deleteUserInSystem 
 } from "@/lib/auth";
 import GlassLayout from "@/components/admin/GlassLayout";
+import PhoneInput from "@/components/PhoneInput";
+import { formatPhoneDisplay } from "@/lib/phoneUtils";
 
 const allDepartments = [
   "Recepción", "Yesos", "Digital_Escaneo", "Digital_Diseno", "Digital_Fresado", 
@@ -52,6 +54,7 @@ export default function AdminUsuarios() {
         ...item, 
         isNew: false, 
         password: "", // Only update if typed
+        telefono: item.telefono || "",
         selectedRoles: item.rol ? item.rol.split(",") : [] 
       });
     } else {
@@ -59,6 +62,7 @@ export default function AdminUsuarios() {
         isNew: true, 
         username: "", 
         password: "", 
+        telefono: "",
         avatar_base64: null, 
         selectedRoles: [] 
       });
@@ -111,7 +115,8 @@ export default function AdminUsuarios() {
         editingItem.username, 
         editingItem.password, 
         rolString, 
-        editingItem.avatar_base64
+        editingItem.avatar_base64,
+        editingItem.telefono
       );
     } else {
       res = await updateUserInSystem(
@@ -119,7 +124,8 @@ export default function AdminUsuarios() {
         editingItem.username, 
         editingItem.password, 
         rolString, 
-        editingItem.avatar_base64
+        editingItem.avatar_base64,
+        editingItem.telefono
       );
     }
 
@@ -174,7 +180,12 @@ export default function AdminUsuarios() {
                 </div>
                 
                 <h3 className="text-lg font-bold text-slate-800">{u.username}</h3>
-                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider font-semibold">Roles Asignados</p>
+                 {u.telefono && (
+                   <p className="text-xs text-slate-600 font-medium mt-0.5 whitespace-nowrap">
+                     📞 {formatPhoneDisplay(u.telefono)}
+                   </p>
+                 )}
+                 <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider font-semibold">Roles Asignados</p>
                 
                 <div className="flex flex-wrap gap-1.5 justify-center mt-3">
                    {u.rol ? u.rol.split(',').map(r => (
@@ -228,10 +239,15 @@ export default function AdminUsuarios() {
                 </div>
 
                 {/* Info Column */}
-                <div className="flex-1 flex flex-col gap-4">
+                 <div className="flex-1 flex flex-col gap-4">
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-500 uppercase">Nombre de Usuario</label>
                     <input type="text" value={editingItem.username} onChange={e => setEditingItem({...editingItem, username: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-rose-400 outline-none" required />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase">Teléfono (WhatsApp)</label>
+                    <PhoneInput value={editingItem.telefono || ""} onChange={val => setEditingItem({...editingItem, telefono: val})} />
                   </div>
                   
                   <div className="space-y-1">

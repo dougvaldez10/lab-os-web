@@ -163,16 +163,22 @@ export async function registrarPromesaPago({ caso_id, fecha_promesa }) {
  * - Resta el abono de casos_master.saldo_pendiente.
  * - Si saldo_pendiente <= 0, actualiza estado_pago = 'Pagado'.
  */
-export async function registrarAbono({ id_caso, monto_abono, metodo_pago, admin_name }) {
+export async function registrarAbono(formData) {
   try {
     await checkAdminAccess();
     const supabase = getAdminClient();
 
-    if (!id_caso || !monto_abono || !metodo_pago || !admin_name) {
+    const id_caso = formData.get('id_caso');
+    const monto_abono_str = formData.get('monto_abono');
+    const metodo_pago = formData.get('metodo_pago');
+    const admin_name = formData.get('admin_name');
+    const file = formData.get('comprobante'); // Objeto File opcional
+
+    if (!id_caso || !monto_abono_str || !metodo_pago || !admin_name) {
       return { success: false, error: "Datos incompletos para registrar el abono." };
     }
 
-    const abono = parseFloat(monto_abono);
+    const abono = parseFloat(monto_abono_str);
     if (isNaN(abono) || abono <= 0) {
       return { success: false, error: "El monto del abono debe ser mayor a cero." };
     }
@@ -191,7 +197,35 @@ export async function registrarAbono({ id_caso, monto_abono, metodo_pago, admin_
 
     const { cliente_id, saldo_pendiente: saldoActual } = caso;
 
-    // 2. Insertar en pagos_historico
+    // 2. Subida del comprobante a storage (opcional)
+    let comprobanteUrl = null;
+    if (file && file.size > 0 && file.name) {
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const fileExt = file.name.split('.').pop() || 'png';
+      const timestamp = Date.now();
+      const filePath = `casos_${id_caso}/abono_${timestamp}.${fileExt}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('comprobantes_pago')
+        .upload(filePath, buffer, {
+          contentType: file.type || 'image/png',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error("Storage upload error:", uploadError);
+        return { success: false, error: `Error al guardar el comprobante: ${uploadError.message}` };
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('comprobantes_pago')
+        .getPublicUrl(filePath);
+
+      comprobanteUrl = publicUrl;
+    }
+
+    // 3. Insertar en pagos_historico
     const { error: errPago } = await supabase
       .from('pagos_historico')
       .insert({
@@ -199,7 +233,8 @@ export async function registrarAbono({ id_caso, monto_abono, metodo_pago, admin_
         cliente_id,
         monto_abono: abono,
         metodo_pago,
-        creado_por: admin_name
+        creado_por: admin_name,
+        comprobante_url: comprobanteUrl
       });
 
     if (errPago) {
@@ -207,12 +242,12 @@ export async function registrarAbono({ id_caso, monto_abono, metodo_pago, admin_
       return { success: false, error: `Error al registrar pago: ${errPago.message}` };
     }
 
-    // 3. Calcular el nuevo saldo y determinar el estado
+    // 4. Calcular el nuevo saldo y determinar el estado
     // Nota: el saldo puede quedar negativo (saldo a favor de la clínica)
     const nuevoSaldo = (parseFloat(saldoActual) || 0) - abono;
     const estadoPago = nuevoSaldo <= 0 ? 'Pagado' : 'Pendiente';
 
-    // 4. Actualizar casos_master
+    // 5. Actualizar casos_master
     const { error: errUpdate } = await supabase
       .from('casos_master')
       .update({
@@ -388,18 +423,34 @@ export async function markCaseAsSent(id_caso) {
 /**
  * Obtiene el histórico de casos pagados.
  */
-export async function getBillingHistory() {
+export async function getBillingHistory(filters = {}) {
   try {
     await checkAdminAccess();
     const supabase = getAdminClient();
 
+    const { startDate, endDate, clienteId, year } = filters;
+
     // Casos terminados en Facturación y ya liquidados
-    const { data: cases, error: errCases } = await supabase
+    let query = supabase
       .from('casos_master')
       .select('id, codigo, paciente, total_caso, saldo_pendiente, fecha_entrega, cliente_id, iva_aplicado, clientes(nombre)')
       .eq('depto_actual', 'Facturación')
-      .eq('estado_pago', 'Pagado')
-      .order('fecha_entrega', { ascending: false });
+      .eq('estado_pago', 'Pagado');
+
+    if (clienteId) {
+      query = query.eq('cliente_id', clienteId);
+    }
+    if (startDate) {
+      query = query.gte('fecha_entrega', startDate);
+    }
+    if (endDate) {
+      query = query.lte('fecha_entrega', endDate);
+    }
+    if (year) {
+      query = query.gte('fecha_entrega', `${year}-01-01`).lte('fecha_entrega', `${year}-12-31`);
+    }
+
+    const { data: cases, error: errCases } = await query.order('fecha_entrega', { ascending: false });
 
     if (errCases) throw errCases;
 

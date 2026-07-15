@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ClipboardList, Users, Wallet, BarChart3, ChevronLeft, ChevronRight, LogOut, UserCog, ShieldAlert } from "lucide-react";
+import { ClipboardList, Users, Wallet, BarChart3, ChevronLeft, ChevronRight, LogOut, UserCog, ShieldAlert, Receipt } from "lucide-react";
 import { logoutUser, getCurrentUser } from "@/lib/auth";
 import { getAuditAlerts } from "@/app/actions/audit";
 
@@ -125,6 +125,7 @@ export default function Sidebar() {
   const menuItems = [
     { href: "/admin", label: "Casos", icon: ClipboardList, iconColor: "text-blue-400" },
     { href: "/admin/facturacion", label: "Finanzas", icon: Wallet, iconColor: "text-amber-400" },
+    { href: "/admin/gastos", label: "Gastos", icon: Receipt, iconColor: "text-emerald-400" },
     { href: "/admin/crm", label: "Directorio", icon: Users, iconColor: "text-green-400" },
     { href: "/admin/usuarios", label: "Usuarios", icon: UserCog, iconColor: "text-rose-400" },
     { href: "/admin/analisis", label: "Métricas", icon: BarChart3, iconColor: "text-purple-400" },
@@ -186,6 +187,7 @@ export default function Sidebar() {
           const colorMap = {
             "text-blue-400": { bg: "bg-blue-500/20", shadow: "shadow-[0_0_25px_rgba(96,165,250,0.8),inset_0_0_15px_rgba(96,165,250,0.3)]", dropShadow: "drop-shadow-[0_0_15px_rgba(96,165,250,1)]", hoverBg: "rgba(96,165,250,0.2)", hoverBorder: "rgba(96,165,250,0.5)", border: "border border-blue-400/80" },
             "text-amber-400": { bg: "bg-amber-400/20", shadow: "shadow-[0_0_25px_rgba(251,191,36,0.8),inset_0_0_15px_rgba(251,191,36,0.3)]", dropShadow: "drop-shadow-[0_0_15px_rgba(251,191,36,1)]", hoverBg: "rgba(251,191,36,0.2)", hoverBorder: "rgba(251,191,36,0.5)", border: "border border-amber-400/80" },
+            "text-emerald-400": { bg: "bg-emerald-500/20", shadow: "shadow-[0_0_25px_rgba(16,185,129,0.8),inset_0_0_15px_rgba(16,185,129,0.3)]", dropShadow: "drop-shadow-[0_0_15px_rgba(16,185,129,1)]", hoverBg: "rgba(16,185,129,0.2)", hoverBorder: "rgba(16,185,129,0.5)", border: "border border-emerald-400/80" },
             "text-green-400": { bg: "bg-green-400/20", shadow: "shadow-[0_0_25px_rgba(74,222,128,0.8),inset_0_0_15px_rgba(74,222,128,0.3)]", dropShadow: "drop-shadow-[0_0_15px_rgba(74,222,128,1)]", hoverBg: "rgba(74,222,128,0.2)", hoverBorder: "rgba(74,222,128,0.5)", border: "border border-green-400/80" },
             "text-rose-400": { bg: "bg-rose-400/20", shadow: "shadow-[0_0_25px_rgba(251,113,133,0.8),inset_0_0_15px_rgba(251,113,133,0.3)]", dropShadow: "drop-shadow-[0_0_15px_rgba(251,113,133,1)]", hoverBg: "rgba(251,113,133,0.2)", hoverBorder: "rgba(251,113,133,0.5)", border: "border border-rose-400/80" },
             "text-purple-400": { bg: "bg-purple-400/20", shadow: "shadow-[0_0_25px_rgba(192,132,252,0.8),inset_0_0_15px_rgba(192,132,252,0.3)]", dropShadow: "drop-shadow-[0_0_15px_rgba(192,132,252,1)]", hoverBg: "rgba(192,132,252,0.2)", hoverBorder: "rgba(192,132,252,0.5)", border: "border border-purple-400/80" },

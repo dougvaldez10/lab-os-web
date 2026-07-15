@@ -131,7 +131,7 @@ export async function getAllUsers() {
   try {
     const { data: users, error } = await supabaseAdmin
       .from('usuarios')
-      .select('id, username, rol, avatar_base64');
+      .select('id, username, rol, avatar_base64, telefono');
     
     if (error) {
        console.error("Error fetching users:", error);
@@ -144,7 +144,7 @@ export async function getAllUsers() {
   }
 }
 
-export async function createUserInSystem(username, passwordOrPin, rol, avatarBase64) {
+export async function createUserInSystem(username, passwordOrPin, rol, avatarBase64, telefono) {
   try {
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(passwordOrPin, salt);
@@ -156,7 +156,8 @@ export async function createUserInSystem(username, passwordOrPin, rol, avatarBas
           username: username,
           password_hash: hash,
           rol: rol,
-          avatar_base64: avatarBase64
+          avatar_base64: avatarBase64,
+          telefono: telefono
         }
       ])
       .select()
@@ -173,12 +174,13 @@ export async function createUserInSystem(username, passwordOrPin, rol, avatarBas
   }
 }
 
-export async function updateUserInSystem(id, username, passwordOrPin, rol, avatarBase64) {
+export async function updateUserInSystem(id, username, passwordOrPin, rol, avatarBase64, telefono) {
   try {
     let updates = {
       username: username,
       rol: rol,
-      avatar_base64: avatarBase64
+      avatar_base64: avatarBase64,
+      telefono: telefono
     };
 
     if (passwordOrPin && passwordOrPin.trim() !== '') {
