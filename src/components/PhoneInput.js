@@ -14,19 +14,30 @@ export default function PhoneInput({ value, onChange, placeholder = "663 436 669
   // Sincronizar el valor desde el padre (base de datos a local)
   useEffect(() => {
     if (value) {
-      const cleaned = value.replace(/\D/g, "");
-      if (cleaned.startsWith("521") && cleaned.length === 13) {
+      if (value.startsWith("+521")) {
         setCountryCode("+52");
-        setLocalNumber(formatLocal(cleaned.slice(3)));
-      } else if (cleaned.startsWith("52") && cleaned.length === 12) {
+        setLocalNumber(formatLocal(value.slice(4)));
+      } else if (value.startsWith("+52")) {
         setCountryCode("+52");
-        setLocalNumber(formatLocal(cleaned.slice(2)));
-      } else if (cleaned.startsWith("1") && cleaned.length === 11) {
+        setLocalNumber(formatLocal(value.slice(3)));
+      } else if (value.startsWith("+1")) {
         setCountryCode("+1");
-        setLocalNumber(formatLocal(cleaned.slice(1)));
+        setLocalNumber(formatLocal(value.slice(2)));
       } else {
-        // Fallback para otros formatos
-        setLocalNumber(value);
+        // Fallback sin prefijo de cruz
+        const cleaned = value.replace(/\D/g, "");
+        if (cleaned.startsWith("521")) {
+          setCountryCode("+52");
+          setLocalNumber(formatLocal(cleaned.slice(3)));
+        } else if (cleaned.startsWith("52")) {
+          setCountryCode("+52");
+          setLocalNumber(formatLocal(cleaned.slice(2)));
+        } else if (cleaned.startsWith("1")) {
+          setCountryCode("+1");
+          setLocalNumber(formatLocal(cleaned.slice(1)));
+        } else {
+          setLocalNumber(formatLocal(cleaned));
+        }
       }
     } else {
       setLocalNumber("");
