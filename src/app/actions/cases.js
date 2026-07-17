@@ -234,6 +234,10 @@ export async function updateCaseState(internalId, action, operatorName = null, m
     const deptoLimpio = currentCase.depto_actual ? currentCase.depto_actual.trim() : "";
     const tipoLimpio  = currentCase.tipo ? currentCase.tipo.trim().toLowerCase() : "análogo";
 
+    // Normalizar para evitar problemas de acentos o espacios invisibles (NFC vs NFD)
+    const normalizeString = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
+    const deptoNorm = normalizeString(deptoLimpio);
+
     let updateData = {};
     let esEnvioFinal = false;
 
@@ -247,7 +251,7 @@ export async function updateCaseState(internalId, action, operatorName = null, m
     } else if (action === 'PAUSE') {
         updateData = { estado: 'En Pausa' };
 
-    } else if (action === 'SHIP' || (action === 'COMPLETE' && deptoLimpio === 'Inspección')) {
+    } else if (action === 'SHIP' || (action === 'COMPLETE' && deptoNorm === 'inspeccion')) {
         // ── ENVÍO FINAL: caso sale del laboratorio ──
         // Se chequea ANTES del bloque COMPLETE general para evitar que caiga ahí.
         esEnvioFinal = true;
@@ -262,14 +266,19 @@ export async function updateCaseState(internalId, action, operatorName = null, m
 
     } else if (action === 'COMPLETE') {
         let nextDept = "Terminado";
+        
+        // Mapeo seguro con nombres normalizados
+        const FLUJO_DIGITAL_NORM = Object.fromEntries(Object.entries(FLUJO_DIGITAL).map(([k, v]) => [normalizeString(k), v]));
+        const FLUJO_ANALOGO_NORM = Object.fromEntries(Object.entries(FLUJO_ANALOGO).map(([k, v]) => [normalizeString(k), v]));
+
         if (tipoLimpio === "digital") {
-            nextDept = FLUJO_DIGITAL[deptoLimpio] || "Terminado";
+            nextDept = FLUJO_DIGITAL_NORM[deptoNorm] || "Terminado";
         } else {
-            nextDept = FLUJO_ANALOGO[deptoLimpio] || "Terminado";
+            nextDept = FLUJO_ANALOGO_NORM[deptoNorm] || "Terminado";
         }
         
         // Regla dinámica: si sale de Digital_Fresado, evaluar si requiere Sinterizado
-        if (deptoLimpio === 'Digital_Fresado') {
+        if (deptoNorm === 'digital_fresado') {
             const { data: detalles } = await supabase
                 .from('casos_detalle')
                 .select('producto')
