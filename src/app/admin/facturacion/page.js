@@ -1125,12 +1125,12 @@ export default function BillingPanel() {
     const paciente = c.paciente || "N/A";
     
     const concepto = c.casos_detalle && c.casos_detalle.length > 0
-      ? c.casos_detalle.map(d => `${d.unidades}x ${d.producto}`).join(', ')
+      ? c.casos_detalle.map(d => `${d.unidades}x ${d.producto}${d.material ? ` (${d.material})` : ''}`).join(', ')
       : "Sin detalles";
       
     const total = Number(c.total_caso).toLocaleString('es-MX', { minimumFractionDigits: 2 });
     
-    const mensaje = `${clinica} / ${doctor}\nPaciente: ${paciente}\nConcepto: ${concepto}\nTotal: $${total}`;
+    const mensaje = `Detalles del caso:\n\n${clinica} / ${doctor}\nPaciente: ${paciente}\nConcepto: ${concepto}\nTotal: $${total}`;
     
     navigator.clipboard.writeText(mensaje).then(() => {
       toast.success("Mensaje copiado al portapapeles");
