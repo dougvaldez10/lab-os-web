@@ -42,7 +42,8 @@ import {
   getPendingFacturacionCases,
   markCaseAsSent,
   revertirPago,
-  registrarPromesaPago
+  registrarPromesaPago,
+  getActiveProductionCases
 } from "@/app/actions/billing";
 import { cancelarCaso } from "@/app/actions/admin-cases";
 import { getAllClinics, getClients } from "@/app/actions/clients";
@@ -86,6 +87,7 @@ export default function BillingPanel() {
 
   // States for Pendientes de Pago (Facturación)
   const [pendingCases, setPendingCases] = useState([]);
+  const [productionCases, setProductionCases] = useState([]);
   const [sendingCaseId, setSendingCaseId] = useState(null);
   const [confirmSendModal, setConfirmSendModal] = useState(null); // caso a confirmar envío
   const [sentCaseId, setSentCaseId] = useState(null); // fila con animación de enviado
@@ -198,11 +200,19 @@ export default function BillingPanel() {
       if (docsRes) setDoctores(docsRes);
 
       if (activeTab === "pendientes") {
-        const res = await getPendingFacturacionCases();
+        const [res, prodRes] = await Promise.all([
+          getPendingFacturacionCases(),
+          getActiveProductionCases()
+        ]);
         if (res.success) {
           setPendingCases(res.cases || []);
         } else {
           toast.error("Error al cargar casos pendientes: " + res.error);
+        }
+        if (prodRes.success) {
+          setProductionCases(prodRes.cases || []);
+        } else {
+          console.error("Error cargando casos en producción", prodRes.error);
         }
       } else if (activeTab === "cxc") {
         const res = await getBillingSummary();
@@ -1302,6 +1312,51 @@ export default function BillingPanel() {
                     </div>
 
                   </div>
+
+                  {/* NUEVA SECCIÓN: EN PRODUCCIÓN */}
+                  {productionCases.length > 0 && (
+                    <div className="mt-8 border-t border-slate-200 pt-6">
+                      <div className="px-6 mb-4">
+                        <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                          <TrendingUp size={16} className="text-slate-400" />
+                          En Producción (Activos)
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1">Casos en progreso. Vista de solo lectura para consulta de costos.</p>
+                      </div>
+                      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm md:overflow-visible overflow-hidden flex flex-col opacity-75">
+                        <div className="md:overflow-visible overflow-x-auto flex-1">
+                          <div className="flex flex-col divide-y divide-slate-100 min-w-[800px]">
+                            {productionCases.map((c) => (
+                              <div
+                                key={c.id}
+                                className="grid grid-cols-[100px_minmax(150px,2fr)_minmax(200px,3fr)_180px_150px_150px] gap-4 px-6 py-3 items-center text-sm bg-slate-50/30"
+                              >
+                                <div className="font-bold text-slate-700">#{c.codigo}</div>
+                                <div>
+                                  <div className="font-semibold text-slate-700">{c.clientes?.nombre || "N/A"}</div>
+                                  <div className="text-xs text-slate-500 mt-0.5">{c.paciente}</div>
+                                </div>
+                                <div className="text-xs text-slate-500">Dr(a). {c.doctor || "N/A"}</div>
+                                <div className="text-slate-600 text-xs font-medium">
+                                  <span className="flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 w-fit">
+                                    {c.depto_actual || "N/A"}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="inline-flex items-center gap-1 font-bold text-slate-500 bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1 text-xs">
+                                    <DollarSign size={12} className="text-slate-400" />
+                                    {Number(c.total_caso).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                                <div>{/* Empty column */}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
               </motion.div>
             )}
 

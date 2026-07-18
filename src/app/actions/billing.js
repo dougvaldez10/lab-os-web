@@ -390,6 +390,30 @@ export async function getPendingFacturacionCases() {
 }
 
 /**
+ * Obtiene los casos activos en producción que no están cancelados ni en Facturación (vista de solo lectura).
+ */
+export async function getActiveProductionCases() {
+  try {
+    await checkAdminAccess();
+    const supabase = getAdminClient();
+
+    const { data: cases, error } = await supabase
+      .from('casos_master')
+      .select('id, codigo, paciente, doctor, depto_actual, total_caso, clientes(nombre)')
+      .neq('depto_actual', 'Facturación')
+      .neq('estado', 'Cancelado')
+      .order('fecha_entrega', { ascending: true });
+
+    if (error) throw error;
+    return { success: true, cases: cases || [] };
+
+  } catch (err) {
+    console.error("getActiveProductionCases error:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
  * Marca un caso como "Enviado", calculando su fecha de cobro y preservando la promesa original.
  */
 export async function markCaseAsSent(id_caso) {
