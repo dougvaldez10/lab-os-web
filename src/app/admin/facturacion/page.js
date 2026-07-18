@@ -27,7 +27,8 @@ import {
   Calculator,
   Percent,
   Send,
-  Save
+  Save,
+  Copy
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast, Toaster } from "sonner";
@@ -1118,6 +1119,27 @@ export default function BillingPanel() {
     }
   }
 
+  const handleCopyMessage = (c) => {
+    const clinica = c.clientes?.nombre || "N/A";
+    const doctor = c.doctor || "N/A";
+    const paciente = c.paciente || "N/A";
+    
+    const concepto = c.casos_detalle && c.casos_detalle.length > 0
+      ? c.casos_detalle.map(d => `${d.unidades}x ${d.producto}`).join(', ')
+      : "Sin detalles";
+      
+    const total = Number(c.total_caso).toLocaleString('es-MX', { minimumFractionDigits: 2 });
+    
+    const mensaje = `${clinica} / ${doctor}\nPaciente: ${paciente}\nConcepto: ${concepto}\nTotal: $${total}`;
+    
+    navigator.clipboard.writeText(mensaje).then(() => {
+      toast.success("Mensaje copiado al portapapeles");
+    }).catch(err => {
+      toast.error("Error al copiar el mensaje");
+      console.error(err);
+    });
+  };
+
   return (
     <>
       <GlassLayout
@@ -1336,7 +1358,7 @@ export default function BillingPanel() {
                                   <div className="font-semibold text-slate-700">{c.clientes?.nombre || "N/A"}</div>
                                   <div className="text-xs text-slate-500 mt-0.5">{c.paciente}</div>
                                 </div>
-                                <div className="text-xs text-slate-500">Dr(a). {c.doctor || "N/A"}</div>
+                                <div className="text-xs text-slate-500">{c.doctor || "N/A"}</div>
                                 <div className="text-slate-600 text-xs font-medium">
                                   <span className="flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 w-fit">
                                     {c.depto_actual || "N/A"}
@@ -1348,7 +1370,15 @@ export default function BillingPanel() {
                                     {Number(c.total_caso).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                   </span>
                                 </div>
-                                <div>{/* Empty column */}</div>
+                                <div className="text-right">
+                                  <button
+                                    onClick={() => handleCopyMessage(c)}
+                                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer inline-flex"
+                                    title="Copiar mensaje para cliente"
+                                  >
+                                    <Copy size={16} />
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>

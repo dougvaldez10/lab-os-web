@@ -399,7 +399,7 @@ export async function getActiveProductionCases() {
 
     const { data: cases, error } = await supabase
       .from('casos_master')
-      .select('id, codigo, paciente, doctor, depto_actual, total_caso, clientes(nombre)')
+      .select('id, codigo, paciente, doctor, depto_actual, total_caso, clientes(nombre), casos_detalle(unidades, producto)')
       .neq('depto_actual', 'Facturación')
       .neq('estado', 'Cancelado')
       .order('fecha_entrega', { ascending: true });
