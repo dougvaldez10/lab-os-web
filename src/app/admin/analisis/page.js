@@ -218,9 +218,10 @@ export default function MetricasPage() {
   const formatCurrency = (val) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      {/* HEADER Y FILTRO */}
-      <div className="flex flex-col gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+    <div className="h-full overflow-y-auto w-full p-4 md:p-8 facturacion-scroll">
+      <div className="max-w-7xl mx-auto space-y-8 pb-10">
+        {/* HEADER Y FILTRO */}
+        <div className="flex flex-col gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-800">Métricas y Análisis</h1>
@@ -442,8 +443,8 @@ export default function MetricasPage() {
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mt-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
-                <h2 className="text-lg font-bold text-slate-800">Producción Anual del Laboratorio</h2>
-                <p className="text-slate-500 text-sm mt-1">Total de unidades producidas por mes en el panorama general.</p>
+                <h2 className="text-lg font-bold text-slate-800">Ingresos Anuales del Laboratorio</h2>
+                <p className="text-slate-500 text-sm mt-1">Total facturado por mes en el panorama general (suma de todos los trabajos de ese mes).</p>
               </div>
               <div className="flex items-center gap-2">
                 <label className="text-xs font-bold text-slate-500">Año:</label>
@@ -490,7 +491,7 @@ export default function MetricasPage() {
                               <p className="text-slate-500 text-xs font-bold mb-1">{payload[0].payload.name} {selectedYear}</p>
                               <p className="text-slate-800 font-bold flex items-center gap-2">
                                 <span className="w-3 h-3 rounded-full" style={{ backgroundColor: payload[0].payload.color }}></span>
-                                {payload[0].value} unidades
+                                {formatCurrency(payload[0].value)}
                               </p>
                             </div>
                           );
@@ -499,7 +500,7 @@ export default function MetricasPage() {
                       }}
                     />
                     <Bar 
-                      dataKey="unidades" 
+                      dataKey="ingresos" 
                       radius={[4, 4, 0, 0]} 
                       barSize={40}
                     >
@@ -514,8 +515,10 @@ export default function MetricasPage() {
               </div>
             )}
           </div>
+          </div>
         </>
       )}
+      </div>
     </div>
   );
 }
