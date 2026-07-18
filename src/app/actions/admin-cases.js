@@ -246,45 +246,13 @@ export async function cancelarCaso({ caso_id, motivo }) {
     revalidatePath('/');
     revalidatePath('/admin/facturacion');
     
-.select('producto, unidades')
-          .eq('caso_id', internalId);
-
-        const eventDetails = detalles ? detalles.map(d => ({
-          producto: d.producto,
-          unidades: d.unidades || 1
-        })) : [];
-
-        if (updatedCase.google_event_id) {
-          const newEventId = await updateCalendarEvent(updatedCase.google_event_id, updatedCase, eventDetails);
-          if (newEventId !== updatedCase.google_event_id) {
-            await supabase
-              .from('casos_master')
-              .update({ google_event_id: newEventId })
-              .eq('id', internalId);
-          }
-        } else if (updatedCase.fecha_entrega) {
-          const newEventId = await createCalendarEvent(updatedCase, eventDetails);
-          if (newEventId) {
-            await supabase
-              .from('casos_master')
-              .update({ google_event_id: newEventId })
-              .eq('id', internalId);
-          }
-        }
-      }
-    } catch (calErr) {
-      console.error("[Google Calendar] Error al sincronizar en updateAdminCase:", calErr);
-    }
-
-    revalidatePath('/');
-    revalidatePath('/admin');
     return { success: true };
+
   } catch (err) {
-    console.error("updateAdminCase error:", err);
+    console.error('cancelarCaso error:', err);
     return { success: false, error: err.message };
   }
 }
-
 
 export async function getMetricsData(timeFilter, customStart, customEnd, searchQuery) {
   try {
