@@ -1125,7 +1125,7 @@ export default function BillingPanel() {
     const paciente = c.paciente || "N/A";
     
     const concepto = c.casos_detalle && c.casos_detalle.length > 0
-      ? c.casos_detalle.map(d => `${d.unidades}x ${d.producto}${d.material ? ` (${d.material})` : ''}`).join(', ')
+      ? c.casos_detalle.map(d => `${d.unidades}x ${d.producto}`).join(', ')
       : "Sin detalles";
       
     const total = Number(c.total_caso).toLocaleString('es-MX', { minimumFractionDigits: 2 });
