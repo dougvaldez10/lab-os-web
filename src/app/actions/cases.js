@@ -77,6 +77,7 @@ async function registrarTermino(supabase, caseId, departamento, nextDept, isPaus
       .eq('id_caso', caseId)
       .eq('departamento', departamento)
       .is('hora_termino', null)
+      .not('hora_inicio', 'is', null)
       .order('hora_inicio', { ascending: false })
       .limit(1)
       .single();
