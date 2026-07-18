@@ -1179,16 +1179,6 @@ export default function BillingPanel() {
                 <Plus size={18} /> Nuevo Trabajo
               </button>
             )}
-            {activeTab === "pendientes" && (
-              <div className="relative group flex items-center justify-center">
-                <div className="px-4 py-2 bg-white text-slate-600 border border-slate-200 rounded-xl font-bold shadow-sm cursor-help flex items-center gap-2">
-                   Valor en proceso
-                   <span className="opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 -bottom-10 bg-slate-800 text-white text-xs px-3 py-1.5 rounded shadow-lg whitespace-nowrap pointer-events-none z-10">
-                      ${sumEnProceso.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                   </span>
-                </div>
-              </div>
-            )}
             <button 
               onClick={fetchData} 
               disabled={loading}

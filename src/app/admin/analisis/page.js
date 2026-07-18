@@ -12,9 +12,12 @@ import {
   ChevronUp,
   Search,
   Calendar,
-  Filter
+  Filter,
+  BarChart3
 } from "lucide-react";
 import { getMetricsData, getAnnualProductionMetrics } from "@/app/actions/admin-cases";
+import { getActiveProductionCases } from "@/app/actions/billing";
+import GlassLayout from "@/components/admin/GlassLayout";
 import MaterialChart from "./MaterialChart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -42,6 +45,22 @@ export default function MetricasPage() {
   const [doctoresExpanded, setDoctoresExpanded] = useState(false);
   const [materialData, setMaterialData] = useState([]);
   const [resumenFinanciero, setResumenFinanciero] = useState({ recaudado: 0, porCobrar: 0 });
+  const [sumEnProceso, setSumEnProceso] = useState(0);
+
+  useEffect(() => {
+    const fetchProductionSum = async () => {
+      try {
+        const res = await getActiveProductionCases();
+        if (res.success && res.cases) {
+          const sum = res.cases.reduce((acc, c) => acc + Number(c.total_caso || 0), 0);
+          setSumEnProceso(sum);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchProductionSum();
+  }, [refreshTrigger]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -218,19 +237,29 @@ export default function MetricasPage() {
   const formatCurrency = (val) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
 
   return (
-    <div className="h-full overflow-y-auto w-full p-4 md:p-8 facturacion-scroll">
-      <div className="max-w-7xl mx-auto space-y-8 pb-10">
-        {/* HEADER Y FILTRO */}
-        <div className="flex flex-col gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Métricas y Análisis</h1>
-            <p className="text-slate-500 text-sm mt-1">
-              Productividad por clínica, doctor y materiales en el periodo seleccionado.
-            </p>
+    <GlassLayout
+      title="Métricas y Análisis"
+      subtitle="Productividad por clínica, doctor y materiales en el periodo seleccionado."
+      icon={<BarChart3 size={24} className="text-purple-500" />}
+      iconBg="bg-purple-500/10 border-purple-500/20"
+      scrollbarClass="analisis-scroll"
+      scrollbarColor="#8B5CF6"
+      headerActions={
+        <div className="relative group flex items-center justify-center pointer-events-auto">
+          <div className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold shadow-md cursor-help flex items-center gap-2 transition-all duration-300">
+             Valor en proceso
+             <span className="opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 -bottom-10 bg-slate-800 text-white text-xs px-3 py-1.5 rounded shadow-lg whitespace-nowrap pointer-events-none z-10">
+                ${sumEnProceso.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+             </span>
           </div>
-          
-          <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
+        </div>
+      }
+    >
+      <div className="space-y-6 pb-8 relative z-10 pt-4 pointer-events-auto">
+        {/* FILTRO */}
+        <div className="flex flex-col gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
             {[{ id: '30d', label: 'Últ. 30 días' }, { id: '3m', label: 'Últ. 3 meses' }, { id: 'year', label: 'Este año' }, { id: 'custom', label: 'Personalizado' }].map(opt => (
               <button
                 key={opt.id}
@@ -518,6 +547,6 @@ export default function MetricasPage() {
         </>
       )}
       </div>
-    </div>
+    </GlassLayout>
   );
 }
