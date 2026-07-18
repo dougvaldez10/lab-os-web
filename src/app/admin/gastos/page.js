@@ -205,15 +205,15 @@ export default function GastosPanel() {
       <GlassLayout
         title="Control de Gastos"
         subtitle="Registro y auditoría de egresos, insumos y compras del laboratorio."
-        icon={<TrendingDown size={24} className="text-emerald-400" />}
-        iconBg="bg-emerald-500/10 border-emerald-500/20"
+        icon={<TrendingDown size={24} className="text-red-400" />}
+        iconBg="bg-red-500/10 border-red-500/20"
         scrollbarClass="gastos-scroll"
-        scrollbarColor="#10b981"
+        scrollbarColor="#ef4444"
         headerActions={
           <>
             <button 
               onClick={() => setIsCreateOpen(true)} 
-              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold transition-colors flex items-center gap-2 shadow-sm pointer-events-auto"
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-colors flex items-center gap-2 shadow-sm pointer-events-auto"
             >
               <Plus size={18} /> Registrar Gasto
             </button>
@@ -221,7 +221,7 @@ export default function GastosPanel() {
               onClick={fetchData} 
               className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm pointer-events-auto"
             >
-              <RefreshCw size={20} className={loading ? "animate-spin text-emerald-500" : ""} />
+              <RefreshCw size={20} className={loading ? "animate-spin text-red-500" : ""} />
             </button>
           </>
         }
@@ -230,8 +230,8 @@ export default function GastosPanel() {
           {/* Dashboard Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 relative overflow-hidden group">
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500" />
-              <div className="p-3 bg-emerald-50 text-emerald-500 rounded-xl">
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-red-500" />
+              <div className="p-3 bg-red-50 text-red-500 rounded-xl">
                 <DollarSign size={24} />
               </div>
               <div>
@@ -284,7 +284,7 @@ export default function GastosPanel() {
                   placeholder="Buscar por concepto o proveedor..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-400 outline-none transition-all text-slate-700"
+                  className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-red-400 outline-none transition-all text-slate-700"
                 />
               </div>
 
@@ -292,7 +292,7 @@ export default function GastosPanel() {
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-400 outline-none text-slate-600 font-semibold cursor-pointer"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-400 outline-none text-slate-600 font-semibold cursor-pointer"
                 >
                   <option value="">Todas las categorías</option>
                   {categories.map(c => (
@@ -309,7 +309,7 @@ export default function GastosPanel() {
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 outline-none text-slate-600 font-semibold"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-red-400 outline-none text-slate-600 font-semibold"
                 />
               </div>
 
@@ -319,7 +319,7 @@ export default function GastosPanel() {
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 outline-none text-slate-600 font-semibold"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-red-400 outline-none text-slate-600 font-semibold"
                 />
               </div>
             </div>
@@ -352,7 +352,7 @@ export default function GastosPanel() {
                           {e.detalles && e.detalles.length > 0 && (
                             <button 
                               onClick={() => setExpandedExpenseId(isExpanded ? null : e.id)}
-                              className="text-[10px] text-emerald-600 hover:text-emerald-700 font-bold uppercase mt-1 tracking-wider block focus:outline-none"
+                              className="text-[10px] text-red-600 hover:text-red-700 font-bold uppercase mt-1 tracking-wider block focus:outline-none"
                             >
                               {isExpanded ? "Ocultar desglose" : `Ver desglose (${e.detalles.length} items)`}
                             </button>
@@ -371,7 +371,7 @@ export default function GastosPanel() {
                           {e.comprobante_url ? (
                             <button
                               onClick={() => setComprobanteModalUrl(e.comprobante_url)}
-                              className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-all inline-flex cursor-pointer"
+                              className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-all inline-flex cursor-pointer"
                               title="Ver comprobante"
                             >
                               <FileText size={16} />
@@ -434,7 +434,7 @@ export default function GastosPanel() {
               style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 -10px 40px -15px rgba(0, 0, 0, 0.1)' }}
             >
               <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center gap-3 shrink-0">
-                <div className="p-2 bg-emerald-50 text-emerald-500 rounded-lg">
+                <div className="p-2 bg-red-50 text-red-500 rounded-lg">
                   <TrendingDown size={20} />
                 </div>
                 <div>
@@ -455,7 +455,7 @@ export default function GastosPanel() {
                       placeholder="Ej. Compra de resinas, Renta, etc."
                       value={concepto}
                       onChange={(e) => setConcepto(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-400 outline-none transition-all text-slate-800 font-bold"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-400 outline-none transition-all text-slate-800 font-bold"
                       required
                     />
                   </div>
@@ -465,7 +465,7 @@ export default function GastosPanel() {
                     <select
                       value={categoria}
                       onChange={(e) => setCategoria(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-400 outline-none text-slate-700 font-semibold cursor-pointer"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-400 outline-none text-slate-700 font-semibold cursor-pointer"
                     >
                       {categories.map(c => (
                         <option key={c} value={c}>{c}</option>
@@ -482,7 +482,7 @@ export default function GastosPanel() {
                       placeholder="Nombre del proveedor"
                       value={proveedor}
                       onChange={(e) => setProveedor(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-400 outline-none transition-all text-slate-700"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-400 outline-none transition-all text-slate-700"
                     />
                   </div>
 
@@ -492,7 +492,7 @@ export default function GastosPanel() {
                       type="date"
                       value={fechaGasto}
                       onChange={(e) => setFechaGasto(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 outline-none text-slate-650 font-semibold"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-red-400 outline-none text-slate-650 font-semibold"
                     />
                   </div>
 
@@ -505,7 +505,7 @@ export default function GastosPanel() {
                       placeholder="0.00"
                       value={monto}
                       onChange={(e) => setMonto(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-400 outline-none transition-all text-rose-600 font-black"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-400 outline-none transition-all text-rose-600 font-black"
                       required
                     />
                   </div>
@@ -545,7 +545,7 @@ export default function GastosPanel() {
                         placeholder="Nombre o descripción del ítem"
                         value={newDetailDesc}
                         onChange={(e) => setNewDetailDesc(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-emerald-400 outline-none text-slate-700"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-red-400 outline-none text-slate-700"
                       />
                     </div>
                     <div className="w-full md:w-20 space-y-1">
@@ -556,7 +556,7 @@ export default function GastosPanel() {
                         step="any"
                         value={newDetailQty}
                         onChange={(e) => setNewDetailQty(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-emerald-400 outline-none text-slate-700 font-bold text-center"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-red-400 outline-none text-slate-700 font-bold text-center"
                       />
                     </div>
                     <div className="w-full md:w-28 space-y-1">
@@ -568,13 +568,13 @@ export default function GastosPanel() {
                         placeholder="0.00"
                         value={newDetailPrice}
                         onChange={(e) => setNewDetailPrice(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-emerald-400 outline-none text-slate-700 font-bold"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-red-400 outline-none text-slate-700 font-bold"
                       />
                     </div>
                     <button
                       type="button"
                       onClick={handleAddDetailItem}
-                      className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors border border-emerald-200 shrink-0 inline-flex items-center justify-center cursor-pointer"
+                      className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors border border-red-200 shrink-0 inline-flex items-center justify-center cursor-pointer"
                       title="Agregar producto"
                     >
                       <PlusCircle size={16} />
@@ -616,7 +616,7 @@ export default function GastosPanel() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-black transition-colors flex items-center justify-center gap-1.5 shadow-md"
+                    className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-black transition-colors flex items-center justify-center gap-1.5 shadow-md"
                   >
                     <Save size={14} />
                     Guardar Gasto
@@ -641,7 +641,7 @@ export default function GastosPanel() {
             >
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <h3 className="font-black text-slate-800 flex items-center gap-2">
-                  <FileText size={20} className="text-emerald-500" />
+                  <FileText size={20} className="text-red-500" />
                   Comprobante de Gasto
                 </h3>
                 <button onClick={() => setComprobanteModalUrl(null)} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-full transition-colors"><X size={18} /></button>
@@ -664,7 +664,7 @@ export default function GastosPanel() {
                   download 
                   target="_blank" 
                   rel="noreferrer" 
-                  className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-1.5"
+                  className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-1.5"
                 >
                   Descargar
                 </a>

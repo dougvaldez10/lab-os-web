@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ClipboardList, Users, Wallet, BarChart3, ChevronLeft, ChevronRight, LogOut, UserCog, ShieldAlert, Receipt } from "lucide-react";
+import { TrendingDown, ClipboardList, Users, Wallet, BarChart3, ChevronLeft, ChevronRight, LogOut, UserCog, ShieldAlert, Receipt } from "lucide-react";
 import { logoutUser, getCurrentUser } from "@/lib/auth";
 import { getAuditAlerts } from "@/app/actions/audit";
 
@@ -125,7 +125,7 @@ export default function Sidebar() {
   const menuItems = [
     { href: "/admin", label: "Casos", icon: ClipboardList, iconColor: "text-blue-400" },
     { href: "/admin/facturacion", label: "Finanzas", icon: Wallet, iconColor: "text-amber-400" },
-    { href: "/admin/gastos", label: "Gastos", icon: Receipt, iconColor: "text-emerald-400" },
+    { href: "/admin/gastos", label: "Gastos", icon: TrendingDown, iconColor: "text-red-500" },
     { href: "/admin/crm", label: "Directorio", icon: Users, iconColor: "text-green-400" },
     { href: "/admin/usuarios", label: "Usuarios", icon: UserCog, iconColor: "text-rose-400" },
     { href: "/admin/analisis", label: "Métricas", icon: BarChart3, iconColor: "text-purple-400" },
