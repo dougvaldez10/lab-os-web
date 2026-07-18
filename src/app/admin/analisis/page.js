@@ -515,7 +515,6 @@ export default function MetricasPage() {
               </div>
             )}
           </div>
-          </div>
         </>
       )}
       </div>
