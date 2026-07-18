@@ -9,14 +9,29 @@ import {
   TrendingDown, 
   Minus,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Search,
+  Calendar,
+  Filter
 } from "lucide-react";
-import { getMetricsData } from "@/app/actions/admin-cases";
+import { getMetricsData, getAnnualProductionMetrics } from "@/app/actions/admin-cases";
 import MaterialChart from "./MaterialChart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function MetricasPage() {
   const [timeFilter, setTimeFilter] = useState("30d");
   const [loading, setLoading] = useState(true);
+  
+  // Custom Filters
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Annual Chart Data
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [annualChartData, setAnnualChartData] = useState([]);
+  const [annualLoading, setAnnualLoading] = useState(true);
   
   // States para datos
   const [topClinicas, setTopClinicas] = useState([]);
@@ -33,7 +48,7 @@ export default function MetricasPage() {
       setLoading(true);
       
       try {
-        const res = await getMetricsData(timeFilter);
+        const res = await getMetricsData(timeFilter, customStart, customEnd, searchQuery);
         if (!res.success) {
           throw new Error(res.error);
         }
@@ -182,32 +197,98 @@ export default function MetricasPage() {
     };
 
     fetchData();
-  }, [timeFilter]);
+  }, [timeFilter, refreshTrigger]);
+
+  useEffect(() => {
+    const fetchAnnualData = async () => {
+      setAnnualLoading(true);
+      try {
+        const res = await getAnnualProductionMetrics(selectedYear);
+        if (res.success) {
+          setAnnualChartData(res.chartData);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      setAnnualLoading(false);
+    };
+    fetchAnnualData();
+  }, [selectedYear]);
 
   const formatCurrency = (val) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       {/* HEADER Y FILTRO */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Métricas y Análisis</h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Productividad por clínica, doctor y materiales en el periodo seleccionado.
-          </p>
+      <div className="flex flex-col gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">Métricas y Análisis</h1>
+            <p className="text-slate-500 text-sm mt-1">
+              Productividad por clínica, doctor y materiales en el periodo seleccionado.
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
+            {[{ id: '30d', label: 'Últ. 30 días' }, { id: '3m', label: 'Últ. 3 meses' }, { id: 'year', label: 'Este año' }, { id: 'custom', label: 'Personalizado' }].map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => setTimeFilter(opt.id)}
+                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all ${timeFilter === opt.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
-        
-        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
-          {[{ id: '30d', label: 'Últ. 30 días' }, { id: '3m', label: 'Últ. 3 meses' }, { id: 'year', label: 'Este año' }].map(opt => (
-            <button
-              key={opt.id}
-              onClick={() => setTimeFilter(opt.id)}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all ${timeFilter === opt.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+
+        {timeFilter === 'custom' && (
+          <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-slate-100 mt-2">
+            <div className="flex-1">
+               <label className="text-xs font-bold text-slate-500 mb-1 block">Buscar por Folio/Paciente</label>
+               <div className="relative">
+                 <input 
+                   type="text" 
+                   placeholder="Ej. Juan Perez, 12345..." 
+                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
+                   value={searchQuery}
+                   onChange={(e) => setSearchQuery(e.target.value)}
+                   onKeyDown={(e) => e.key === 'Enter' && setRefreshTrigger(prev => prev + 1)}
+                 />
+                 <Search size={16} className="absolute right-3 top-2.5 text-slate-400" />
+               </div>
+            </div>
+            <div>
+               <label className="text-xs font-bold text-slate-500 mb-1 block">Desde</label>
+               <div className="relative">
+                 <input 
+                   type="date" 
+                   className="w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
+                   value={customStart}
+                   onChange={(e) => setCustomStart(e.target.value)}
+                 />
+                 <Calendar size={16} className="absolute left-3 top-2.5 text-slate-400" />
+               </div>
+            </div>
+            <div>
+               <label className="text-xs font-bold text-slate-500 mb-1 block">Hasta</label>
+               <div className="relative">
+                 <input 
+                   type="date" 
+                   className="w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
+                   value={customEnd}
+                   onChange={(e) => setCustomEnd(e.target.value)}
+                 />
+                 <Calendar size={16} className="absolute left-3 top-2.5 text-slate-400" />
+               </div>
+            </div>
+            <div className="flex items-end">
+               <button onClick={() => setRefreshTrigger(prev => prev + 1)} className="w-full sm:w-auto px-6 py-2 bg-[#D4AF37] hover:bg-[#B8860B] text-white rounded-xl font-bold transition-colors shadow-sm">
+                 Aplicar
+               </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -355,6 +436,83 @@ export default function MetricasPage() {
               </div>
             </div>
 
+          </div>
+
+          {/* GRÁFICA ANUAL */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mt-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-lg font-bold text-slate-800">Producción Anual del Laboratorio</h2>
+                <p className="text-slate-500 text-sm mt-1">Total de unidades producidas por mes en el panorama general.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold text-slate-500">Año:</label>
+                <select 
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                >
+                  {[0, 1, 2].map(offset => {
+                    const y = new Date().getFullYear() - offset;
+                    return <option key={y} value={y.toString()}>{y}</option>
+                  })}
+                </select>
+              </div>
+            </div>
+
+            {annualLoading ? (
+              <div className="h-72 flex items-center justify-center text-slate-400">Cargando gráfica anual...</div>
+            ) : annualChartData.length === 0 ? (
+              <div className="h-72 flex items-center justify-center text-slate-400">No hay datos para este año</div>
+            ) : (
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={annualChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#64748B', fontSize: 12 }} 
+                      dy={10}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#64748B', fontSize: 12 }}
+                    />
+                    <Tooltip 
+                      cursor={{ fill: '#F1F5F9' }}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-white p-3 border border-slate-100 shadow-xl rounded-xl">
+                              <p className="text-slate-500 text-xs font-bold mb-1">{payload[0].payload.name} {selectedYear}</p>
+                              <p className="text-slate-800 font-bold flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: payload[0].payload.color }}></span>
+                                {payload[0].value} unidades
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar 
+                      dataKey="unidades" 
+                      radius={[4, 4, 0, 0]} 
+                      barSize={40}
+                    >
+                      {
+                        annualChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))
+                      }
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         </>
       )}

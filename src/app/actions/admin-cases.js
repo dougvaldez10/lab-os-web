@@ -254,51 +254,71 @@ export async function cancelarCaso({ caso_id, motivo }) {
   }
 }
 
-export async function getMetricsData(timeFilter) {
+export async function getMetricsData(timeFilter, customStart, customEnd, searchQuery) {
   try {
     await checkAdminAccess();
     const supabase = getAdminClient();
 
     const now = new Date();
-    let fechaInicioActual = new Date();
-    let fechaInicioAnterior = new Date();
-    let fechaFinAnterior = new Date();
+    let isoActualStart, isoActualEnd, isoPrevStart, isoPrevEnd;
 
-    if (timeFilter === "30d") {
-      fechaInicioActual.setDate(now.getDate() - 30);
-      fechaInicioAnterior.setDate(now.getDate() - 60);
-      fechaFinAnterior.setDate(now.getDate() - 30);
-    } else if (timeFilter === "3m") {
-      fechaInicioActual.setMonth(now.getMonth() - 3);
-      fechaInicioAnterior.setMonth(now.getMonth() - 6);
-      fechaFinAnterior.setMonth(now.getMonth() - 3);
-    } else if (timeFilter === "year") {
-      fechaInicioActual = new Date(now.getFullYear(), 0, 1);
-      fechaInicioAnterior = new Date(now.getFullYear() - 1, 0, 1);
-      fechaFinAnterior = new Date(now.getFullYear() - 1, 11, 31);
+    if (timeFilter === "custom" && customStart && customEnd) {
+      isoActualStart = customStart;
+      isoActualEnd = customEnd;
+      const startDate = new Date(customStart);
+      const endDate = new Date(customEnd);
+      const diffTime = Math.abs(endDate - startDate);
+      const prevStartDate = new Date(startDate.getTime() - diffTime - (24 * 60 * 60 * 1000));
+      const prevEndDate = new Date(endDate.getTime() - diffTime - (24 * 60 * 60 * 1000));
+      isoPrevStart = prevStartDate.toISOString().split('T')[0];
+      isoPrevEnd = prevEndDate.toISOString().split('T')[0];
+    } else {
+      let fechaInicioActual = new Date();
+      let fechaInicioAnterior = new Date();
+      let fechaFinAnterior = new Date();
+
+      if (timeFilter === "30d") {
+        fechaInicioActual.setDate(now.getDate() - 30);
+        fechaInicioAnterior.setDate(now.getDate() - 60);
+        fechaFinAnterior.setDate(now.getDate() - 30);
+      } else if (timeFilter === "3m") {
+        fechaInicioActual.setMonth(now.getMonth() - 3);
+        fechaInicioAnterior.setMonth(now.getMonth() - 6);
+        fechaFinAnterior.setMonth(now.getMonth() - 3);
+      } else if (timeFilter === "year") {
+        fechaInicioActual = new Date(now.getFullYear(), 0, 1);
+        fechaInicioAnterior = new Date(now.getFullYear() - 1, 0, 1);
+        fechaFinAnterior = new Date(now.getFullYear() - 1, 11, 31);
+      }
+
+      isoActualStart = fechaInicioActual.toISOString().split('T')[0];
+      isoActualEnd = now.toISOString().split('T')[0];
+      isoPrevStart = fechaInicioAnterior.toISOString().split('T')[0];
+      isoPrevEnd = fechaFinAnterior.toISOString().split('T')[0];
     }
 
-    const isoActualStart = fechaInicioActual.toISOString().split('T')[0];
-    const isoActualEnd = now.toISOString().split('T')[0];
-    const isoPrevStart = fechaInicioAnterior.toISOString().split('T')[0];
-    const isoPrevEnd = fechaFinAnterior.toISOString().split('T')[0];
-
-    // 1. TOP CLÍNICAS - Periodo Actual
-    const { data: casosActuales, error: errorActual } = await supabase
+    let queryActual = supabase
       .from('casos_master')
       .select('cliente_id, total_caso, saldo_pendiente, tipo, doctor, estado, estado_pago, clientes(nombre), casos_detalle(unidades)')
       .gte('fecha_ingreso', isoActualStart)
       .lte('fecha_ingreso', isoActualEnd);
 
-    if (errorActual) throw errorActual;
-
-    // 1b. TOP CLÍNICAS - Periodo Anterior
-    const { data: casosAnteriores, error: errorAnterior } = await supabase
+    let queryAnterior = supabase
       .from('casos_master')
       .select('cliente_id, estado, estado_pago, casos_detalle(unidades)')
       .gte('fecha_ingreso', isoPrevStart)
       .lte('fecha_ingreso', isoPrevEnd);
 
+    if (searchQuery && searchQuery.trim().length > 0) {
+      const search = searchQuery.trim();
+      queryActual = queryActual.or(`codigo.ilike.%${search}%,paciente.ilike.%${search}%`);
+      queryAnterior = queryAnterior.or(`codigo.ilike.%${search}%,paciente.ilike.%${search}%`);
+    }
+
+    const { data: casosActuales, error: errorActual } = await queryActual;
+    if (errorActual) throw errorActual;
+
+    const { data: casosAnteriores, error: errorAnterior } = await queryAnterior;
     if (errorAnterior) throw errorAnterior;
 
     return { success: true, casosActuales, casosAnteriores };
@@ -307,5 +327,52 @@ export async function getMetricsData(timeFilter) {
     return { success: false, error: err.message };
   }
 }
+export async function getAnnualProductionMetrics(year) {
+  try {
+    await checkAdminAccess();
+    const supabase = getAdminClient();
 
+    const startDate = `${year}-01-01`;
+    const endDate = `${year}-12-31`;
 
+    const { data: casos, error } = await supabase
+      .from('casos_master')
+      .select('fecha_ingreso, estado, casos_detalle(unidades)')
+      .gte('fecha_ingreso', startDate)
+      .lte('fecha_ingreso', endDate)
+      .neq('estado', 'Cancelado');
+
+    if (error) throw error;
+
+    const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+      monthIndex: i,
+      unidades: 0
+    }));
+
+    casos?.forEach(c => {
+      if (!c.fecha_ingreso) return;
+      // Using UTC parsing to avoid timezone shifts
+      const d = new Date(c.fecha_ingreso + 'T12:00:00Z');
+      const month = d.getMonth();
+      const unidades = c.casos_detalle?.reduce((sum, det) => sum + (det.unidades || 1), 0) || 0;
+      if (month >= 0 && month < 12) {
+        monthlyData[month].unidades += unidades;
+      }
+    });
+
+    const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    // Mismos colores que las donas
+    const colors = ["#10B981", "#3B82F6", "#6366F1", "#8B5CF6", "#EC4899", "#F43F5E", "#EF4444", "#F59E0B", "#F97316", "#14B8A6", "#06B6D4", "#8B5CF6"];
+
+    const chartData = monthlyData.map((d, i) => ({
+      name: monthNames[i],
+      unidades: d.unidades,
+      color: colors[i]
+    }));
+
+    return { success: true, chartData };
+  } catch (err) {
+    console.error('getAnnualProductionMetrics error:', err);
+    return { success: false, error: err.message };
+  }
+}
