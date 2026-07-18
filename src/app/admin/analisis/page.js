@@ -13,7 +13,8 @@ import {
   Search,
   Calendar,
   Filter,
-  BarChart3
+  BarChart3,
+  RefreshCw
 } from "lucide-react";
 import { getMetricsData, getAnnualProductionMetrics } from "@/app/actions/admin-cases";
 import { getActiveProductionCases } from "@/app/actions/billing";
@@ -232,7 +233,7 @@ export default function MetricasPage() {
       setAnnualLoading(false);
     };
     fetchAnnualData();
-  }, [selectedYear]);
+  }, [selectedYear, refreshTrigger]);
 
   const formatCurrency = (val) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
 
@@ -245,14 +246,24 @@ export default function MetricasPage() {
       scrollbarClass="analisis-scroll"
       scrollbarColor="#8B5CF6"
       headerActions={
-        <div className="relative group flex items-center justify-center pointer-events-auto">
-          <div className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold shadow-md cursor-help flex items-center gap-2 transition-all duration-300">
-             Valor en proceso
-             <span className="opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 -bottom-10 bg-slate-800 text-white text-xs px-3 py-1.5 rounded shadow-lg whitespace-nowrap pointer-events-none z-10">
-                ${sumEnProceso.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-             </span>
+        <>
+          <div className="relative group flex items-center justify-center pointer-events-auto">
+            <div className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold shadow-md cursor-help flex items-center gap-2 transition-all duration-300">
+               Valor en proceso
+               <span className="opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 -bottom-10 bg-slate-800 text-white text-xs px-3 py-1.5 rounded shadow-lg whitespace-nowrap pointer-events-none z-10">
+                  ${sumEnProceso.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+               </span>
+            </div>
           </div>
-        </div>
+          <button 
+            onClick={() => setRefreshTrigger(prev => prev + 1)} 
+            disabled={loading}
+            title="Actualizar Datos"
+            className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 shadow-sm hover:rotate-180 transition-all duration-500 cursor-pointer disabled:opacity-50 flex items-center justify-center pointer-events-auto"
+          >
+            <RefreshCw size={20} className={loading ? "animate-spin text-purple-500" : ""} />
+          </button>
+        </>
       }
     >
       <div className="space-y-6 pb-8 relative z-10 pt-4 pointer-events-auto">
