@@ -405,7 +405,33 @@ export async function getActiveProductionCases() {
       .order('fecha_entrega', { ascending: true });
 
     if (error) throw error;
-    return { success: true, cases: cases || [] };
+    
+    let resultCases = cases || [];
+    
+    // Ordenar por etapa de producción (del más avanzado al menos)
+    const ordenEtapas = [
+      'Inspección',
+      'Terminado',
+      'Ajuste',
+      'Sinterizado',
+      'Digital_Fresado',
+      'Digital_Diseno',
+      'Digital_Escaneo',
+      'Yesos'
+    ];
+    
+    resultCases.sort((a, b) => {
+      let indexA = ordenEtapas.indexOf(a.depto_actual);
+      let indexB = ordenEtapas.indexOf(b.depto_actual);
+      
+      // Si no están en la lista (ej. Recepción), mandarlos al final (peso alto)
+      if (indexA === -1) indexA = 999;
+      if (indexB === -1) indexB = 999;
+      
+      return indexA - indexB;
+    });
+
+    return { success: true, cases: resultCases };
 
   } catch (err) {
     console.error("getActiveProductionCases error:", err);
