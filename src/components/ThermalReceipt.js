@@ -1,5 +1,3 @@
-import { convertirNotacion } from "../lib/dentalNotation";
-
 export function printThermalReceipt({ caso, abono }) {
   if (!caso) return;
 
@@ -12,17 +10,13 @@ export function printThermalReceipt({ caso, abono }) {
     return;
   }
 
-  const notacion = caso.clientes?.notacion_dental || 'FDI';
-  const detallesHTML = (caso.casos_detalle || []).map(d => {
-    const dientesConvertidos = d.dientes ? convertirNotacion(d.dientes, notacion) : '';
-    return `
-      <tr>
-        <td style="text-align: left;">${d.unidades}x ${d.producto}</td>
-        <td style="text-align: right;">$${Number(d.subtotal).toFixed(2)}</td>
-      </tr>
-      ${dientesConvertidos ? `<tr><td colspan="2" style="font-size: 9px; padding-bottom: 4px;">Dientes: ${dientesConvertidos}</td></tr>` : ''}
-    `;
-  }).join('');
+  const detallesHTML = (caso.casos_detalle || []).map(d => `
+    <tr>
+      <td style="text-align: left;">${d.unidades}x ${d.producto}</td>
+      <td style="text-align: right;">$${Number(d.subtotal).toFixed(2)}</td>
+    </tr>
+    ${d.dientes ? `<tr><td colspan="2" style="font-size: 9px; padding-bottom: 4px;">Dientes: ${d.dientes}</td></tr>` : ''}
+  `).join('');
 
   const html = `
     <!DOCTYPE html>
