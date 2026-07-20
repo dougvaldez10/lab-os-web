@@ -74,7 +74,7 @@ export async function getReceiptByCaseId(casoId) {
       .select(`
         id, codigo, paciente, doctor, total_caso, saldo_pendiente, fecha_entrega,
         iva_aplicado, descuento, cliente_id,
-        clientes(nombre, direccion, rfc, tel_fijo, tel_celular),
+        clientes(nombre, direccion, rfc, tel_fijo, tel_celular, notacion_dental),
         casos_detalle(unidades, producto, dientes, precio_unit, subtotal)
       `)
       .eq('id', casoId)

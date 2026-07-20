@@ -65,7 +65,7 @@ export default function AdminCRM() {
       setEditingItem({ ...item, cliente_ids: clientIds, isNew: false });
     } else {
       if (activeTab === "clinicas") {
-        setEditingItem({ isNew: true, nombre: "", tel_fijo: "", email: "", direccion: "" });
+        setEditingItem({ isNew: true, nombre: "", tel_fijo: "", email: "", direccion: "", notacion_dental: "FDI" });
       } else {
         setEditingItem({ isNew: true, trato: "Dr.", nombre: "", apellido: "", cliente_ids: [], telefono: "", email: "" });
       }
@@ -83,7 +83,8 @@ export default function AdminCRM() {
         nombre: editingItem.nombre, 
         tel_fijo: editingItem.tel_fijo, 
         email: editingItem.email, 
-        direccion: editingItem.direccion 
+        direccion: editingItem.direccion,
+        notacion_dental: editingItem.notacion_dental || "FDI"
       };
       if (editingItem.isNew) res = await createAdminClient(payload);
       else res = await updateAdminClient(editingItem.id, payload);
@@ -244,6 +245,17 @@ export default function AdminCRM() {
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-500 uppercase">Dirección</label>
                     <textarea value={editingItem.direccion || ""} onChange={e => setEditingItem({...editingItem, direccion: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none resize-none"></textarea>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase">Notación Dental Preferida</label>
+                    <select 
+                      value={editingItem.notacion_dental || "FDI"} 
+                      onChange={e => setEditingItem({...editingItem, notacion_dental: e.target.value})} 
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none font-semibold text-slate-700"
+                    >
+                      <option value="FDI">FDI (Internacional - ej. 11, 26)</option>
+                      <option value="ADA">ADA / Universal (EUA - ej. 8, 14)</option>
+                    </select>
                   </div>
                 </>
               ) : (
