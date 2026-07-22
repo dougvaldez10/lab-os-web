@@ -373,7 +373,8 @@ export async function getPendingFacturacionCases() {
         casos_detalle(unidades, producto, dientes)
       `)
       .eq('depto_actual', 'Facturación')
-      .neq('estado_pago', 'Pagado')
+      .neq('saldo_pendiente', 0)
+      .neq('estado', 'Cancelado')
       .order('id', { ascending: true }); // id ascending orders by oldest arrival roughly
 
     if (error) throw error;
