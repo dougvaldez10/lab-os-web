@@ -186,21 +186,58 @@ export async function createNewCase(formData) {
     if (items.length > 0) {
       // Precios base desde productos
       const { data: dbProductos } = await supabase.from('productos').select('nombre, precio');
-      const priceMap = {};
-      if (dbProductos) {
-        dbProductos.forEach(p => {
-          const cleanName = p.nombre.replace(/^\d+\-/, '').trim();
-          priceMap[cleanName.toLowerCase()] = Number(p.precio) || 0;
-          priceMap[p.nombre.toLowerCase()]  = Number(p.precio) || 0;
-        });
+
+      function normalizeProdName(str) {
+        if (!str) return '';
+        return str
+          .toLowerCase()
+          .replace(/^\d+[-_]/, '')
+          .replace(/\bzirconia\b/g, 'zr')
+          .replace(/\bdisilicato\b/g, 'li2si2o5')
+          .replace(/\bemax\b/g, 'li2si2o5')
+          .replace(/[^a-z0-9]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
+
+      function findPrice(inputName) {
+        if (!inputName || !dbProductos || dbProductos.length === 0) return 0;
+        const cleanInput = normalizeProdName(inputName.split(' - ')[0]);
+        for (const p of dbProductos) {
+          const raw = p.nombre.toLowerCase();
+          const display = p.nombre.replace(/^\d+-/, '').trim().toLowerCase();
+          if (raw === inputName.toLowerCase() || display === inputName.toLowerCase()) {
+            return Number(p.precio) || 0;
+          }
+        }
+        for (const p of dbProductos) {
+          if (normalizeProdName(p.nombre) === cleanInput) {
+            return Number(p.precio) || 0;
+          }
+        }
+        const inputTokens = cleanInput.split(' ').filter(Boolean);
+        let bestMatch = null, bestScore = 0;
+        for (const p of dbProductos) {
+          const norm = normalizeProdName(p.nombre);
+          const prodTokens = norm.split(' ').filter(Boolean);
+          let score = 0;
+          inputTokens.forEach(t => {
+            if (prodTokens.includes(t)) score += 2;
+            else if (norm.includes(t)) score += 1;
+          });
+          if (score > bestScore) {
+            bestScore = score;
+            bestMatch = p;
+          }
+        }
+        if (bestMatch && bestScore >= 2) return Number(bestMatch.precio) || 0;
+        return 0;
       }
 
       let grandTotal = 0;
 
       const detalles = items.map(item => {
-        const baseProduct       = item.producto.split(' - ')[0].trim().toLowerCase();
-        const fullProduct       = item.producto.toLowerCase();
-        const matchedPrice      = priceMap[baseProduct] || priceMap[fullProduct] || 0;
+        const matchedPrice      = findPrice(item.producto);
         const numUnidades       = item.unidades || 1;
         const subTotalCalculado = matchedPrice * numUnidades;
         

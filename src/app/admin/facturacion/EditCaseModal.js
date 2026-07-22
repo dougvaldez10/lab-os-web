@@ -43,6 +43,67 @@ export default function EditCaseModal({ caseData, onClose, onUpdated, isReceiptM
     setSaving(false);
   };
 
+  const resolveProductPrice = (inputName, catalog) => {
+    if (!inputName || !catalog) return 0;
+    const allProds = Object.values(catalog).flat();
+    if (allProds.length === 0) return 0;
+
+    const normalize = (str) => {
+      if (!str) return '';
+      return str
+        .toLowerCase()
+        .replace(/^\d+[-_]/, '')
+        .replace(/\bzirconia\b/g, 'zr')
+        .replace(/\bdisilicato\b/g, 'li2si2o5')
+        .replace(/\bemax\b/g, 'li2si2o5')
+        .replace(/[^a-z0-9]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
+    const cleanInput = normalize(inputName.split(' - ')[0]);
+
+    // 1. Exact match raw or display
+    for (const p of allProds) {
+      if (p.raw.toLowerCase() === inputName.toLowerCase() || p.display.toLowerCase() === inputName.toLowerCase()) {
+        return Number(p.precio) || 0;
+      }
+    }
+
+    // 2. Normalized match
+    for (const p of allProds) {
+      if (normalize(p.raw) === cleanInput || normalize(p.display) === cleanInput) {
+        return Number(p.precio) || 0;
+      }
+    }
+
+    // 3. Token inclusion match
+    const inputTokens = cleanInput.split(' ').filter(Boolean);
+    let bestMatch = null;
+    let bestScore = 0;
+
+    for (const p of allProds) {
+      const norm = normalize(p.raw);
+      const prodTokens = norm.split(' ').filter(Boolean);
+      let score = 0;
+      inputTokens.forEach(t => {
+        if (prodTokens.includes(t)) score += 2;
+        else if (norm.includes(t)) score += 1;
+      });
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = p;
+      }
+    }
+
+    if (bestMatch && bestScore >= 2) {
+      return Number(bestMatch.precio) || 0;
+    }
+
+    return 0;
+  };
+
   const loadData = async () => {
     setLoading(true);
     const [res, prods] = await Promise.all([
@@ -57,14 +118,7 @@ export default function EditCaseModal({ caseData, onClose, onUpdated, isReceiptM
         let resolvedPrice = Number(d.precio_unit) || 0;
         
         if (resolvedPrice === 0 && prodBase) {
-          const cleanProdBase = prodBase.trim().toLowerCase();
-          for (const cat of Object.values(prods || {})) {
-            const found = cat.find(p => p.raw.toLowerCase() === cleanProdBase || p.display.toLowerCase() === cleanProdBase);
-            if (found) {
-              resolvedPrice = found.precio;
-              break;
-            }
-          }
+          resolvedPrice = resolveProductPrice(prodBase, prods);
         }
 
         return {
@@ -94,15 +148,9 @@ export default function EditCaseModal({ caseData, onClose, onUpdated, isReceiptM
     const newDetalles = [...detalles];
     newDetalles[index].producto_base = baseName;
     newDetalles[index].producto = newDetalles[index].subtipo ? `${baseName} - ${newDetalles[index].subtipo}` : baseName;
-    // Find price in the grouped catalog
-    let newPrice = 0;
-    for (const cat of Object.values(productosCat)) {
-      const found = cat.find(p => p.raw === baseName);
-      if (found) {
-        newPrice = found.precio;
-        break;
-      }
-    }
+    
+    const newPrice = resolveProductPrice(baseName, productosCat);
+
     newDetalles[index].precio_unit = newPrice;
     newDetalles[index].precio_original = newPrice;
     setDetalles(newDetalles);
