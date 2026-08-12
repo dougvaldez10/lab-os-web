@@ -810,6 +810,53 @@ export default function BillingPanel() {
     printWindow.document.close();
   };
 
+  const handleDirectPrintReceipt = async (caso) => {
+    const toastId = toast.loading("Generando recibo...");
+    try {
+      const res = await getCaseDetailsForEdit(caso.id);
+      let items = [];
+      let discountVal = 0;
+      
+      if (res.success) {
+        items = res.detalles?.map(d => ({
+          unidades: d.unidades,
+          producto: d.producto,
+          precio_unitario: Number(d.precio_unit) || 0,
+          dientes: d.dientes
+        })) || [];
+        discountVal = Number(res.master?.descuento) || 0;
+      }
+      
+      const customCaseObj = {
+        id: caso.codigo,
+        internal_id: caso.id,
+        patient: caso.paciente,
+        doctor: caso.doctor || caso.clientes?.nombre,
+        items: items,
+        total_caso: caso.total_caso || 0,
+        iva_aplicado: caso.iva_aplicado
+      };
+
+      const subtotal = items.length > 0
+        ? items.reduce((acc, it) => acc + (Number(it.unidades) * Number(it.precio_unitario)), 0)
+        : Number(caso.total_caso || 0);
+
+      const disc = parseFloat(discountVal) || 0;
+      const discountAmount = disc;
+      
+      const ivaAmount = caso.iva_aplicado ? (subtotal - discountAmount) * 0.08 : 0;
+      const total = (subtotal - discountAmount) + ivaAmount;
+
+      const calc = { subtotal, discountAmount, ivaAmount, total };
+
+      toast.dismiss(toastId);
+      printReceipt(calc, customCaseObj);
+    } catch (err) {
+      console.error(err);
+      toast.error("Error al generar recibo.", { id: toastId });
+    }
+  };
+
   const handleSaveAdjustments = async () => {
       if (!receiptCase) return;
       setReceiptSaving(true);
@@ -1623,13 +1670,11 @@ export default function BillingPanel() {
                                           <Edit size={18} />
                                         </button>
                                         <button
-                                          onClick={() => {
-                                            setIsEditReceiptMode(true);
-                                            handleOpenEdit(c);
-                                          }}
-                                          className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
+                                          title="Imprimir Recibo"
+                                          onClick={() => handleDirectPrintReceipt(c)}
+                                          className="inline-flex items-center justify-center w-8 h-8 text-slate-500 hover:bg-slate-50 rounded-lg transition-all cursor-pointer"
                                         >
-                                          <FileText size={14} /> Recibo
+                                          <FileText size={18} />
                                         </button>
                                         <button
                                           title="Registrar Abono"
