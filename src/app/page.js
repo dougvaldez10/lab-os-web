@@ -1149,7 +1149,7 @@ export default function Home() {
 
       {/* CAPA CONTENIDO Y TARJETAS */}
       <div className="w-full flex-1 flex flex-col relative z-0" style={{ paddingLeft: 'calc(100vw - 100%)' }}>
-        <div style={{ paddingTop: '144px', paddingBottom: '100px' }} className="w-[calc(100%-2rem)] sm:w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto flex flex-col relative z-0 px-0">
+        <div style={{ paddingTop: '72px', paddingBottom: '100px' }} className="w-[calc(100%-2rem)] sm:w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto flex flex-col relative z-0 px-0">
            {loading && cases.length === 0 ? (
                <div className="p-10 text-center text-slate-400 font-medium text-sm">Cargando datos...</div>
            ) : (
@@ -1479,7 +1479,7 @@ export default function Home() {
       <div className="fixed inset-0 pointer-events-none z-10">
           {/* LAYER 2: EL VIDRIO OPACO */}
           <div className="fixed inset-0 pointer-events-none flex flex-col z-10">
-            <div className="h-[144px] bg-slate-50/15 backdrop-blur-[4px] w-full transition-all duration-300" />
+            <div className="h-[72px] bg-slate-50/15 backdrop-blur-[4px] w-full transition-all duration-300" />
             <div className="flex-1 flex relative w-full">
               <div className="flex-1 bg-slate-50/15 backdrop-blur-[4px] h-full transition-all duration-300" />
               <div className="w-[calc(100%-2rem)] sm:w-full sm:max-w-[520px] lg:max-w-[680px] mx-auto bg-transparent h-full px-0 flex flex-col relative pointer-events-none">
@@ -1559,7 +1559,7 @@ export default function Home() {
 
             {/* Search Button (Lupa) */}
             <div className="relative flex flex-col items-center justify-center group h-14 w-14">
-              <span className={`absolute text-[9px] font-bold tracking-wide text-slate-600 opacity-0 group-hover:opacity-100 transform translate-y-0 group-hover:translate-y-[22px] transition-all duration-300 pointer-events-none whitespace-nowrap z-0 ${isSearchBubbleOpen ? 'opacity-100 translate-y-[22px]' : ''}`}>
+              <span className={`absolute text-[9px] font-bold tracking-wide text-teal-600 opacity-0 group-hover:opacity-100 transform translate-y-0 group-hover:translate-y-[22px] transition-all duration-300 pointer-events-none whitespace-nowrap z-0 ${isSearchBubbleOpen ? 'opacity-100 translate-y-[22px]' : ''}`}>
                 Buscar
               </span>
               <button
@@ -1571,7 +1571,11 @@ export default function Home() {
                     setIsSearchBubbleOpen(true);
                   }
                 }}
-                className={`w-11 h-11 rounded-full bg-white flex items-center justify-center text-slate-600 border border-slate-200 shadow-sm transition-all duration-300 group-hover:border-slate-300 group-hover:shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:-translate-y-2 active:scale-95 relative z-10 ${isSearchBubbleOpen ? 'border-slate-400 bg-slate-50 -translate-y-2 shadow-[0_0_15px_rgba(0,0,0,0.1)]' : ''}`}
+                className={`w-11 h-11 rounded-full bg-white flex items-center justify-center transition-all duration-300 active:scale-95 relative z-10 ${
+                  isSearchBubbleOpen
+                    ? "text-teal-600 border border-teal-300 shadow-[0_0_15px_rgba(20,184,166,0.3)] -translate-y-2 bg-teal-50"
+                    : "text-teal-500 border border-slate-200 shadow-sm group-hover:border-teal-200 group-hover:text-teal-600 group-hover:shadow-[0_0_15px_rgba(20,184,166,0.2)] group-hover:-translate-y-2"
+                }`}
                 title="Buscar Casos"
               >
                 <Search size={20} strokeWidth={2} className="transition-colors duration-300" />
@@ -1599,7 +1603,7 @@ export default function Home() {
                 className={`w-11 h-11 rounded-full bg-white flex items-center justify-center transition-all duration-300 active:scale-95 relative z-10 ${
                   activeDept === 'all'
                     ? "text-indigo-600 border border-indigo-300 shadow-[0_0_15px_rgba(79,70,229,0.3)] -translate-y-2 bg-indigo-50"
-                    : "text-slate-600 border border-slate-200 shadow-sm group-hover:border-indigo-200 group-hover:text-indigo-500 group-hover:shadow-[0_0_15px_rgba(79,70,229,0.2)] group-hover:-translate-y-2"
+                    : "text-indigo-500 border border-slate-200 shadow-sm group-hover:border-indigo-200 group-hover:text-indigo-600 group-hover:shadow-[0_0_15px_rgba(79,70,229,0.2)] group-hover:-translate-y-2"
                 }`}
                 title="Monitor Global"
               >
