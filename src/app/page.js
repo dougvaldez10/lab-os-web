@@ -955,9 +955,8 @@ export default function Home() {
     ? cases.filter(c => {
         const query = searchQuery.toLowerCase();
         return (
-          (c.paciente && c.paciente.toLowerCase().includes(query)) ||
+          (c.patient && c.patient.toLowerCase().includes(query)) ||
           (c.doctor && c.doctor.toLowerCase().includes(query)) ||
-          (c.codigo && String(c.codigo).toLowerCase().includes(query)) ||
           (c.id && String(c.id).toLowerCase().includes(query))
         );
       })
