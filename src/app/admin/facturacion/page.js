@@ -28,7 +28,8 @@ import {
   Percent,
   Send,
   Save,
-  Copy
+  Copy,
+  Undo2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast, Toaster } from "sonner";
@@ -80,8 +81,7 @@ export default function BillingPanel() {
   const [motivoCancelacion, setMotivoCancelacion] = useState("");
   const [submittingCancelacion, setSubmittingCancelacion] = useState(false);
 
-  const [promesaModalCase, setPromesaModalCase] = useState(null);
-  const [fechaPromesa, setFechaPromesa] = useState("");
+  const [returnPendingCase, setReturnPendingCase] = useState(null);
   const [submittingPromesa, setSubmittingPromesa] = useState(false);
   const [selectedClinic, setSelectedClinic] = useState(null); // Level 2 selection
   const [searchTerm, setSearchTerm] = useState("");
@@ -310,23 +310,19 @@ export default function BillingPanel() {
     }
   };
 
-  const handleRegistrarPromesa = async (e) => {
+  const handleReturnToPending = async (e) => {
     e.preventDefault();
-    if (!fechaPromesa) {
-      toast.error("Seleccione una fecha válida");
-      return;
-    }
     setSubmittingPromesa(true);
-    const toastId = toast.loading("Registrando promesa...");
+    const toastId = toast.loading("Regresando caso a Pendientes...");
     try {
-      const res = await registrarPromesaPago({ caso_id: promesaModalCase.id, fecha_promesa: fechaPromesa });
-      if (res.success) {
-        toast.success("Promesa registrada", { id: toastId });
-        setPromesaModalCase(null);
-        setFechaPromesa("");
+      const { supabase } = await import('@/lib/supabase');
+      const { error } = await supabase.from('casos_master').update({ estado: 'Pendiente' }).eq('id', returnPendingCase.id);
+      if (!error) {
+        toast.success("Caso regresado a Pendientes", { id: toastId });
+        setReturnPendingCase(null);
         fetchData();
       } else {
-        toast.error(res.error || "Error al registrar promesa", { id: toastId });
+        toast.error("Error al regresar el caso", { id: toastId });
       }
     } catch (err) {
       toast.error("Error de red", { id: toastId });
@@ -1216,7 +1212,6 @@ export default function BillingPanel() {
             })}
           </>
         }
-        tableHeader={null}
       >
       {/* Contenido Principal */}
       <div className="flex-1 min-h-0">
@@ -1614,11 +1609,11 @@ export default function BillingPanel() {
                                       </div>
                                       <div className="text-right flex justify-end gap-2">
                                         <button
-                                          title="Promesa de Pago"
-                                          onClick={() => setPromesaModalCase(c)}
+                                          title="Regresar a Casos Pendientes"
+                                          onClick={() => setReturnPendingCase(c)}
                                           className="inline-flex items-center justify-center w-8 h-8 text-amber-500 hover:bg-amber-50 rounded-lg transition-all cursor-pointer"
                                         >
-                                          <Calendar size={18} />
+                                          <Undo2 size={18} />
                                         </button>
                                         <button
                                           title="Ajustes de Cobro"
@@ -1628,11 +1623,13 @@ export default function BillingPanel() {
                                           <Edit size={18} />
                                         </button>
                                         <button
-                                          title="Imprimir Recibo"
-                                          onClick={() => handlePrintReceipt(c)}
-                                          className="inline-flex items-center justify-center w-8 h-8 text-slate-500 hover:bg-slate-50 rounded-lg transition-all cursor-pointer"
+                                          onClick={() => {
+                                            setIsEditReceiptMode(true);
+                                            handleOpenEdit(c);
+                                          }}
+                                          className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
                                         >
-                                          <FileText size={18} />
+                                          <FileText size={14} /> Recibo
                                         </button>
                                         <button
                                           title="Registrar Abono"
@@ -2614,20 +2611,17 @@ export default function BillingPanel() {
         )}
       </AnimatePresence>
 
-      {/* MODAL PROMESA DE PAGO */}
+      {/* MODAL REGRESAR A CASOS PENDIENTES */}
       <AnimatePresence>
-        {promesaModalCase && (
+        {returnPendingCase && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setPromesaModalCase(null)} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setReturnPendingCase(null)} />
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100">
-              <button onClick={() => setPromesaModalCase(null)} className="absolute top-4 right-4 text-slate-400 hover:bg-slate-100 p-1.5 rounded-lg transition-colors"><X size={18} /></button>
-              <div className="flex items-center gap-3 text-amber-500 mb-2"><Calendar size={24} /><h3 className="text-lg font-black tracking-tight">Registrar Promesa de Pago</h3></div>
-              <p className="text-sm text-slate-500 mb-4">Caso <strong>#{promesaModalCase.codigo}</strong>. Selecciona la nueva fecha acordada.</p>
-              <form onSubmit={handleRegistrarPromesa}>
-                <div className="mb-4">
-                  <input type="date" value={fechaPromesa} onChange={(e) => setFechaPromesa(e.target.value)} required className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none transition-all" />
-                </div>
-                <div className="flex justify-end gap-3"><button type="button" onClick={() => setPromesaModalCase(null)} className="px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">Cancelar</button><button type="submit" disabled={submittingPromesa} className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold transition-all shadow-md flex items-center justify-center min-w-[120px]">{submittingPromesa ? <RefreshCw size={16} className="animate-spin" /> : "Guardar Fecha"}</button></div>
+              <button onClick={() => setReturnPendingCase(null)} className="absolute top-4 right-4 text-slate-400 hover:bg-slate-100 p-1.5 rounded-lg transition-colors"><X size={18} /></button>
+              <div className="flex items-center gap-3 text-amber-500 mb-2"><Undo2 size={24} /><h3 className="text-lg font-black tracking-tight">Regresar a Pendientes</h3></div>
+              <p className="text-sm text-slate-500 mb-4">¿Estás seguro de regresar el caso <strong>#{returnPendingCase.codigo}</strong> a la lista de Casos Pendientes?</p>
+              <form onSubmit={handleReturnToPending}>
+                <div className="flex justify-end gap-3"><button type="button" onClick={() => setReturnPendingCase(null)} className="px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">Cancelar</button><button type="submit" disabled={submittingPromesa} className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold transition-all shadow-md flex items-center justify-center min-w-[120px]">{submittingPromesa ? <RefreshCw size={16} className="animate-spin" /> : "Confirmar"}</button></div>
               </form>
             </motion.div>
           </div>
