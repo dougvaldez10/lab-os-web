@@ -45,7 +45,8 @@ import {
   markCaseAsSent,
   revertirPago,
   registrarPromesaPago,
-  getActiveProductionCases
+  getActiveProductionCases,
+  returnCaseToPending
 } from "@/app/actions/billing";
 import { cancelarCaso } from "@/app/actions/admin-cases";
 import { getAllClinics, getClients } from "@/app/actions/clients";
@@ -315,14 +316,13 @@ export default function BillingPanel() {
     setSubmittingPromesa(true);
     const toastId = toast.loading("Regresando caso a Pendientes...");
     try {
-      const { supabase } = await import('@/lib/supabase');
-      const { error } = await supabase.from('casos_master').update({ estado: 'Pendiente' }).eq('id', returnPendingCase.id);
-      if (!error) {
+      const res = await returnCaseToPending(returnPendingCase.id);
+      if (res.success) {
         toast.success("Caso regresado a Pendientes", { id: toastId });
         setReturnPendingCase(null);
         fetchData();
       } else {
-        toast.error("Error al regresar el caso", { id: toastId });
+        toast.error(res.error || "Error al regresar el caso", { id: toastId });
       }
     } catch (err) {
       toast.error("Error de red", { id: toastId });

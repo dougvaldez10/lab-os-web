@@ -271,6 +271,28 @@ export async function registrarAbono(formData) {
 }
 
 /**
+ * Regresa un caso de Cuentas por Cobrar a Pendientes.
+ */
+export async function returnCaseToPending(caso_id) {
+  try {
+    await checkAdminAccess();
+    const supabase = getAdminClient();
+
+    const { data, error } = await supabase
+      .from('casos_master')
+      .update({ estado: 'Pendiente' })
+      .eq('id', caso_id)
+      .select();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (err) {
+    console.error('Error in returnCaseToPending:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
  * Obtiene el resumen de CxC (Cuentas por Cobrar).
  * Retorna la lista de casos pendientes separada por categorías y las clínicas agrupadas.
  */
