@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, ChevronDown, ChevronUp, Plus, Check, RefreshCw, Layers, Smile, Shield, Smartphone, Package, Target, Sun, X, Calculator, DollarSign, Percent, Pause, Download, Upload, Play, AlertTriangle, Settings, User } from "lucide-react";
+import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, ChevronDown, ChevronUp, Plus, Check, RefreshCw, Layers, Smile, Shield, Smartphone, Package, Target, Sun, X, Calculator, DollarSign, Percent, Pause, Download, Upload, Play, AlertTriangle, Settings, User, Globe } from "lucide-react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { getAllUsers, loginUser, getCurrentUser, logoutUser } from "@/lib/auth";
 import { differenceInBusinessDays, isBefore } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
@@ -572,6 +573,8 @@ export default function Home() {
   const [authChecked, setAuthChecked] = useState(false);
   const [clients, setClients] = useState([]);
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
+  const [isSearchBubbleOpen, setIsSearchBubbleOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   // SLA dinímico: mapa depto ΓåÆ media real en minutos
   const [slaAverages, setSlaAverages] = useState({});
   
@@ -922,11 +925,13 @@ export default function Home() {
 
 
   let groupsToRender = [];
-  if (activeDept === "all") {
-    // Si estamos en TODAS (Monitor Global), renderizar TODOS los departamentos operativos
+  const isGlobalMode = activeDept === "all" || (isSearchBubbleOpen && searchQuery.trim().length > 0);
+  
+  if (isGlobalMode) {
+    // Si estamos en TODAS (Monitor Global) o buscando, renderizar TODOS los departamentos operativos
     groupsToRender = departments.filter(d => d.id !== "Recepción");
   } else {
-    // Si estamos en Departamentos Operativos, renderizar solo las íreas asignadas al usuario
+    // Si estamos en Departamentos Operativos, renderizar solo las áreas asignadas al usuario
     if (isAdmin) {
       groupsToRender = departments.filter(d => d.id !== "Recepción");
     } else {
@@ -946,7 +951,17 @@ export default function Home() {
   // para simplificar el estado.
   const isDeptHidden = (deptId) => !!expandedDepts[deptId];
 
-
+  const filteredCases = (isSearchBubbleOpen && searchQuery.trim() !== "") 
+    ? cases.filter(c => {
+        const query = searchQuery.toLowerCase();
+        return (
+          (c.paciente && c.paciente.toLowerCase().includes(query)) ||
+          (c.doctor && c.doctor.toLowerCase().includes(query)) ||
+          (c.codigo && String(c.codigo).toLowerCase().includes(query)) ||
+          (c.id && String(c.id).toLowerCase().includes(query))
+        );
+      })
+    : cases;
 
   return (
     <div className="h-[100dvh] w-full relative overflow-hidden bg-white sm:bg-slate-50 lg:bg-slate-100 flex flex-col font-sans transition-colors duration-300">
@@ -1146,10 +1161,14 @@ export default function Home() {
                
                  {groupsToRender.map(grupo => {
                    // Obtener los casos para este grupo
-                   const casosEnGrupo = cases
+                   const casosEnGrupo = filteredCases
                      .filter(c => c.dept === grupo.id)
                      .sort(dateTimeSort);
 
+                   // Si hay búsqueda activa y no hay casos en el grupo, lo ocultamos
+                   if (isSearchBubbleOpen && searchQuery.trim() !== "" && casosEnGrupo.length === 0) {
+                     return null;
+                   }
                    
                    const collapsed = isDeptHidden(grupo.id);
                    const isStackExpanded = !!expandedStacks[grupo.id];
@@ -1474,7 +1493,7 @@ export default function Home() {
           {/* LAYER 3: LOS PAPELES SOLIDOS */}
           <div className="fixed inset-0 pointer-events-none flex flex-col items-center z-20">
             <header className="px-5 py-4 flex items-center justify-center shrink-0 h-[56px] w-full bg-transparent relative pointer-events-auto">
-              <h1 className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none" onClick={() => setActiveDept("Producción")} title="Volver a Inicio">
+              <h1 className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none" onClick={() => { setActiveDept("Producción"); setIsSearchBubbleOpen(false); setSearchQuery(""); }} title="Volver a Inicio">
                 Lab OS
               </h1>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -1486,22 +1505,42 @@ export default function Home() {
                 )}
               </div>
             </header>
-            <div className="px-4 py-3 pb-5 shrink-0 bg-transparent w-full flex justify-center pointer-events-auto h-[88px]">
-               <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm w-full max-w-[320px]">
-                 <button onClick={() => setActiveDept("Producción")} className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeDept === "Producción" ? "bg-slate-100 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
-                    Producción
-                 </button>
-                 <button onClick={() => setActiveDept("all")} className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeDept === "all" ? "bg-slate-100 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
-                    Monitor Global
-                 </button>
-               </div>
-            </div>
           </div>
       </div>
 
       {/* Avatar de usuario — fijo al pie de pantalla, centrado */}
       {currentUser && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+          {/* Burbuja de búsqueda */}
+          <AnimatePresence>
+            {isSearchBubbleOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 p-2 w-[300px] flex items-center gap-2"
+              >
+                <div className="flex items-center justify-center pl-2 text-slate-400">
+                  <Search size={18} />
+                </div>
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Buscar paciente, doctor, caso..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 bg-transparent outline-none border-none text-sm text-slate-700 placeholder:text-slate-400 py-1"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                    <X size={14} />
+                  </button>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Bubble container */}
           <div className="bg-slate-50/15 backdrop-blur-[4px] border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-[32px] px-6 py-2 flex items-center gap-6 relative">
             
@@ -1519,6 +1558,27 @@ export default function Home() {
               </button>
             </div>
 
+            {/* Search Button (Lupa) */}
+            <div className="relative flex flex-col items-center justify-center group h-14 w-14">
+              <span className={`absolute text-[9px] font-bold tracking-wide text-slate-600 opacity-0 group-hover:opacity-100 transform translate-y-0 group-hover:translate-y-[22px] transition-all duration-300 pointer-events-none whitespace-nowrap z-0 ${isSearchBubbleOpen ? 'opacity-100 translate-y-[22px]' : ''}`}>
+                Buscar
+              </span>
+              <button
+                onClick={() => {
+                  if (isSearchBubbleOpen) {
+                    setIsSearchBubbleOpen(false);
+                    setSearchQuery("");
+                  } else {
+                    setIsSearchBubbleOpen(true);
+                  }
+                }}
+                className={`w-11 h-11 rounded-full bg-white flex items-center justify-center text-slate-600 border border-slate-200 shadow-sm transition-all duration-300 group-hover:border-slate-300 group-hover:shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:-translate-y-2 active:scale-95 relative z-10 ${isSearchBubbleOpen ? 'border-slate-400 bg-slate-50 -translate-y-2 shadow-[0_0_15px_rgba(0,0,0,0.1)]' : ''}`}
+                title="Buscar Casos"
+              >
+                <Search size={20} strokeWidth={2} className="transition-colors duration-300" />
+              </button>
+            </div>
+
             {/* User Avatar */}
             <div className="relative flex flex-col items-center justify-center h-14">
               <button
@@ -1527,6 +1587,24 @@ export default function Home() {
                 className="w-12 h-12 rounded-full bg-white border border-slate-200 shadow-md flex items-center justify-center text-slate-700 font-black text-[16px] hover:bg-slate-50 hover:shadow-lg transition-all hover:scale-105 active:scale-95 select-none z-10 relative"
               >
                 {currentUser.username?.charAt(0).toUpperCase()}
+              </button>
+            </div>
+
+            {/* Monitor Global Toggle */}
+            <div className="relative flex flex-col items-center justify-center group h-14 w-14">
+              <span className={`absolute text-[9px] font-bold tracking-wide text-indigo-600 transform transition-all duration-300 pointer-events-none whitespace-nowrap z-0 ${activeDept === 'all' ? 'opacity-100 translate-y-[22px]' : 'opacity-0 translate-y-0 group-hover:opacity-100 group-hover:translate-y-[22px]'}`}>
+                Monitor Global
+              </span>
+              <button
+                onClick={() => setActiveDept(prev => prev === "all" ? "Producción" : "all")}
+                className={`w-11 h-11 rounded-full bg-white flex items-center justify-center transition-all duration-300 active:scale-95 relative z-10 ${
+                  activeDept === 'all'
+                    ? "text-indigo-600 border border-indigo-300 shadow-[0_0_15px_rgba(79,70,229,0.3)] -translate-y-2 bg-indigo-50"
+                    : "text-slate-600 border border-slate-200 shadow-sm group-hover:border-indigo-200 group-hover:text-indigo-500 group-hover:shadow-[0_0_15px_rgba(79,70,229,0.2)] group-hover:-translate-y-2"
+                }`}
+                title="Monitor Global"
+              >
+                <Globe size={20} strokeWidth={2} className="transition-colors duration-300" />
               </button>
             </div>
 
