@@ -1170,8 +1170,6 @@ export default function Home() {
                    }
                    
                    const collapsed = isDeptHidden(grupo.id);
-                   const isStackExpanded = !!expandedStacks[grupo.id];
-
                    const groupCases = casosEnGrupo.map(c => {
                        return { ...c, urgencyObj: getUrgency(c.fecha_entrega) };
                    });
@@ -1187,6 +1185,9 @@ export default function Home() {
                    const stackedCases = groupCases.filter(c => 
                        !isCaseActive(c) && (!c.urgencyObj || c.urgencyObj.days > 1)
                    );
+
+                   const defaultStackExpanded = expandedVisibleCases.length === 0 && stackedCases.length > 0;
+                   const isStackExpanded = expandedStacks[grupo.id] !== undefined ? expandedStacks[grupo.id] : defaultStackExpanded;
 
                    const renderCaseList = (caseArray, isStacked = false) => {
                       return caseArray.map((c) => {
@@ -1448,9 +1449,11 @@ export default function Home() {
                                      <div className="flex justify-center w-full py-2 mb-3">
                                        <button 
                                          onClick={() => toggleStack(grupo.id)}
-                                         className="w-10 h-1.5 rounded-full bg-slate-300 hover:bg-slate-400 transition-colors shadow-sm"
-                                         title={isStackExpanded ? "Ocultar casos próximos" : `Ver ${stackedCases.length} casos más`}
-                                       />
+                                         className="px-4 py-1.5 text-xs font-bold rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors shadow-sm flex items-center gap-1.5"
+                                       >
+                                         {isStackExpanded ? "Ocultar casos próximos" : `Ver ${stackedCases.length} casos próximos`}
+                                         {isStackExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                       </button>
                                      </div>
                                      {isStackExpanded && (
                                         <ul className="flex flex-col">
