@@ -762,7 +762,7 @@ export default function BillingPanel() {
                 <span class="info-value">${activeCase.patient}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Doctor/Cl├¡nica</span>
+                <span class="info-label">Doctor/Clínica</span>
                 <span class="info-value">${activeCase.doctor}</span>
               </div>
             </div>
