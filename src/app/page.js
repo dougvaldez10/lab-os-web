@@ -969,6 +969,39 @@ export default function Home() {
       }
   };
 
+  // ── Los hooks useMemo DEBEN estar antes de cualquier return condicional ──
+  // Se usan guards para cuando currentUser todavía no está disponible.
+  const _rawRoles = currentUser ? (currentUser.rol || "").split(',').map(r => r.trim()) : [];
+  const _isAdmin = _rawRoles.some(r => !!r.match(/admin/i));
+
+  const isGlobalMode = useMemo(
+    () => activeDept === "all" || (isSearchBubbleOpen && searchQuery.trim().length > 0),
+    [activeDept, isSearchBubbleOpen, searchQuery]
+  );
+
+  const groupsToRender = useMemo(() => {
+    if (isGlobalMode) return departments.filter(d => d.id !== "Recepción");
+    if (_isAdmin) return departments.filter(d => d.id !== "Recepción");
+    return departments.filter(d => {
+      if (d.id === "Recepción") return false;
+      const hasExactId = _rawRoles.includes(d.id);
+      const hasName = _rawRoles.includes(d.name);
+      const hasStrippedId = _rawRoles.includes(d.id.replace("Digital_", ""));
+      return hasExactId || hasName || hasStrippedId || d.id === "Sinterizado";
+    });
+  }, [isGlobalMode, _isAdmin, _rawRoles]);
+
+  const filteredCases = useMemo(() => {
+    if (!isSearchBubbleOpen || searchQuery.trim() === "") return cases;
+    const query = searchQuery.toLowerCase();
+    return cases.filter(c =>
+      (c.patient && c.patient.toLowerCase().includes(query)) ||
+      (c.doctor && c.doctor.toLowerCase().includes(query)) ||
+      (c.id && String(c.id).toLowerCase().includes(query))
+    );
+  }, [cases, isSearchBubbleOpen, searchQuery]);
+  // ─────────────────────────────────────────────────────────────────────────
+
   if (!authChecked) {
     return <div className="min-h-screen bg-white flex items-center justify-center"><RefreshCw className="animate-spin text-slate-300 w-8 h-8" /></div>;
   }
@@ -990,44 +1023,11 @@ export default function Home() {
     window.location.reload();
   };
 
-  // Filtrado de roles para los grupos visuales
-  const userRolesStr = currentUser.rol || "";
-  const rawRoles = userRolesStr.split(',').map(r => r.trim());
-  const isAdmin = rawRoles.some(r => !!r.match(/admin/i));
+  // Aliases a las variables calculadas antes de los early returns
+  const rawRoles = _rawRoles;
+  const isAdmin = _isAdmin;
 
-
-  const isGlobalMode = useMemo(
-    () => activeDept === "all" || (isSearchBubbleOpen && searchQuery.trim().length > 0),
-    [activeDept, isSearchBubbleOpen, searchQuery]
-  );
-
-  const groupsToRender = useMemo(() => {
-    if (isGlobalMode) return departments.filter(d => d.id !== "Recepción");
-    if (isAdmin) return departments.filter(d => d.id !== "Recepción");
-    return departments.filter(d => {
-      if (d.id === "Recepción") return false;
-      const hasExactId = rawRoles.includes(d.id);
-      const hasName = rawRoles.includes(d.name);
-      const hasStrippedId = rawRoles.includes(d.id.replace("Digital_", ""));
-      return hasExactId || hasName || hasStrippedId || d.id === "Sinterizado";
-    });
-  }, [isGlobalMode, isAdmin, rawRoles]);
-
-  // Pre-abrir todos los acordeones en la carga inicial (hacemos un set 1 vez)
-  // Como Set no funciona fícil, lo inicializamos solo la primera vez en useEffect si fuera util,
-  // pero podemos basarnos predeterminadamente en que false/undefined = "Abierto", true = "Cerrado"
-  // para simplificar el estado.
   const isDeptHidden = (deptId) => !!expandedDepts[deptId];
-
-  const filteredCases = useMemo(() => {
-    if (!isSearchBubbleOpen || searchQuery.trim() === "") return cases;
-    const query = searchQuery.toLowerCase();
-    return cases.filter(c =>
-      (c.patient && c.patient.toLowerCase().includes(query)) ||
-      (c.doctor && c.doctor.toLowerCase().includes(query)) ||
-      (c.id && String(c.id).toLowerCase().includes(query))
-    );
-  }, [cases, isSearchBubbleOpen, searchQuery]);
 
   return (
     <div className="h-[100dvh] w-full relative overflow-hidden bg-white sm:bg-slate-50 lg:bg-slate-100 flex flex-col font-sans transition-colors duration-300">
