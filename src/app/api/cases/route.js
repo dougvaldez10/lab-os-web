@@ -88,11 +88,7 @@ export async function GET(request) {
     // 2.5 Obtener la hora_llegada mas reciente de cada caso desde el historico
     let horaLlegadaPorCaso = {};
     if (ids.length > 0) {
-      const adminClient = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY
-      );
-      const { data: tiempos } = await adminClient
+      const { data: tiempos } = await secureClient
         .from('casos_tiempos_historicos')
         .select('id_caso, hora_llegada')
         .in('id_caso', ids)
@@ -132,9 +128,11 @@ export async function GET(request) {
       items: itemsPorCaso[row.id] || [],
       urgent: false,
       hora_llegada: horaLlegadaPorCaso[row.id] || null,
+      sort_ts: row.fecha_entrega
+        ? new Date(`${row.fecha_entrega}T${row.hora_entrega || '23:59'}:00`).getTime()
+        : 8640000000000000,
     }));
 
-    revalidatePath('/');
     return Response.json(cases);
   } catch (error) {
     console.error('Database error:', error);

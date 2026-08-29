@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { Bell, Search, Star, MessageSquare, Clipboard, MoreHorizontal, LogOut, ChevronDown, ChevronUp, Plus, Check, RefreshCw, Layers, Smile, Shield, Smartphone, Package, Target, Sun, X, Calculator, DollarSign, Percent, Pause, Download, Upload, Play, AlertTriangle, Settings, User, Globe } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -82,7 +82,8 @@ function FileProgressBar({ progress, direction }) {
   );
 }
 // Barra de acciones horizontal por caso (reemplaza los 3 puntos)
-function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onToggleExpand, onOpenReceipt, onPauseRequest }) {
+// React.memo evita re-renders cuando el padre actualiza estado no relacionado con este caso.
+const CaseActionBar = React.memo(function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onToggleExpand, onOpenReceipt, onPauseRequest }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [fileProgress, setFileProgress] = useState(null);
   const [fileDirection, setFileDirection] = useState(null); // 'upload' o 'download'
@@ -276,7 +277,7 @@ function CaseActionBar({ currentCase, onRefresh, operatorName, isExpanded, onTog
       )}
     </div>
   );
-}
+});
 
 
 
@@ -537,6 +538,80 @@ function LoginScreen({ onLoginSuccess }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// preGroupItems: función pura que pre-procesa los items de un caso para su
+// visualización. Se llama UNA SOLA VEZ al recibir los datos del API, no en
+// cada render. Extrae material, tipo, translucidez y rangos de dientes.
+// ─────────────────────────────────────────────────────────────────────────────
+function preGroupItems(items) {
+  if (!items || items.length === 0) return [];
+  const grouped = {};
+
+  items.forEach(item => {
+    const p = item.producto ? item.producto.toLowerCase() : "";
+    const cat = item.categoria ? item.categoria.toLowerCase() : "";
+
+    // 1. Material Base
+    let matText = "";
+    let matColor = "";
+    if (cat.includes("zr") || cat.includes("zirconia") || p.includes("zirconia") || p.includes("zr")) {
+      matText = "Zr"; matColor = "text-[#D4AF37]";
+    } else if (cat.includes("pmma") || p.includes("pmma")) {
+      matText = "(C5O2H8)n"; matColor = "text-red-500";
+    } else if (cat.includes("emax") || cat.includes("litio") || p.includes("emax") || p.includes("litio") || p.includes("lisio4") || p.includes("li2si2o5")) {
+      matText = "Li2Si2O5"; matColor = "text-blue-500";
+    } else if (cat.includes("metal") || p.includes("metal")) {
+      matText = "Metal"; matColor = "text-slate-500";
+    } else {
+      matText = item.producto.split(' ')[0] || "Pieza"; matColor = "text-slate-600";
+    }
+
+    // 2. Sufijo de Tipo
+    if (p.includes("implante") || p.includes("incrustacion") || p.includes("inlay") || p.includes("onlay")) {
+      matText += " I";
+    } else if (p.includes("carilla")) {
+      matText += " Ca";
+    } else if (p.includes("corona")) {
+      matText += " Co";
+    }
+
+    // 3. Translucidez
+    let extraText = "";
+    const dashMatch = item.producto.match(/\s-\s([A-Za-z0-9]+)/);
+    const parenMatch = item.producto.match(/\(([^)]+)\)/);
+    let subtipo = "";
+    if (dashMatch) subtipo = dashMatch[1];
+    else if (parenMatch) subtipo = parenMatch[1].toUpperCase();
+    if (["HT", "LT", "MT", "MO", "HO", "ML", "Mono"].includes(subtipo)) extraText = subtipo;
+
+    const groupKey = `${matText}|${matColor}|${extraText}`;
+    if (!grouped[groupKey]) grouped[groupKey] = { matText, matColor, extraText, teeth: [] };
+
+    if (item.dientes) {
+      const tArr = item.dientes.split(',').map(s => s.trim()).filter(Boolean);
+      grouped[groupKey].teeth.push(...tArr);
+    }
+  });
+
+  // Convertir teeth a rangos legibles
+  return Object.values(grouped).map(group => {
+    let teethStr = "";
+    if (group.teeth.length > 0) {
+      const sorted = [...new Set(group.teeth)].map(Number).sort((a, b) => a - b);
+      const ranges = [];
+      let start = sorted[0], prev = sorted[0];
+      for (let i = 1; i < sorted.length; i++) {
+        const curr = sorted[i];
+        if (curr === prev + 1) { prev = curr; }
+        else { ranges.push(start === prev ? `${start}` : `${start}-${prev}`); start = curr; prev = curr; }
+      }
+      ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+      teethStr = ranges.join(", ");
+    }
+    return { matText: group.matText, matColor: group.matColor, extraText: group.extraText, teethStr };
+  });
+}
+
 export default function Home() {
   const globalStyles = (
     <style dangerouslySetInnerHTML={{__html: `
@@ -677,8 +752,12 @@ export default function Home() {
       const data = await res.json();
 
       if (Array.isArray(data) && data.length > 0) {
-        // Respuesta vílida
-        setCases(data);
+        // Respuesta válida — pre-procesar items para visualización eficiente
+        const enriched = data.map(c => ({
+          ...c,
+          _groupedItems: preGroupItems(c.items || []),
+        }));
+        setCases(enriched);
         // Auto-collapse logic eliminada: respetamos el localStorage
       } else if (retryOnAuth) {
         // Token probablemente expirado ΓåÆ refrescar y reintentar UNA vez
@@ -738,21 +817,14 @@ export default function Home() {
   }, []);
 
 
-  const dateTimeSort = (a, b) => {
-     const timeA = a.hora_entrega ? a.hora_entrega : '23:59';
-     const timeB = b.hora_entrega ? b.hora_entrega : '23:59';
-     const dateA = new Date(`${a.fecha_entrega || '2099-12-31'}T${timeA}`).getTime();
-     const dateB = new Date(`${b.fecha_entrega || '2099-12-31'}T${timeB}`).getTime();
-     
-     if (isNaN(dateA) && isNaN(dateB)) return 0;
-     if (isNaN(dateA)) return 1;
-     if (isNaN(dateB)) return -1;
-     
-     return dateA - dateB;
-  };
+  const dateTimeSort = (a, b) => (a.sort_ts ?? 8640000000000000) - (b.sort_ts ?? 8640000000000000);
 
   const currentOperatorName = currentUser ? (currentUser.nombre_completo || currentUser.username) : null;
   const canCreateCases = currentUser && (currentUser.rol?.toLowerCase().includes('recep') || currentUser.rol?.includes('Admin'));
+
+  // Callbacks estables para CaseActionBar (React.memo requiere referencias estables)
+  const fetchCasesSilent = useCallback(() => fetchCases({ silent: true }), []);
+  const openReceiptModalCb = useCallback((c) => openReceiptModal(c), []);
 
   const getDeliveryDateProps = (fecha, hora) => {
     if (!fecha) return null;
@@ -924,26 +996,22 @@ export default function Home() {
   const isAdmin = rawRoles.some(r => !!r.match(/admin/i));
 
 
-  let groupsToRender = [];
-  const isGlobalMode = activeDept === "all" || (isSearchBubbleOpen && searchQuery.trim().length > 0);
-  
-  if (isGlobalMode) {
-    // Si estamos en TODAS (Monitor Global) o buscando, renderizar TODOS los departamentos operativos
-    groupsToRender = departments.filter(d => d.id !== "Recepción");
-  } else {
-    // Si estamos en Departamentos Operativos, renderizar solo las áreas asignadas al usuario
-    if (isAdmin) {
-      groupsToRender = departments.filter(d => d.id !== "Recepción");
-    } else {
-      groupsToRender = departments.filter(d => {
-         if(d.id === "Recepción") return false;
-         const hasExactId = rawRoles.includes(d.id);
-         const hasName = rawRoles.includes(d.name);
-         const hasStrippedId = rawRoles.includes(d.id.replace("Digital_", ""));
-         return hasExactId || hasName || hasStrippedId || d.id === "Sinterizado";
-      });
-    }
-  }
+  const isGlobalMode = useMemo(
+    () => activeDept === "all" || (isSearchBubbleOpen && searchQuery.trim().length > 0),
+    [activeDept, isSearchBubbleOpen, searchQuery]
+  );
+
+  const groupsToRender = useMemo(() => {
+    if (isGlobalMode) return departments.filter(d => d.id !== "Recepción");
+    if (isAdmin) return departments.filter(d => d.id !== "Recepción");
+    return departments.filter(d => {
+      if (d.id === "Recepción") return false;
+      const hasExactId = rawRoles.includes(d.id);
+      const hasName = rawRoles.includes(d.name);
+      const hasStrippedId = rawRoles.includes(d.id.replace("Digital_", ""));
+      return hasExactId || hasName || hasStrippedId || d.id === "Sinterizado";
+    });
+  }, [isGlobalMode, isAdmin, rawRoles]);
 
   // Pre-abrir todos los acordeones en la carga inicial (hacemos un set 1 vez)
   // Como Set no funciona fícil, lo inicializamos solo la primera vez en useEffect si fuera util,
@@ -951,16 +1019,15 @@ export default function Home() {
   // para simplificar el estado.
   const isDeptHidden = (deptId) => !!expandedDepts[deptId];
 
-  const filteredCases = (isSearchBubbleOpen && searchQuery.trim() !== "") 
-    ? cases.filter(c => {
-        const query = searchQuery.toLowerCase();
-        return (
-          (c.patient && c.patient.toLowerCase().includes(query)) ||
-          (c.doctor && c.doctor.toLowerCase().includes(query)) ||
-          (c.id && String(c.id).toLowerCase().includes(query))
-        );
-      })
-    : cases;
+  const filteredCases = useMemo(() => {
+    if (!isSearchBubbleOpen || searchQuery.trim() === "") return cases;
+    const query = searchQuery.toLowerCase();
+    return cases.filter(c =>
+      (c.patient && c.patient.toLowerCase().includes(query)) ||
+      (c.doctor && c.doctor.toLowerCase().includes(query)) ||
+      (c.id && String(c.id).toLowerCase().includes(query))
+    );
+  }, [cases, isSearchBubbleOpen, searchQuery]);
 
   return (
     <div className="h-[100dvh] w-full relative overflow-hidden bg-white sm:bg-slate-50 lg:bg-slate-100 flex flex-col font-sans transition-colors duration-300">
@@ -1248,134 +1315,41 @@ export default function Home() {
                                       {c.doctor && <span className="ml-2 text-[14px] font-medium text-slate-400 tracking-normal">({c.doctor})</span>}
                                     </p>
                                     
-                                    {c.items && c.items.length > 0 && (() => {
-                                      // AGRUPACIÓN Y FORMATEO
-                                      const grouped = {};
-                                      
-                                      c.items.forEach(item => {
-                                          const p = item.producto ? item.producto.toLowerCase() : "";
-                                          const cat = item.categoria ? item.categoria.toLowerCase() : "";
-                                          
-                                          // 1. Material Base y Color
-                                          let matText = "";
-                                          let matColor = "";
-                                          
-                                          if (cat.includes("zr") || cat.includes("zirconia") || p.includes("zirconia") || p.includes("zr")) {
-                                            matText = "Zr";
-                                            matColor = "text-[#D4AF37]"; // Dorado
-                                          } else if (cat.includes("pmma") || p.includes("pmma")) {
-                                            matText = "(C5O2H8)n";
-                                            matColor = "text-red-500";
-                                          } else if (cat.includes("emax") || cat.includes("litio") || p.includes("emax") || p.includes("litio") || p.includes("lisio4") || p.includes("li2si2o5")) {
-                                            matText = "Li2Si2O5";
-                                            matColor = "text-blue-500";
-                                          } else if (cat.includes("metal") || p.includes("metal")) {
-                                            matText = "Metal";
-                                            matColor = "text-slate-500";
-                                          } else {
-                                            matText = item.producto.split(' ')[0] || "Pieza"; // Fallback
-                                            matColor = "text-slate-600";
-                                          }
-
-                                          // 2. Extraer sufijo de Tipo (I, Ca, Co) y pegarlo al matText (todo mismo color y negrita)
-                                          if (p.includes("implante") || p.includes("incrustacion") || p.includes("inlay") || p.includes("onlay")) {
-                                              matText += " I";
-                                          } else if (p.includes("carilla")) {
-                                              matText += " Ca";
-                                          } else if (p.includes("corona")) {
-                                              matText += " Co";
-                                          }
-
-                                          // 3. Translucidez (Subtipo, ej. HT, LT, ML)
-                                          let extraText = "";
-                                          const dashMatch = item.producto.match(/\s-\s([A-Za-z0-9]+)/);
-                                          const parenMatch = item.producto.match(/\(([^)]+)\)/); // Compatibilidad vieja
-                                          let subtipo = "";
-                                          
-                                          if (dashMatch) {
-                                              subtipo = dashMatch[1];
-                                          } else if (parenMatch) {
-                                              subtipo = parenMatch[1].toUpperCase();
-                                          }
-                                          
-                                          if (["HT", "LT", "MT", "MO", "HO", "ML", "Mono"].includes(subtipo)) {
-                                              extraText = subtipo;
-                                          }
-
-                                          const groupKey = `${matText}|${matColor}|${extraText}`;
-                                          
-                                          if (!grouped[groupKey]) {
-                                              grouped[groupKey] = { matText, matColor, extraText, teeth: [] };
-                                          }
-                                          
-                                          if (item.dientes) {
-                                              // Teeth often come as "11,12" or "11"
-                                              const tArr = item.dientes.split(',').map(s => s.trim()).filter(Boolean);
-                                              grouped[groupKey].teeth.push(...tArr);
-                                          }
-                                      });
-
-                                      // Generar la lista final y formatear dientes
-                                      const renderedLines = Object.values(grouped).map((group, idx) => {
-                                          // Eliminar duplicados y formatear dientes consecutivos
-                                          let teethStr = "";
-                                          if (group.teeth.length > 0) {
-                                              let sorted = [...new Set(group.teeth)].map(Number).sort((a,b) => a-b);
-                                              let ranges = [];
-                                              let start = sorted[0];
-                                              let prev = sorted[0];
-                                              for (let i = 1; i < sorted.length; i++) {
-                                                  let curr = sorted[i];
-                                                  if (curr === prev + 1) {
-                                                      prev = curr;
-                                                  } else {
-                                                      ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
-                                                      start = curr;
-                                                      prev = curr;
-                                                  }
-                                              }
-                                              ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
-                                              teethStr = ranges.join(", ");
-                                          }
-
-                                          return (
-                                            <div key={idx} className="flex items-center gap-1.5 truncate mt-0.5">
-                                              <span className={`text-[16px] font-black tracking-tight ${group.matColor}`}>
-                                                {group.matText}
-                                              </span>
-                                              {group.extraText && (
-                                                <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50/80 border border-indigo-100/50 px-1.5 py-0.5 rounded-md tracking-tight shadow-sm">
-                                                  {group.extraText}
-                                                </span>
-                                              )}
-                                              {c.color && (
-                                                <span className="text-[11px] font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.5 rounded-md tracking-tight ml-0.5 shadow-sm border border-amber-200/50">
-                                                  {c.color}
-                                                </span>
-                                              )}
-                                              {teethStr && (
-                                                <span className="text-[14px] font-medium text-slate-700 truncate ml-0.5">
-                                                  #{teethStr}
-                                                </span>
-                                              )}
-                                            </div>
-                                          );
-                                      });
-
-                                      return (
-                                        <div className="flex flex-col gap-0.5 mt-0.5">
-                                          {renderedLines}
-                                        </div>
-                                      );
-                                    })()}
+                                     {c._groupedItems && c._groupedItems.length > 0 && (
+                                       <div className="flex flex-col gap-0.5 mt-0.5">
+                                         {c._groupedItems.map((group, idx) => (
+                                           <div key={idx} className="flex items-center gap-1.5 truncate mt-0.5">
+                                             <span className={`text-[16px] font-black tracking-tight ${group.matColor}`}>
+                                               {group.matText}
+                                             </span>
+                                             {group.extraText && (
+                                               <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50/80 border border-indigo-100/50 px-1.5 py-0.5 rounded-md tracking-tight shadow-sm">
+                                                 {group.extraText}
+                                               </span>
+                                             )}
+                                             {c.color && (
+                                               <span className="text-[11px] font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.5 rounded-md tracking-tight ml-0.5 shadow-sm border border-amber-200/50">
+                                                 {c.color}
+                                               </span>
+                                             )}
+                                             {group.teethStr && (
+                                               <span className="text-[14px] font-medium text-slate-700 truncate ml-0.5">
+                                                 #{group.teethStr}
+                                               </span>
+                                             )}
+                                           </div>
+                                         ))}
+                                       </div>
+                                     )}
+                                     
+                                     {/* COMENTARIO (opcional) */}
+                                     {c.comentarios && c.comentarios.trim() !== "" && (
+                                       <div className="mt-1 text-[13px] text-slate-600 leading-snug break-words pr-2">
+                                         <span className="font-bold text-slate-700 mr-1">Comentario:</span>
+                                         {c.comentarios}
+                                       </div>
+                                     )}
                                     
-                                    {/* COMENTARIO (opcional) */}
-                                    {c.comentarios && c.comentarios.trim() !== "" && (
-                                      <div className="mt-1 text-[13px] text-slate-600 leading-snug break-words pr-2">
-                                        <span className="font-bold text-slate-700 mr-1">Comentario:</span>
-                                        {c.comentarios}
-                                      </div>
-                                    )}
                                   </div>
                                   
                                   {/* Derecha: Pill de estado del Caso */}
@@ -1392,12 +1366,12 @@ export default function Home() {
                                 {/* Row Expandible del Caso (Solo si no es monitor global / read_only) */}
                                 {!isReadOnly && (
                                    <CaseActionBar 
-                                      onOpenReceipt={openReceiptModal}
-                                     currentCase={c} 
-                                     onRefresh={fetchCases} 
-                                     operatorName={currentOperatorName} 
-                                     isExpanded={cExpanded} 
-                                     onToggleExpand={() => toggleCase(c.internal_id)} 
+                                      onOpenReceipt={openReceiptModalCb}
+                                      currentCase={c} 
+                                      onRefresh={fetchCasesSilent} 
+                                      operatorName={currentOperatorName} 
+                                      isExpanded={cExpanded} 
+                                      onToggleExpand={() => toggleCase(c.internal_id)} 
                                    />
                                 )}
                               </li>
