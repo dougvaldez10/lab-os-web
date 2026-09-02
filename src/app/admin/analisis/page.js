@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Building2, 
   UserSquare2, 
@@ -18,11 +19,14 @@ import {
 } from "lucide-react";
 import { getMetricsData, getAnnualProductionMetrics } from "@/app/actions/admin-cases";
 import { getActiveProductionCases } from "@/app/actions/billing";
+import { getCurrentUser } from "@/lib/auth";
 import GlassLayout from "@/components/admin/GlassLayout";
 import MaterialChart from "./MaterialChart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function MetricasPage() {
+  const router = useRouter();
+  const [authorized, setAuthorized] = useState(false);
   const [timeFilter, setTimeFilter] = useState("30d");
   const [loading, setLoading] = useState(true);
   
@@ -49,6 +53,18 @@ export default function MetricasPage() {
   const [sumEnProceso, setSumEnProceso] = useState(0);
 
   useEffect(() => {
+    getCurrentUser().then(user => {
+      const isSuper = user?.is_superadmin || user?.rol === 'lab_owner' || user?.username?.toLowerCase() === 'legion';
+      if (!isSuper) {
+        router.replace('/admin');
+      } else {
+        setAuthorized(true);
+      }
+    });
+  }, [router]);
+
+  useEffect(() => {
+    if (!authorized) return;
     const fetchProductionSum = async () => {
       try {
         const res = await getActiveProductionCases();
@@ -61,9 +77,10 @@ export default function MetricasPage() {
       }
     };
     fetchProductionSum();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, authorized]);
 
   useEffect(() => {
+    if (!authorized) return;
     const fetchData = async () => {
       setLoading(true);
       
@@ -217,9 +234,10 @@ export default function MetricasPage() {
     };
 
     fetchData();
-  }, [timeFilter, refreshTrigger]);
+  }, [timeFilter, refreshTrigger, authorized]);
 
   useEffect(() => {
+    if (!authorized) return;
     const fetchAnnualData = async () => {
       setAnnualLoading(true);
       try {
@@ -233,9 +251,17 @@ export default function MetricasPage() {
       setAnnualLoading(false);
     };
     fetchAnnualData();
-  }, [selectedYear, refreshTrigger]);
+  }, [selectedYear, refreshTrigger, authorized]);
 
   const formatCurrency = (val) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
+
+  if (!authorized) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-900/10">
+        <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <GlassLayout

@@ -127,11 +127,11 @@ export default function Sidebar() {
     { href: "/admin/facturacion", label: "Finanzas", icon: Wallet, iconColor: "text-amber-400" },
     { href: "/admin/gastos", label: "Gastos", icon: TrendingDown, iconColor: "text-red-500" },
     { href: "/admin/crm", label: "Directorio", icon: Users, iconColor: "text-green-400" },
-    { href: "/admin/usuarios", label: "Usuarios", icon: UserCog, iconColor: "text-rose-400" },
-    { href: "/admin/analisis", label: "Métricas", icon: BarChart3, iconColor: "text-purple-400" },
   ];
 
   if (isAdmin) {
+    menuItems.push({ href: "/admin/usuarios", label: "Usuarios", icon: UserCog, iconColor: "text-rose-400" });
+    menuItems.push({ href: "/admin/analisis", label: "Métricas", icon: BarChart3, iconColor: "text-purple-400" });
     menuItems.push({ href: "/admin/auditoria", label: "Auditoría", icon: ShieldAlert, iconColor: "text-red-500", badge: auditCount });
   }
 

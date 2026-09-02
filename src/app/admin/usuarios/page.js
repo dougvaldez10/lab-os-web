@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Edit, Trash2, Plus, RefreshCw, X, Save, UserCog, Camera } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { 
-  getAllUsers, createUserInSystem, updateUserInSystem, deleteUserInSystem 
+  getAllUsers, createUserInSystem, updateUserInSystem, deleteUserInSystem, getCurrentUser 
 } from "@/lib/auth";
 import GlassLayout from "@/components/admin/GlassLayout";
 import PhoneInput from "@/components/PhoneInput";
@@ -16,6 +17,8 @@ const allDepartments = [
 ];
 
 export default function AdminUsuarios() {
+  const router = useRouter();
+  const [authorized, setAuthorized] = useState(false);
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -31,8 +34,16 @@ export default function AdminUsuarios() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    getCurrentUser().then(user => {
+      const isSuper = user?.is_superadmin || user?.rol === 'lab_owner' || user?.username?.toLowerCase() === 'legion';
+      if (!isSuper) {
+        router.replace('/admin');
+      } else {
+        setAuthorized(true);
+        fetchData();
+      }
+    });
+  }, [router]);
 
   // DELETE
   const handleDelete = async (id, username) => {
@@ -138,6 +149,14 @@ export default function AdminUsuarios() {
       toast.error(res.error || "Error al guardar", { id: toastId });
     }
   };
+
+  if (!authorized) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-900/10">
+        <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <>
