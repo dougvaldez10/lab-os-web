@@ -1383,7 +1383,7 @@ export default function Home() {
                      <div key={grupo.id} className="mb-2">
                        <div 
                          onClick={() => toggleDept(grupo.id)}
-                         className={`flex items-center justify-center py-3 px-4 cursor-pointer select-none group mb-2 mt-4 relative mx-4 sm:mx-0 rounded-2xl border shadow-sm hover:shadow-md sticky top-[144px] z-30 pointer-events-auto transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] ${collapsed && hasUrgentCase ? 'bg-red-50 hover:bg-red-100 border-red-200' : 'bg-slate-50 hover:bg-slate-100 border-slate-200'}`}
+                         className={`flex items-center justify-center py-3 px-4 cursor-pointer select-none group mb-2 mt-4 relative mx-4 sm:mx-0 rounded-2xl border shadow-sm hover:shadow-md sticky top-[72px] z-30 pointer-events-auto transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] ${collapsed && hasUrgentCase ? 'bg-red-50 hover:bg-red-100 border-red-200' : 'bg-slate-50 hover:bg-slate-100 border-slate-200'}`}
                        >
                          <span className={`text-sm font-bold uppercase tracking-wide transition-colors ${collapsed && hasUrgentCase ? 'text-red-800 group-hover:text-red-900' : 'text-slate-800 group-hover:text-slate-900'}`}>
                            {grupo.name.replace("Digital_", "")}
