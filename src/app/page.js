@@ -1486,7 +1486,7 @@ export default function Home() {
 
       {/* Avatar de usuario — fijo al pie de pantalla, centrado */}
       {currentUser && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+        <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50">
           {/* Burbuja de búsqueda */}
           <AnimatePresence>
             {isSearchBubbleOpen && (
