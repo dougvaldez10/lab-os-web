@@ -676,7 +676,7 @@ export async function updateCaseDiscount(caseId, discountAmount, discountType) {
     if (!master) return { success: false, error: 'Caso no encontrado' };
 
     const discountVal = Number(discountAmount) || 0;
-    const descReal = discountType === 'porcentaje'
+    const descReal = discountType === '%'
       ? subtotalItems * (discountVal / 100)
       : discountVal;
 
