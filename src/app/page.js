@@ -1469,7 +1469,7 @@ export default function Home() {
           {/* LAYER 3: LOS PAPELES SOLIDOS */}
           <div className="fixed inset-0 pointer-events-none flex flex-col items-center z-20">
             <header className="px-5 py-4 flex items-center justify-center shrink-0 h-[56px] w-full bg-transparent relative pointer-events-auto">
-              <h1 className="font-bold text-xl tracking-tight text-slate-900 cursor-pointer select-none" onClick={() => { setActiveDept("Producción"); setIsSearchBubbleOpen(false); setSearchQuery(""); }} title="Volver a Inicio">
+              <h1 className="font-bold text-xl tracking-tight text-[#ebb305] cursor-pointer select-none" onClick={() => { setActiveDept("Producción"); setIsSearchBubbleOpen(false); setSearchQuery(""); }} title="Volver a Inicio">
                 Lab OS
               </h1>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
