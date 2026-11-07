@@ -1160,17 +1160,17 @@ export default function BillingPanel() {
         </div>
       );
       currentTableHeader = (
-        <div className="grid grid-cols-[85px_120px_minmax(150px,2fr)_minmax(140px,1.5fr)_120px_100px_100px_150px_120px_200px] gap-4 px-6 py-4 items-center">
+        <div className="grid grid-cols-[minmax(70px,0.6fr)_minmax(100px,0.8fr)_minmax(150px,1.6fr)_minmax(140px,1.4fr)_minmax(110px,1fr)_minmax(80px,0.8fr)_minmax(80px,0.7fr)_minmax(120px,1fr)_minmax(90px,0.8fr)_minmax(160px,1.2fr)] gap-4 px-6 py-4 items-center">
           <div className="font-bold text-center">Asignar</div>
-          <div className="font-bold">Folio</div>
-          <div className="font-bold">Paciente</div>
-          <div className="font-bold">Doctor</div>
-          <div className="font-bold">Fecha Entrega</div>
-          <div className="font-bold">Total</div>
+          <div className="font-bold text-center">Folio</div>
+          <div className="font-bold text-center">Paciente</div>
+          <div className="font-bold text-center">Doctor</div>
+          <div className="font-bold text-center">Fecha Entrega</div>
+          <div className="font-bold text-center">Total</div>
           <div className="font-bold text-center">IVA (8%)</div>
-          <div className="font-bold">Saldo Pendiente</div>
-          <div className="font-bold">Abonar ($)</div>
-          <div className="font-bold text-right">Acción</div>
+          <div className="font-bold text-center">Saldo Pendiente</div>
+          <div className="font-bold text-center">Abonar ($)</div>
+          <div className="font-bold text-center">Acción</div>
         </div>
       );
       currentTableFooter = null;
@@ -1606,7 +1606,7 @@ export default function BillingPanel() {
                                   const opacityClass = isUpcoming && !isAllocated ? "opacity-50 grayscale hover:grayscale-0 hover:opacity-100 focus-within:opacity-100 focus-within:grayscale-0 transition-all" : "transition-colors";
 
                                   return (
-                                    <div key={c.id} className={`grid grid-cols-[85px_120px_minmax(150px,2fr)_minmax(140px,1.5fr)_120px_100px_100px_150px_120px_200px] gap-4 px-6 py-4 items-center hover:bg-slate-50/50 text-sm ${opacityClass}`}>
+                                    <div key={c.id} className={`grid grid-cols-[minmax(70px,0.6fr)_minmax(100px,0.8fr)_minmax(150px,1.6fr)_minmax(140px,1.4fr)_minmax(110px,1fr)_minmax(80px,0.8fr)_minmax(80px,0.7fr)_minmax(120px,1fr)_minmax(90px,0.8fr)_minmax(160px,1.2fr)] gap-4 px-6 py-4 items-center hover:bg-slate-50/50 text-sm ${opacityClass}`}>
                                       <div className="text-center w-full">
                                         <input 
                                           type="checkbox" 
@@ -1615,7 +1615,7 @@ export default function BillingPanel() {
                                           className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded cursor-pointer border-slate-300" 
                                         />
                                       </div>
-                                      <div className="font-bold text-slate-800 flex flex-col items-start gap-1">
+                                      <div className="font-bold text-slate-800 flex flex-col items-center justify-center gap-1 text-center">
                                         <div className="flex items-center gap-2">
                                           {(() => {
                                             let color = "bg-rose-500"; // Rojo por defecto si no hay promesa o ya pasó
@@ -1633,15 +1633,15 @@ export default function BillingPanel() {
                                         </div>
                                         {isUpcoming && <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Próximo cobro</span>}
                                       </div>
-                                      <div className="font-semibold text-slate-700 truncate">
+                                      <div className="font-semibold text-slate-700 truncate text-center" title={c.paciente}>
                                         {c.paciente}
                                       </div>
-                                      <div className="text-slate-600 text-xs font-medium truncate">
+                                      <div className="text-slate-600 text-xs font-medium truncate text-center" title={c.doctor || "—"}>
                                         {c.doctor || "—"}
                                       </div>
-                                      <div className="text-slate-600 text-xs">
+                                      <div className="text-slate-600 text-xs text-center">
                                         {c.fecha_entrega ? (
-                                          <span className="flex items-center gap-1">
+                                          <span className="flex items-center justify-center gap-1">
                                             <Calendar size={12} className="text-slate-400" />
                                             {c.fecha_entrega}
                                           </span>
@@ -1649,7 +1649,7 @@ export default function BillingPanel() {
                                           <span className="text-slate-400">—</span>
                                         )}
                                       </div>
-                                      <div className="font-medium text-slate-600">
+                                      <div className="font-medium text-slate-600 text-center">
                                         ${c.total_caso
                                           ? (c.iva_aplicado
                                               ? (Number(c.total_caso) / 1.08).toFixed(2)
@@ -1664,7 +1664,7 @@ export default function BillingPanel() {
                                           className="w-4 h-4 text-[#D4AF37] focus:ring-[#D4AF37] rounded cursor-pointer border-slate-300" 
                                         />
                                       </div>
-                                      <div>
+                                      <div className="text-center">
                                         {Number(c.saldo_pendiente) < 0 ? (
                                           <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1 text-xs">
                                             <DollarSign size={12} className="text-emerald-500" />
@@ -1677,7 +1677,7 @@ export default function BillingPanel() {
                                           </span>
                                         )}
                                       </div>
-                                      <div>
+                                      <div className="text-center">
                                         <input 
                                           type="number" 
                                           step="0.01"
@@ -1690,7 +1690,7 @@ export default function BillingPanel() {
                                           className="w-24 bg-white disabled:bg-slate-50 border border-slate-200 disabled:border-slate-100 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
                                         />
                                       </div>
-                                      <div className="text-right flex justify-end gap-2">
+                                      <div className="text-center flex justify-center gap-2">
                                         <button
                                           title="Regresar a Casos Pendientes"
                                           onClick={() => setReturnPendingCase(c)}
