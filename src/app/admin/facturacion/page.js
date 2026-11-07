@@ -1631,15 +1631,15 @@ export default function BillingPanel() {
                                           })()}
                                           #{c.codigo}
                                         </div>
-                                        {isUpcoming && <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Próximo cobro</span>}
+                                        {isUpcoming && <span className="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Próximo cobro</span>}
                                       </div>
                                       <div className="font-semibold text-slate-700 truncate text-center" title={c.paciente}>
                                         {c.paciente}
                                       </div>
-                                      <div className="text-slate-600 text-xs font-medium truncate text-center" title={c.doctor || "—"}>
+                                      <div className="text-slate-600 font-medium truncate text-center" title={c.doctor || "—"}>
                                         {c.doctor || "—"}
                                       </div>
-                                      <div className="text-slate-600 text-xs text-center">
+                                      <div className="text-slate-600 text-center">
                                         {c.fecha_entrega ? (
                                           <span className="flex items-center justify-center gap-1">
                                             <Calendar size={12} className="text-slate-400" />
@@ -1666,12 +1666,12 @@ export default function BillingPanel() {
                                       </div>
                                       <div className="text-center">
                                         {Number(c.saldo_pendiente) < 0 ? (
-                                          <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1 text-xs">
+                                          <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1">
                                             <DollarSign size={12} className="text-emerald-500" />
                                             {Math.abs(Number(c.saldo_pendiente)).toFixed(2)}
                                           </span>
                                         ) : (
-                                          <span className="inline-flex items-center gap-1 font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-2.5 py-1 text-xs">
+                                          <span className="inline-flex items-center gap-1 font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-2.5 py-1">
                                             <DollarSign size={12} className="text-rose-500" />
                                             {Number(c.saldo_pendiente).toFixed(2)}
                                           </span>
@@ -1687,7 +1687,7 @@ export default function BillingPanel() {
                                           value={allocatedAmount}
                                           disabled={!isAllocated}
                                           onChange={(e) => handleUpdateAllocationAmount(c.id, e.target.value, Number(c.saldo_pendiente))}
-                                          className="w-24 bg-white disabled:bg-slate-50 border border-slate-200 disabled:border-slate-100 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
+                                          className="w-24 bg-white disabled:bg-slate-50 border border-slate-200 disabled:border-slate-100 rounded-lg px-2 py-1 font-bold text-slate-800 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
                                         />
                                       </div>
                                       <div className="text-center flex justify-center gap-2">
