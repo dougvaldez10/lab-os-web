@@ -249,7 +249,7 @@ export default function BillingPanel() {
 
   const handleOpenAbono = (c) => {
     setAbonoModal(c);
-    setMontoAbono(String(c.saldo_pendiente));
+    setMontoAbono(Number(c.saldo_pendiente).toFixed(2));
     setMetodoPago("Transferencia");
     setAbonoComprobante(null);
     if (currentUser) {
@@ -885,9 +885,23 @@ export default function BillingPanel() {
   );
 
   // Filtrado de Clínicas (CxC Nivel 1)
-  const filteredClinics = clinics.filter(cl => 
-    cl.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredClinics = clinics.filter(cl => {
+    if (!normalizedSearch) return true;
+    if ((cl.nombre || "").toLowerCase().includes(normalizedSearch)) return true;
+    return cases.some(c => {
+      if (c.cliente_id !== cl.id) return false;
+      const codigoStr = String(c.codigo || "").toLowerCase();
+      const pacienteStr = String(c.paciente || "").toLowerCase();
+      const doctorStr = String(c.doctor || "").toLowerCase();
+      return (
+        codigoStr.includes(normalizedSearch) ||
+        `#${codigoStr}`.includes(normalizedSearch) ||
+        pacienteStr.includes(normalizedSearch) ||
+        doctorStr.includes(normalizedSearch)
+      );
+    });
+  });
 
   // Calcular total pendiente para las clínicas filtradas
   const totalGeneral = filteredClinics.reduce((acc, cli) => {
@@ -1068,7 +1082,7 @@ export default function BillingPanel() {
           </div>
           <input
             type="text"
-            placeholder="Buscar clínica con deuda..."
+            placeholder="Buscar por clínica, folio, paciente o dentista..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] outline-none shadow-sm transition-all"
@@ -1146,13 +1160,14 @@ export default function BillingPanel() {
         </div>
       );
       currentTableHeader = (
-        <div className="grid grid-cols-[85px_120px_minmax(150px,2fr)_120px_100px_100px_150px_120px_200px] gap-4 px-6 py-4 items-center">
+        <div className="grid grid-cols-[85px_120px_minmax(150px,2fr)_minmax(140px,1.5fr)_120px_100px_100px_150px_120px_200px] gap-4 px-6 py-4 items-center">
           <div className="font-bold text-center">Asignar</div>
           <div className="font-bold">Folio</div>
           <div className="font-bold">Paciente</div>
+          <div className="font-bold">Doctor</div>
           <div className="font-bold">Fecha Entrega</div>
-          <div className="font-bold text-center">IVA (8%)</div>
           <div className="font-bold">Total</div>
+          <div className="font-bold text-center">IVA (8%)</div>
           <div className="font-bold">Saldo Pendiente</div>
           <div className="font-bold">Abonar ($)</div>
           <div className="font-bold text-right">Acción</div>
@@ -1203,8 +1218,16 @@ export default function BillingPanel() {
               <button
                 onClick={() => {
                   setIsGlobalPaymentOpen(true);
-                  setGlobalClienteId("");
-                  setGlobalMonto("");
+                  if (selectedClinic) {
+                    const clinicWithDebt = clinics.find(c => c.id === selectedClinic.id);
+                    setGlobalClienteId(selectedClinic.id);
+                    setGlobalMonto(clinicWithDebt ? String(clinicWithDebt.total_deuda) : "");
+                  } else {
+                    setGlobalClienteId("");
+                    setGlobalMonto("");
+                  }
+                  setGlobalPickerSearch("");
+                  setGlobalPickerOpen(false);
                   setGlobalComprobante(null);
                 }}
                 title="Registrar Pago"
@@ -1453,13 +1476,23 @@ export default function BillingPanel() {
 
 
                     {filteredClinics.length === 0 ? (
-                      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
-                        <CheckCircle2 className="mx-auto text-emerald-500 w-12 h-12 mb-3" />
-                        <h3 className="text-lg font-bold text-slate-800">¡Al día!</h3>
-                        <p className="text-slate-500 text-sm mt-1 max-w-sm mx-auto">
-                          No se encontraron clínicas con saldo pendiente acumulado en el departamento de Facturación.
-                        </p>
-                      </div>
+                      searchTerm.trim() ? (
+                        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
+                          <Search className="mx-auto text-slate-300 w-12 h-12 mb-3" />
+                          <h3 className="text-lg font-bold text-slate-800">Sin coincidencias</h3>
+                          <p className="text-slate-500 text-sm mt-1 max-w-sm mx-auto">
+                            No se encontraron coincidencias para &ldquo;{searchTerm.trim()}&rdquo;.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
+                          <CheckCircle2 className="mx-auto text-emerald-500 w-12 h-12 mb-3" />
+                          <h3 className="text-lg font-bold text-slate-800">¡Al día!</h3>
+                          <p className="text-slate-500 text-sm mt-1 max-w-sm mx-auto">
+                            No se encontraron clínicas con saldo pendiente acumulado en el departamento de Facturación.
+                          </p>
+                        </div>
+                      )
                     ) : (
                       <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm md:overflow-visible overflow-hidden flex flex-col">
                         <div className="md:overflow-visible overflow-x-auto flex-1">
@@ -1559,7 +1592,7 @@ export default function BillingPanel() {
 
                         return (
                           <>
-                            <div className="flex flex-col divide-y divide-slate-100 min-w-[1000px]">
+                            <div className="flex flex-col divide-y divide-slate-100 min-w-[1150px]">
                               {sortedSelectedClinicCases.length === 0 ? (
                                 <div className="px-6 py-8 text-center text-slate-400">
                                   No hay casos con saldo pendiente para esta clínica.
@@ -1573,7 +1606,7 @@ export default function BillingPanel() {
                                   const opacityClass = isUpcoming && !isAllocated ? "opacity-50 grayscale hover:grayscale-0 hover:opacity-100 focus-within:opacity-100 focus-within:grayscale-0 transition-all" : "transition-colors";
 
                                   return (
-                                    <div key={c.id} className={`grid grid-cols-[85px_120px_minmax(150px,2fr)_120px_100px_100px_150px_120px_200px] gap-4 px-6 py-4 items-center hover:bg-slate-50/50 text-sm ${opacityClass}`}>
+                                    <div key={c.id} className={`grid grid-cols-[85px_120px_minmax(150px,2fr)_minmax(140px,1.5fr)_120px_100px_100px_150px_120px_200px] gap-4 px-6 py-4 items-center hover:bg-slate-50/50 text-sm ${opacityClass}`}>
                                       <div className="text-center w-full">
                                         <input 
                                           type="checkbox" 
@@ -1603,6 +1636,9 @@ export default function BillingPanel() {
                                       <div className="font-semibold text-slate-700 truncate">
                                         {c.paciente}
                                       </div>
+                                      <div className="text-slate-600 text-xs font-medium truncate">
+                                        {c.doctor || "—"}
+                                      </div>
                                       <div className="text-slate-600 text-xs">
                                         {c.fecha_entrega ? (
                                           <span className="flex items-center gap-1">
@@ -1613,6 +1649,13 @@ export default function BillingPanel() {
                                           <span className="text-slate-400">—</span>
                                         )}
                                       </div>
+                                      <div className="font-medium text-slate-600">
+                                        ${c.total_caso
+                                          ? (c.iva_aplicado
+                                              ? (Number(c.total_caso) / 1.08).toFixed(2)
+                                              : Number(c.total_caso).toFixed(2))
+                                          : "0.00"}
+                                      </div>
                                       <div className="text-center">
                                         <input 
                                           type="checkbox" 
@@ -1620,13 +1663,6 @@ export default function BillingPanel() {
                                           onChange={(e) => handleToggleIVA(c, e.target.checked)} 
                                           className="w-4 h-4 text-[#D4AF37] focus:ring-[#D4AF37] rounded cursor-pointer border-slate-300" 
                                         />
-                                      </div>
-                                      <div className="font-medium text-slate-600">
-                                        ${c.total_caso
-                                          ? (c.iva_aplicado
-                                              ? (Number(c.total_caso) / 1.08).toFixed(2)
-                                              : Number(c.total_caso).toFixed(2))
-                                          : "0.00"}
                                       </div>
                                       <div>
                                         {Number(c.saldo_pendiente) < 0 ? (
@@ -2025,26 +2061,35 @@ export default function BillingPanel() {
 
             {/* Form */}
             <form onSubmit={handleRegisterAbono} className="p-6 space-y-4">
-              <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-3.5 flex justify-between items-center text-xs">
-                <div>
-                  <span className="text-slate-500 block font-medium">Saldo Pendiente actual</span>
-                  <strong className="text-slate-800 text-sm font-black">${Number(abonoModal.saldo_pendiente).toFixed(2)}</strong>
-                </div>
-                <div className="text-right">
-                  <span className="text-slate-500 block font-medium">
-                    Total del Caso
+              {(() => {
+                const totalCaso = Number(abonoModal.total_caso || 0);
+                const precioBase = abonoModal.iva_aplicado ? totalCaso / 1.08 : totalCaso;
+                const ivaMonto = abonoModal.iva_aplicado ? totalCaso - precioBase : 0;
+                const saldoPendiente = Number(abonoModal.saldo_pendiente || 0);
+
+                return (
+                  <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-3.5 space-y-2 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500 font-medium">Precio</span>
+                      <span className="text-slate-700 font-bold">${precioBase.toFixed(2)}</span>
+                    </div>
                     {abonoModal.iva_aplicado && (
-                      <span className="ml-1 text-[9px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full">+IVA 8%</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500 font-medium">IVA 8%</span>
+                        <span className="text-slate-700 font-bold">${ivaMonto.toFixed(2)}</span>
+                      </div>
                     )}
-                  </span>
-                  <strong className="text-slate-700 font-bold">
-                    ${(abonoModal.iva_aplicado
-                      ? (Number(abonoModal.total_caso || 0) / 1.08)
-                      : Number(abonoModal.total_caso || 0)
-                    ).toFixed(2)}
-                  </strong>
-                </div>
-              </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500 font-medium">Total</span>
+                      <span className="text-slate-800 font-bold">${totalCaso.toFixed(2)}</span>
+                    </div>
+                    <div className="pt-2 border-t border-amber-200/60 flex justify-between items-center">
+                      <span className="text-slate-600 font-bold">Saldo pendiente</span>
+                      <strong className="text-slate-800 text-sm font-black">${saldoPendiente.toFixed(2)}</strong>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Monto a abonar ($)</label>
