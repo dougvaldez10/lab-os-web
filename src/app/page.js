@@ -1518,7 +1518,7 @@ export default function Home() {
           </AnimatePresence>
 
           {/* Bubble container */}
-          <div className="bg-slate-50/15 backdrop-blur-[4px] border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-[32px] px-6 py-2 flex items-center gap-6 relative">
+          <div className="bg-white/40 backdrop-blur-md border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-[32px] px-6 py-2 flex items-center gap-6 relative isolate transform-gpu">
             
             {/* Add New Case */}
             <div className="relative flex flex-col items-center justify-center group h-14 w-14">
