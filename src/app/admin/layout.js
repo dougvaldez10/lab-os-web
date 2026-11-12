@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Sidebar from "./Sidebar";
+import AdminDock from "./AdminDock";
 
 export const metadata = {
   title: 'Lab OS - Administración',
@@ -28,14 +29,17 @@ export default async function AdminLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 backdrop-blur-md flex flex-col md:flex-row font-sans">
-      {/* Sidebar de Administración */}
+    <div className="min-h-screen md:h-screen bg-slate-50 flex flex-col font-sans relative overflow-hidden md:pb-[34px]">
+      {/* Menú móvil (pantallas chicas) */}
       <Sidebar />
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 bg-transparent h-screen overflow-hidden relative z-0">
+      {/* Área de contenido principal (en escritorio termina ~34px antes del borde inferior) */}
+      <main className="flex-1 flex flex-col min-w-0 min-h-0 bg-slate-50 h-screen md:h-full overflow-hidden relative">
         {children}
       </main>
+
+      {/* Barra flotante inferior (solo escritorio md+) */}
+      <AdminDock />
     </div>
   );
 }
