@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingDown,
@@ -36,6 +36,8 @@ const SUB_MENUS = {
 
 export default function AdminDock() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const searchStr = searchParams ? searchParams.toString() : "";
   const [isAdmin, setIsAdmin] = useState(false);
   const [auditCount, setAuditCount] = useState(0);
   const [showLabels, setShowLabels] = useState(false);
@@ -95,13 +97,6 @@ export default function AdminDock() {
     };
   }, []);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      setActiveTabParam(params.get("tab") || "");
-    }
-  }, [pathname, hoveredMenu]);
-
   const clearDockTimers = () => {
     if (shrinkTimerRef.current) {
       clearTimeout(shrinkTimerRef.current);
@@ -111,6 +106,16 @@ export default function AdminDock() {
       clearTimeout(glowTimerRef.current);
       glowTimerRef.current = null;
     }
+  };
+
+  const resetSubmenuAndHover = () => {
+    if (menuHoverTimerRef.current) {
+      clearTimeout(menuHoverTimerRef.current);
+      menuHoverTimerRef.current = null;
+    }
+    hoveredMenuRef.current = null;
+    setHoveredMenu(null);
+    setHoveredItem(null);
   };
 
   const openDockNow = () => {
@@ -128,6 +133,17 @@ export default function AdminDock() {
       setIsStrip(true);
     }, HOLD_MS);
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(
+      searchStr || (typeof window !== "undefined" ? window.location.search : "")
+    );
+    setActiveTabParam(params.get("tab") || "");
+    resetSubmenuAndHover();
+    if (!isStripRef.current && !pointerInsideRef.current) {
+      scheduleShrink();
+    }
+  }, [pathname, searchStr]);
 
   const handleProximityEnter = () => {
     pointerInsideRef.current = true;
@@ -173,14 +189,23 @@ export default function AdminDock() {
   const handleSubmenuLeave = () => {
     if (menuHoverTimerRef.current) {
       clearTimeout(menuHoverTimerRef.current);
+      menuHoverTimerRef.current = null;
     }
     menuHoverTimerRef.current = setTimeout(() => {
+      menuHoverTimerRef.current = null;
       hoveredMenuRef.current = null;
       setHoveredMenu(null);
       if (!pointerInsideRef.current) {
         scheduleShrink();
       }
     }, 180);
+  };
+
+  const handleSubmenuOptionClick = (tab) => {
+    setActiveTabParam(tab);
+    pointerInsideRef.current = false;
+    resetSubmenuAndHover();
+    scheduleShrink();
   };
 
   const handleToggleLabels = (e) => {
@@ -195,8 +220,13 @@ export default function AdminDock() {
       // Ignore storage errors
     }
     setIsHopping(true);
-    clearTimeout(hopTimerRef.current);
-    hopTimerRef.current = setTimeout(() => setIsHopping(false), 320);
+    if (hopTimerRef.current) {
+      clearTimeout(hopTimerRef.current);
+    }
+    hopTimerRef.current = setTimeout(() => {
+      hopTimerRef.current = null;
+      setIsHopping(false);
+    }, 320);
     openDockNow();
   };
 
@@ -319,11 +349,16 @@ export default function AdminDock() {
           pointerInsideRef.current = true;
           openDockNow();
         }}
-        className="pointer-events-auto px-14 pt-5 pb-[6px] overflow-visible"
+        className="pointer-events-auto px-14 pt-5 pb-[22px] overflow-visible"
       >
         <motion.nav
           aria-label="Navegación de administración"
           initial={false}
+          onPointerMove={() => {
+            if (!pointerInsideRef.current) {
+              handleProximityEnter();
+            }
+          }}
           animate={{
             height: isStrip ? 22 : 90,
             borderRadius: isStrip ? 11 : 32,
@@ -559,6 +594,9 @@ export default function AdminDock() {
                 >
                   <Link
                     href={item.href}
+                    onClick={() => {
+                      resetSubmenuAndHover();
+                    }}
                     className="flex flex-col items-center justify-center w-full focus:outline-none"
                   >
                     <span
@@ -648,8 +686,22 @@ export default function AdminDock() {
                           animate={{ opacity: 1, y: 0, x: "-50%" }}
                           exit={{ opacity: 0, y: 8, x: "-50%" }}
                           transition={{ duration: 0.18, ease: "easeOut" }}
-                          onMouseEnter={() => handleSubmenuEnter(item.href)}
+                          onMouseEnter={() => {
+                            pointerInsideRef.current = false;
+                            handleSubmenuEnter(item.href);
+                          }}
                           onMouseLeave={handleSubmenuLeave}
+                          onPointerEnter={(e) => {
+                            e.stopPropagation();
+                            pointerInsideRef.current = false;
+                            handleSubmenuEnter(item.href);
+                          }}
+                          onPointerMove={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                          }}
                           style={{
                             backgroundColor: "rgba(255, 255, 255, 0.72)",
                             border: "1px solid rgba(255, 255, 255, 0.78)",
@@ -678,9 +730,7 @@ export default function AdminDock() {
                                 key={subItem.href}
                                 href={subItem.href}
                                 onClick={() => {
-                                  setActiveTabParam(subItem.tab);
-                                  hoveredMenuRef.current = null;
-                                  setHoveredMenu(null);
+                                  handleSubmenuOptionClick(subItem.tab);
                                 }}
                                 className={`relative z-10 rounded-full px-[18px] py-[9px] text-[12px] font-bold text-center whitespace-nowrap transition-all duration-150 ${
                                   isSubActive
