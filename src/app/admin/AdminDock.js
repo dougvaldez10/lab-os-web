@@ -41,7 +41,7 @@ export default function AdminDock() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [auditCount, setAuditCount] = useState(0);
   const [showLabels, setShowLabels] = useState(false);
-  const [isStrip, setIsStrip] = useState(true);
+  const [isStrip, setIsStrip] = useState(false);
   const [isGlowing, setIsGlowing] = useState(false);
   const [isHopping, setIsHopping] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
@@ -50,7 +50,7 @@ export default function AdminDock() {
 
   const pointerInsideRef = useRef(false);
   const hoveredMenuRef = useRef(null);
-  const isStripRef = useRef(true);
+  const isStripRef = useRef(false);
   const shrinkTimerRef = useRef(null);
   const glowTimerRef = useRef(null);
   const menuHoverTimerRef = useRef(null);
